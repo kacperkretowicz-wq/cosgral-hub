@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db/client";
 import { normalizeOptionalDate } from "@/lib/date-utils";
 import { getIntranetDb } from "@/lib/intranet-db";
 import { getAppBaseUrl, getOfferUrl } from "@/lib/app-url";
+import type { Inspiration } from "@/lib/types";
 
 const offerContentSchema = z.object({
   intro: z.string(),
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const inspirations: ReturnType<typeof normalizeInspiration>[] = [];
+    const inspirations: Inspiration[] = [];
 
     const data = await db.createClient({
       company_name: parsed.company_name,
