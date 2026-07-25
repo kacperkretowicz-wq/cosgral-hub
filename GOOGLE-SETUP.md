@@ -1,6 +1,6 @@
-# Google Drive + Docs — konfiguracja Cosgral Hub
+# Google Drive + Docs — konfiguracja Cosgral Hub (OAuth 2.0)
 
-Materiały klientów (pliki → Drive, teksty → Google Doc) wymagają Service Account.
+Materiały klientów (pliki → Drive, teksty → Google Doc) wymagają OAuth 2.0 Client ID.
 
 ## 1. Google Cloud Console
 
@@ -8,37 +8,43 @@ Materiały klientów (pliki → Drive, teksty → Google Doc) wymagają Service 
 2. **APIs & Services → Library** → włącz:
    - **Google Drive API**
    - **Google Docs API**
-3. **Credentials → Create Credentials → Service Account**
-4. Pobierz JSON → skopiuj:
-   - `client_email` → `GOOGLE_SERVICE_ACCOUNT_EMAIL`
-   - `private_key` → `GOOGLE_PRIVATE_KEY`
+3. **Credentials → Create Credentials → OAuth client ID**
+   - Typ: **Web application**
+   - **Authorized redirect URIs:**
+     - `https://cosgralhub.netlify.app/api/google/oauth/callback`
+     - `http://localhost:3000/api/google/oauth/callback` (dev)
+4. Skopiuj **Client ID** i **Client secret**
 
-## 2. Udostępnij folder Drive
+## 2. Zmienne środowiskowe (Netlify)
 
-1. Otwórz folder: [Cosgral — materiały klientów](https://drive.google.com/drive/folders/1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G)
-2. **Udostępnij** → wklej email service account → rola **Edytor**
-
-## 3. Zmienne środowiskowe
-
-Lokalnie (`.env.local`) i na **Netlify** (Site → Environment variables):
+Site → **Environment variables**:
 
 ```env
-GOOGLE_SERVICE_ACCOUNT_EMAIL=cosgral-portal@....iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+GOOGLE_CLIENT_ID=....apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-...
 GOOGLE_DRIVE_ROOT_FOLDER_ID=1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G
+GOOGLE_REFRESH_TOKEN=...   ← krok 3
 ```
 
-Zaznacz **Contains secret values** dla `GOOGLE_PRIVATE_KEY`.
+Zaznacz **Contains secret values** dla `GOOGLE_CLIENT_SECRET` i `GOOGLE_REFRESH_TOKEN`.
+
+## 3. Jednorazowa autoryzacja (refresh token)
+
+Po deploy z `CLIENT_ID` + `CLIENT_SECRET`:
+
+1. Otwórz: `https://cosgralhub.netlify.app/api/google/oauth/authorize`
+2. Zaloguj się kontem Google, które ma dostęp do folderu Drive
+3. Skopiuj **refresh token** ze strony callback
+4. Dodaj jako `GOOGLE_REFRESH_TOKEN` na Netlify
+5. **Deploys → Clear cache and deploy site**
+
+Folder Drive musi należeć do konta użytego przy autoryzacji (lub być udostępniony temu kontu).
 
 ## 4. Supabase — migracja
 
 W **SQL Editor** uruchom:
 
 `supabase/migrations/004_drive_doc_id.sql`
-
-## 5. Redeploy
-
-Netlify → **Deploys → Trigger deploy → Clear cache and deploy site**
 
 ## Struktura w Drive (automatyczna)
 

@@ -24,7 +24,10 @@ W **Site configuration → Environment variables** dodaj:
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://bduwbnnvhahtcjjxaazv.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | z `.env.local` |
 | `SUPABASE_SERVICE_ROLE_KEY` | z `.env.local` |
+| `GOOGLE_CLIENT_ID` | z Google Cloud |
+| `GOOGLE_CLIENT_SECRET` | z Google Cloud |
 | `GOOGLE_DRIVE_ROOT_FOLDER_ID` | `1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G` |
+| `GOOGLE_REFRESH_TOKEN` | po `/api/google/oauth/authorize` |
 | `NEXT_PUBLIC_APP_URL` | **po deploy** — URL Netlify, np. `https://cosgral-hub.netlify.app` |
 
 ### 4. Deploy

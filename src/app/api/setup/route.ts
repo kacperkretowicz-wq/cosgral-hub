@@ -31,10 +31,11 @@ DATABASE_URL=postgresql://postgres.${PROJECT_REF}:${encodeURIComponent(db_passwo
 
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Google Drive
+# Google Drive (OAuth 2.0)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 GOOGLE_DRIVE_ROOT_FOLDER_ID=1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G
-# GOOGLE_SERVICE_ACCOUNT_EMAIL=
-# GOOGLE_PRIVATE_KEY=
+# GOOGLE_REFRESH_TOKEN=
 
 # OpenAI (opcjonalnie)
 # OPENAI_API_KEY=

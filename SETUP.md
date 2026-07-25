@@ -34,17 +34,14 @@ Szczegółowa instrukcja: [GOOGLE-SETUP.md](./GOOGLE-SETUP.md)
 1. Wejdź na [Google Cloud Console](https://console.cloud.google.com/)
 2. Utwórz projekt **Cosgral Portal**
 3. Włącz **Google Drive API** i **Google Docs API** (APIs & Services → Library)
-4. Utwórz **Service Account** (APIs & Services → Credentials → Create Credentials)
-5. Pobierz plik JSON z kluczem
-6. Skopiuj email service account (np. `...@....iam.gserviceaccount.com`)
-7. W Google Drive udostępnij główny folder klientów temu emailowi z uprawnieniem **Edytor**:
-   - Folder: [Cosgral — materiały klientów](https://drive.google.com/drive/folders/1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G)
-   - ID folderu: `1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G`
-8. Uruchom migrację `supabase/migrations/004_drive_doc_id.sql` w Supabase SQL Editor
-9. Ustaw zmienne env (lokalnie i Netlify):
-   - `GOOGLE_SERVICE_ACCOUNT_EMAIL` — email z JSON
-   - `GOOGLE_PRIVATE_KEY` — klucz prywatny z JSON (z `\n` jako newline)
-   - `GOOGLE_DRIVE_ROOT_FOLDER_ID` — ID folderu
+4. Utwórz **OAuth client ID** (Web application) — redirect URI: `/api/google/oauth/callback`
+5. Folder klientów: [Cosgral — materiały klientów](https://drive.google.com/drive/folders/1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G)
+6. Uruchom migrację `supabase/migrations/004_drive_doc_id.sql` w Supabase SQL Editor
+7. Ustaw zmienne env (lokalnie i Netlify):
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+   - `GOOGLE_DRIVE_ROOT_FOLDER_ID`
+   - `GOOGLE_REFRESH_TOKEN` — jednorazowo przez `/api/google/oauth/authorize`
 
 Bez Google Drive pliki trafiają do Supabase Storage (limit 1 GB). Teksty zapisują się w bazie.
 
