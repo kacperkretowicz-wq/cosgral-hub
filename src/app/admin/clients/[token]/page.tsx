@@ -10,6 +10,7 @@ import { getStoredFileUrl } from "@/lib/file-url";
 import { getOfferUrl } from "@/lib/app-url";
 import { getDriveFolderUrl } from "@/lib/google-drive";
 import { getGoogleDocUrl } from "@/lib/google-docs";
+import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import type { Client, Submission, UploadedFile } from "@/lib/types";
 
 interface Props {
@@ -97,6 +98,12 @@ export default async function ClientDetailPage({ params }: Props) {
                 <Button variant="ghost">Google Doc ↗</Button>
               </a>
             )}
+            <DeleteRecordButton
+              apiUrl={`/api/clients/${typedClient.id}`}
+              redirectTo="/admin"
+              label="Usuń ofertę"
+              confirmMessage={`Usunąć ofertę i formularz „${typedClient.company_name}”? Materiały w Google Drive pozostaną na dysku.`}
+            />
           </div>
         </div>
 

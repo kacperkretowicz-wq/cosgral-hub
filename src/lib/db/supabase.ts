@@ -121,5 +121,11 @@ export function createSupabaseDb(): DbClient {
       if (error) throw new Error(error.message);
       return created as UploadedFile;
     },
+
+    async deleteClient(id) {
+      const supabase = getServiceClient();
+      const { error } = await supabase.from("clients").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
   };
 }

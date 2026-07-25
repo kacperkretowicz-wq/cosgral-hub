@@ -131,5 +131,32 @@ export function createLocalDb(): DbClient {
       await writeJson("files.json", all);
       return file;
     },
+
+    async deleteClient(id) {
+      const clients = await readJson<Client[]>("clients.json", []);
+      if (!clients.some((c) => c.id === id)) {
+        throw new Error("Client not found");
+      }
+
+      await writeJson(
+        "clients.json",
+        clients.filter((c) => c.id !== id),
+      );
+
+      const submissions = await readJson<Submission[]>("submissions.json", []);
+      await writeJson(
+        "submissions.json",
+        submissions.filter((s) => s.client_id !== id),
+      );
+
+      const files = await readJson<UploadedFile[]>("files.json", []);
+      await writeJson(
+        "files.json",
+        files.filter((f) => f.client_id !== id),
+      );
+
+      const uploadsDir = path.join(DATA_DIR, "uploads", id);
+      await fs.rm(uploadsDir, { recursive: true, force: true }).catch(() => {});
+    },
   };
 }

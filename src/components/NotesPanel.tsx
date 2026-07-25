@@ -55,6 +55,14 @@ export function NotesPanel({ entityId, entityType }: NotesPanelProps) {
     setLoading(false);
   };
 
+  const handleDelete = async (noteId: string) => {
+    if (!confirm("Usunąć tę notatkę?")) return;
+    const res = await fetch(`/api/notes?id=${noteId}`, { method: "DELETE" });
+    if (res.ok) {
+      setNotes((prev) => prev.filter((note) => note.id !== noteId));
+    }
+  };
+
   return (
     <div className="space-y-4">
       <form onSubmit={handleAdd} className="flex gap-2">
@@ -75,11 +83,22 @@ export function NotesPanel({ entityId, entityType }: NotesPanelProps) {
         <div className="space-y-2">
           {notes.map((note) => (
             <div key={note.id} className="rounded-sm bg-white/5 p-3 text-sm">
-              <p className="text-white/80">{note.content}</p>
-              <p className="mt-1 text-xs text-white/30">
-                {note.author_email} ·{" "}
-                {new Date(note.created_at).toLocaleString("pl-PL")}
-              </p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-white/80">{note.content}</p>
+                  <p className="mt-1 text-xs text-white/30">
+                    {note.author_email} ·{" "}
+                    {new Date(note.created_at).toLocaleString("pl-PL")}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleDelete(note.id)}
+                  className="shrink-0 px-3 py-1 text-xs text-red-400/80 hover:text-red-300 hover:bg-red-500/10"
+                >
+                  Usuń
+                </Button>
+              </div>
             </div>
           ))}
         </div>

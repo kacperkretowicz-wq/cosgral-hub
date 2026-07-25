@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinksPanel } from "@/components/ResourceLinksPanel";
+import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import { getIntranetDb } from "@/lib/intranet-db";
 import {
   PROJECT_STATUS_COLORS,
@@ -25,20 +26,28 @@ export default async function KlientDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-8">
-      <div>
-        <Link
-          href="/admin/klienci"
-          className="text-sm text-white/50 hover:text-white"
-        >
-          ← Klienci
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold md:text-3xl">
-          {client.company_name}
-        </h1>
-        <p className="text-sm text-white/50">
-          {client.contact_name ?? "Brak osoby kontaktowej"}
-          {client.industry ? ` · ${client.industry}` : ""}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Link
+            href="/admin/klienci"
+            className="text-sm text-white/50 hover:text-white"
+          >
+            ← Klienci
+          </Link>
+          <h1 className="mt-2 text-2xl font-bold md:text-3xl">
+            {client.company_name}
+          </h1>
+          <p className="text-sm text-white/50">
+            {client.contact_name ?? "Brak osoby kontaktowej"}
+            {client.industry ? ` · ${client.industry}` : ""}
+          </p>
+        </div>
+        <DeleteRecordButton
+          apiUrl={`/api/crm-clients/${id}`}
+          redirectTo="/admin/klienci"
+          label="Usuń klienta"
+          confirmMessage={`Usunąć klienta CRM „${client.company_name}”? Powiązane notatki i linki zostaną usunięte.`}
+        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

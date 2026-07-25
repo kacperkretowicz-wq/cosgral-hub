@@ -181,5 +181,29 @@ function createSupabaseIntranetDb() {
         .eq("id", id);
       if (error) throw new Error(error.message);
     },
+
+    async deleteCrmClient(id: string): Promise<void> {
+      const { error } = await getSupabaseClient()
+        .from("crm_clients")
+        .delete()
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+
+    async deleteProject(id: string): Promise<void> {
+      const { error } = await getSupabaseClient()
+        .from("projects")
+        .delete()
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+
+    async deleteNote(id: string): Promise<void> {
+      const { error } = await getSupabaseClient()
+        .from("notes")
+        .delete()
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    },
   };
 }

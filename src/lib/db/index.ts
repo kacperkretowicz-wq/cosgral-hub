@@ -36,4 +36,5 @@ export interface DbClient {
   createFile(
     data: Omit<UploadedFile, "id" | "uploaded_at">,
   ): Promise<UploadedFile>;
+  deleteClient(id: string): Promise<void>;
 }

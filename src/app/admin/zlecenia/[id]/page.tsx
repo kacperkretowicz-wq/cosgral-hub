@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinksPanel } from "@/components/ResourceLinksPanel";
+import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import {
   PROJECT_STATUS_COLORS,
   PROJECT_STATUS_LABELS,
@@ -67,22 +68,30 @@ export default function ZlecenieDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-8">
-      <div>
-        <Link
-          href="/admin/zlecenia"
-          className="text-sm text-white/50 hover:text-white"
-        >
-          ← Zlecenia
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold md:text-3xl">{project.title}</h1>
-        {project.crm_clients && (
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
           <Link
-            href={`/admin/klienci/${project.crm_clients.id}`}
+            href="/admin/zlecenia"
             className="text-sm text-white/50 hover:text-white"
           >
-            {project.crm_clients.company_name}
+            ← Zlecenia
           </Link>
-        )}
+          <h1 className="mt-2 text-2xl font-bold md:text-3xl">{project.title}</h1>
+          {project.crm_clients && (
+            <Link
+              href={`/admin/klienci/${project.crm_clients.id}`}
+              className="text-sm text-white/50 hover:text-white"
+            >
+              {project.crm_clients.company_name}
+            </Link>
+          )}
+        </div>
+        <DeleteRecordButton
+          apiUrl={`/api/projects/${id}`}
+          redirectTo="/admin/zlecenia"
+          label="Usuń zlecenie"
+          confirmMessage={`Usunąć zlecenie „${project.title}”? Powiązane notatki i linki zostaną usunięte.`}
+        />
       </div>
 
       <GlassCard title="Szczegóły">

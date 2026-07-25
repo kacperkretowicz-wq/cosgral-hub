@@ -49,3 +49,22 @@ export async function PATCH(request: Request, { params }: Props) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+export async function DELETE(_request: Request, { params }: Props) {
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+
+  try {
+    const { id } = await params;
+    const client = await getIntranetDb().getCrmClient(id);
+    if (!client) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await getIntranetDb().deleteCrmClient(id);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

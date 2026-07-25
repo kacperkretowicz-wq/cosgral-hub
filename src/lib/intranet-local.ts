@@ -229,6 +229,68 @@ export function createLocalIntranetDb() {
         links.filter((l) => l.id !== id),
       );
     },
+
+    async deleteCrmClient(id: string): Promise<void> {
+      const clients = await readJson<CrmClient[]>("crm_clients.json", []);
+      if (!clients.some((c) => c.id === id)) {
+        throw new Error("CRM client not found");
+      }
+      await writeJson(
+        "crm_clients.json",
+        clients.filter((c) => c.id !== id),
+      );
+
+      const notes = await readJson<Note[]>("notes.json", []);
+      await writeJson(
+        "notes.json",
+        notes.filter((n) => n.crm_client_id !== id),
+      );
+
+      const links = await readJson<ResourceLink[]>("resource_links.json", []);
+      await writeJson(
+        "resource_links.json",
+        links.filter((l) => l.crm_client_id !== id),
+      );
+
+      const projects = await readJson<Project[]>("projects.json", []);
+      await writeJson(
+        "projects.json",
+        projects.map((p) =>
+          p.crm_client_id === id ? { ...p, crm_client_id: null } : p,
+        ),
+      );
+    },
+
+    async deleteProject(id: string): Promise<void> {
+      const projects = await readJson<Project[]>("projects.json", []);
+      if (!projects.some((p) => p.id === id)) {
+        throw new Error("Project not found");
+      }
+      await writeJson(
+        "projects.json",
+        projects.filter((p) => p.id !== id),
+      );
+
+      const notes = await readJson<Note[]>("notes.json", []);
+      await writeJson(
+        "notes.json",
+        notes.filter((n) => n.project_id !== id),
+      );
+
+      const links = await readJson<ResourceLink[]>("resource_links.json", []);
+      await writeJson(
+        "resource_links.json",
+        links.filter((l) => l.project_id !== id),
+      );
+    },
+
+    async deleteNote(id: string): Promise<void> {
+      const notes = await readJson<Note[]>("notes.json", []);
+      await writeJson(
+        "notes.json",
+        notes.filter((n) => n.id !== id),
+      );
+    },
   };
 }
 
