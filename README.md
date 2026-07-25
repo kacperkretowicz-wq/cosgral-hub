@@ -49,7 +49,7 @@ Krótko:
 
 ## Dostęp dla Kacpra (GitHub + live)
 
-Instrukcja: [WDROZENIE.md](./WDROZENIE.md#dostęp-dla-kacpra)
+Instrukcja: [KACPER-START.md](./KACPER-START.md) · [WDROZENIE.md](./WDROZENIE.md#dostęp-dla-kacpra)
 
 ## Stack
 
