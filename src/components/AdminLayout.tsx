@@ -20,7 +20,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
-    href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+    href === "/admin"
+      ? pathname === "/admin"
+      : (pathname?.startsWith(href) ?? false);
 
   const handleLogout = async () => {
     await fetch("/api/auth/login", { method: "DELETE" }).catch(() =>

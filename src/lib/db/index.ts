@@ -1,4 +1,4 @@
-import type { Client, Submission, UploadedFile } from "./types";
+import type { Client, Submission, UploadedFile } from "@/lib/types";
 
 export function isSupabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";

@@ -117,7 +117,7 @@ export default async function ClientDetailPage({ params }: Props) {
                     className="border-t border-white/10 pt-4 space-y-3"
                   >
                     <h3 className="font-bold">{section.title}</h3>
-                    {sectionSubs.map((sub) => {
+                    {sectionSubs.map((sub: Submission) => {
                       const field = section.fields.find(
                         (f) => f.key === sub.field_key,
                       );
