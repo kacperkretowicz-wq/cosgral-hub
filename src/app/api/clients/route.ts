@@ -6,10 +6,6 @@ import { getDb } from "@/lib/db/client";
 import { normalizeOptionalDate } from "@/lib/date-utils";
 import { getIntranetDb } from "@/lib/intranet-db";
 import { getAppBaseUrl, getOfferUrl } from "@/lib/app-url";
-import {
-  inspirationSchema,
-  normalizeInspiration,
-} from "@/lib/inspiration-utils";
 
 const offerContentSchema = z.object({
   intro: z.string(),
@@ -30,7 +26,7 @@ const createSchema = z.object({
   deadline: z.string().optional(),
   crm_client_id: z.string().uuid().optional(),
   create_crm: z.boolean().optional(),
-  custom_inspirations: z.array(inspirationSchema).optional(),
+  offer_text: z.string().min(1).optional(),
   offer_content: offerContentSchema.optional(),
 });
 
@@ -80,9 +76,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const inspirations = (parsed.custom_inspirations ?? []).map((item) =>
-      normalizeInspiration(item),
-    );
+    const inspirations: ReturnType<typeof normalizeInspiration>[] = [];
 
     const data = await db.createClient({
       company_name: parsed.company_name,
@@ -95,6 +89,7 @@ export async function POST(request: Request) {
       drive_doc_id: driveDocId,
       inspirations,
       offer_content: parsed.offer_content ?? null,
+      offer_text: parsed.offer_text?.trim() ?? null,
       status: "sent",
     });
 

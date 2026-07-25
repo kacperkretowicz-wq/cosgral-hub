@@ -24,6 +24,7 @@ export interface Client {
   drive_doc_id: string | null;
   inspirations: Inspiration[] | null;
   offer_content: OfferContent | null;
+  offer_text: string | null;
   status: ClientStatus;
   created_at: string;
 }

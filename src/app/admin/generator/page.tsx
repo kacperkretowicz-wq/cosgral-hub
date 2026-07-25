@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { OfferLinkResult } from "@/components/OfferLinkResult";
-import { InspirationsEditor } from "@/components/InspirationsEditor";
-import { OfferContentEditor } from "@/components/OfferContentEditor";
-import type { CrmClient, Inspiration } from "@/lib/types";
-import type { OfferContent } from "@/lib/offer-content";
+import {
+  OfferTextEditor,
+  type OfferChatMessage,
+} from "@/components/OfferTextEditor";
+import type { CrmClient } from "@/lib/types";
 
 function formatApiError(error: unknown): string {
   if (typeof error === "string") return error;
@@ -26,11 +27,8 @@ export default function GeneratorPage() {
   const [crmClientId, setCrmClientId] = useState("");
   const [createCrm, setCreateCrm] = useState(true);
   const [crmClients, setCrmClients] = useState<CrmClient[]>([]);
-  const [customInspirations, setCustomInspirations] = useState<Inspiration[]>(
-    [],
-  );
-  const [offerContent, setOfferContent] = useState<OfferContent | null>(null);
-  const [generatingOfferText, setGeneratingOfferText] = useState(false);
+  const [offerText, setOfferText] = useState("");
+  const [chatMessages, setChatMessages] = useState<OfferChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{
@@ -48,41 +46,11 @@ export default function GeneratorPage() {
       .catch(() => {});
   }, []);
 
-  const handleGenerateOfferText = async () => {
-    if (!companyName.trim()) return;
-
-    setGeneratingOfferText(true);
-    setError("");
-
-    const res = await fetch("/api/offer/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        company_name: companyName,
-        industry,
-        page_type: pageType,
-        deadline: deadline || undefined,
-        inspirations: customInspirations,
-        use_gemini: true,
-      }),
-    });
-
-    const data = await res.json();
-    setGeneratingOfferText(false);
-
-    if (!res.ok) {
-      setError(formatApiError(data.error));
-      return;
-    }
-
-    setOfferContent(data.offer_content);
-  };
-
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!offerContent) {
-      setError("Najpierw zaproponuj tekst oferty (Gemini) i ewentualnie go edytuj.");
+    if (!offerText.trim()) {
+      setError("Wpisz treść oferty ręcznie lub użyj „Generuj AI”.");
       return;
     }
 
@@ -100,8 +68,7 @@ export default function GeneratorPage() {
         deadline: deadline || undefined,
         crm_client_id: crmClientId || undefined,
         create_crm: createCrm && !crmClientId,
-        custom_inspirations: customInspirations,
-        offer_content: offerContent,
+        offer_text: offerText,
       }),
     });
 
@@ -122,7 +89,7 @@ export default function GeneratorPage() {
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">Generator WWW</h1>
         <p className="mt-1 text-sm text-white/50">
-          Gemini proponuje tekst → edytujesz → generujesz link dla klienta
+          Wypełnij dane → treść oferty (ręcznie lub AI + czat) → generuj link
         </p>
       </div>
 
@@ -202,22 +169,20 @@ export default function GeneratorPage() {
             onChange={(e) => setDeadline(e.target.value)}
           />
 
-          <InspirationsEditor
-            value={customInspirations}
-            onChange={setCustomInspirations}
-          />
-
-          <OfferContentEditor
-            value={offerContent}
-            onChange={setOfferContent}
-            onGenerate={handleGenerateOfferText}
-            generating={generatingOfferText}
+          <OfferTextEditor
+            value={offerText}
+            onChange={setOfferText}
             companyName={companyName}
+            industry={industry}
+            pageType={pageType}
+            deadline={deadline}
+            chatMessages={chatMessages}
+            onChatMessagesChange={setChatMessages}
           />
 
           {error && <p className="text-sm text-red-400">{error}</p>}
 
-          <Button type="submit" disabled={loading || !offerContent}>
+          <Button type="submit" disabled={loading || !offerText.trim()}>
             {loading ? "Generowanie..." : "Generuj ofertę"}
           </Button>
         </form>

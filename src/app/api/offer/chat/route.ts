@@ -2,13 +2,23 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/api-auth";
 import { normalizeOptionalDate } from "@/lib/date-utils";
-import { generateInitialOfferText } from "@/lib/gemini-offer";
+import { chatEditOfferText } from "@/lib/gemini-offer";
 
 const schema = z.object({
   company_name: z.string().min(1),
   industry: z.string().optional(),
   page_type: z.enum(["onepage", "multipage"]),
   deadline: z.string().optional(),
+  offer_text: z.string().min(1),
+  message: z.string().min(1),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(["user", "model"]),
+        text: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 export async function POST(request: Request) {
@@ -20,12 +30,17 @@ export async function POST(request: Request) {
     const parsed = schema.parse(body);
     const deadline = normalizeOptionalDate(parsed.deadline) ?? "";
 
-    const result = await generateInitialOfferText({
-      companyName: parsed.company_name,
-      pageType: parsed.page_type,
-      deadline,
-      industry: parsed.industry,
-    });
+    const result = await chatEditOfferText(
+      {
+        companyName: parsed.company_name,
+        pageType: parsed.page_type,
+        deadline,
+        industry: parsed.industry,
+      },
+      parsed.offer_text,
+      parsed.history ?? [],
+      parsed.message,
+    );
 
     return NextResponse.json(result);
   } catch (err) {

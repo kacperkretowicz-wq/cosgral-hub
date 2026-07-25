@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/api-auth";
 import { getDb } from "@/lib/db/client";
 
 const updateSchema = z.object({
+  offer_text: z.string().min(1).optional(),
   offer_content: z
     .object({
       intro: z.string(),
