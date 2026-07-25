@@ -38,8 +38,8 @@ Szczegółowa instrukcja: [GOOGLE-SETUP.md](./GOOGLE-SETUP.md)
 5. Pobierz plik JSON z kluczem
 6. Skopiuj email service account (np. `...@....iam.gserviceaccount.com`)
 7. W Google Drive udostępnij główny folder klientów temu emailowi z uprawnieniem **Edytor**:
-   - Folder: [Cosgral — materiały klientów](https://drive.google.com/drive/folders/1HtZichmlL31RY3LKS7Z_P4AbBdpjcy1D)
-   - ID folderu: `1HtZichmlL31RY3LKS7Z_P4AbBdpjcy1D`
+   - Folder: [Cosgral — materiały klientów](https://drive.google.com/drive/folders/1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G)
+   - ID folderu: `1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G`
 8. Uruchom migrację `supabase/migrations/004_drive_doc_id.sql` w Supabase SQL Editor
 9. Ustaw zmienne env (lokalnie i Netlify):
    - `GOOGLE_SERVICE_ACCOUNT_EMAIL` — email z JSON

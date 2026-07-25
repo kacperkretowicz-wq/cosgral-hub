@@ -41,7 +41,7 @@ git push -u origin main
 | `NEXT_PUBLIC_APP_URL` | **`https://cosgral-hub.vercel.app`** (URL po deploy!) |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | opcjonalnie |
 | `GOOGLE_PRIVATE_KEY` | opcjonalnie |
-| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | `1HtZichmlL31RY3LKS7Z_P4AbBdpjcy1D` |
+| `GOOGLE_DRIVE_ROOT_FOLDER_ID` | `1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G` |
 
 4. Kliknij **Deploy**
 5. Po deploy skopiuj URL (np. `https://cosgral-hub.vercel.app`) i ustaw go jako `NEXT_PUBLIC_APP_URL` → **Redeploy**

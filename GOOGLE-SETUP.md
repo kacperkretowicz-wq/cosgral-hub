@@ -15,7 +15,7 @@ Materiały klientów (pliki → Drive, teksty → Google Doc) wymagają Service 
 
 ## 2. Udostępnij folder Drive
 
-1. Otwórz folder: [Cosgral — materiały klientów](https://drive.google.com/drive/folders/1HtZichmlL31RY3LKS7Z_P4AbBdpjcy1D)
+1. Otwórz folder: [Cosgral — materiały klientów](https://drive.google.com/drive/folders/1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G)
 2. **Udostępnij** → wklej email service account → rola **Edytor**
 
 ## 3. Zmienne środowiskowe
@@ -25,7 +25,7 @@ Lokalnie (`.env.local`) i na **Netlify** (Site → Environment variables):
 ```env
 GOOGLE_SERVICE_ACCOUNT_EMAIL=cosgral-portal@....iam.gserviceaccount.com
 GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-GOOGLE_DRIVE_ROOT_FOLDER_ID=1HtZichmlL31RY3LKS7Z_P4AbBdpjcy1D
+GOOGLE_DRIVE_ROOT_FOLDER_ID=1r7lRmwWpgD89VlIPdybmwHXqPzMUsO6G
 ```
 
 Zaznacz **Contains secret values** dla `GOOGLE_PRIVATE_KEY`.
