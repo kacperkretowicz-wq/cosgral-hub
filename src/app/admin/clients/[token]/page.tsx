@@ -21,8 +21,8 @@ export default async function ClientDetailPage({ params }: Props) {
   const client = await db.getClientByToken(token);
   if (!client) notFound();
 
-  const submissions = await db.getSubmissions(client.id);
-  const files = await db.getFiles(client.id);
+  const submissions: Submission[] = await db.getSubmissions(client.id);
+  const files: UploadedFile[] = await db.getFiles(client.id);
 
   const typedClient = client as Client;
   const offerUrl = getOfferUrl(token);
