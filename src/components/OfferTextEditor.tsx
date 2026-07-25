@@ -21,11 +21,22 @@ interface OfferTextEditorProps {
 }
 
 function formatApiError(error: unknown): string {
+  const text =
+    typeof error === "string"
+      ? error
+      : error && typeof error === "object" && "message" in error
+        ? String((error as { message: unknown }).message)
+        : "Błąd AI";
+
+  if (text.includes("QUOTA_EXCEEDED") || text.includes('"code": 429')) {
+    return "Limit API Gemini wyczerpany. Doładuj billing w Google AI Studio albo edytuj ofertę ręcznie.";
+  }
+
   if (typeof error === "string") return error;
   if (Array.isArray(error)) {
     return error.map((item) => JSON.stringify(item)).join(", ");
   }
-  return "Błąd AI";
+  return text;
 }
 
 export function OfferTextEditor({

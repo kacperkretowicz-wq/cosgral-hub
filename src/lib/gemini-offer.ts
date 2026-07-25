@@ -38,6 +38,11 @@ async function callGemini(
 
   if (!response.ok) {
     const errorText = await response.text();
+    const quotaExceeded =
+      response.status === 429 || errorText.includes('"code": 429');
+    if (quotaExceeded) {
+      throw new Error("QUOTA_EXCEEDED");
+    }
     throw new Error(`Gemini API: ${errorText.slice(0, 240)}`);
   }
 
@@ -92,20 +97,31 @@ Zwróć JSON:
   "reply": "krótka wiadomość po polsku do użytkownika (1-2 zdania)"
 }`;
 
-  const raw = await callGemini(
-    [{ role: "user", parts: [{ text: prompt }] }],
-    true,
-  );
+  try {
+    const raw = await callGemini(
+      [{ role: "user", parts: [{ text: prompt }] }],
+      true,
+    );
 
-  const parsed = JSON.parse(raw) as { offer_text?: string; reply?: string };
-  if (!parsed.offer_text?.trim()) {
-    throw new Error("Gemini zwróciło pustą treść oferty");
+    const parsed = JSON.parse(raw) as { offer_text?: string; reply?: string };
+    if (!parsed.offer_text?.trim()) {
+      throw new Error("Gemini zwróciło pustą treść oferty");
+    }
+
+    return {
+      offer_text: parsed.offer_text.trim(),
+      reply: parsed.reply?.trim() || "Wygenerowałem pierwszą wersję oferty.",
+    };
+  } catch (err) {
+    if (err instanceof Error && err.message === "QUOTA_EXCEEDED") {
+      return {
+        offer_text: template,
+        reply:
+          "Limit API Gemini wyczerpany — wstawiono standardowy szablon Cosgral. Edytuj ręcznie lub doładuj billing w Google AI Studio.",
+      };
+    }
+    throw err;
   }
-
-  return {
-    offer_text: parsed.offer_text.trim(),
-    reply: parsed.reply?.trim() || "Wygenerowałem pierwszą wersję oferty.",
-  };
 }
 
 export async function chatEditOfferText(
@@ -166,15 +182,24 @@ Zwróć JSON:
     ],
   });
 
-  const raw = await callGemini(contents, true);
-  const parsed = JSON.parse(raw) as { offer_text?: string; reply?: string };
+  try {
+    const raw = await callGemini(contents, true);
+    const parsed = JSON.parse(raw) as { offer_text?: string; reply?: string };
 
-  if (!parsed.offer_text?.trim()) {
-    throw new Error("Gemini zwróciło pustą treść oferty");
+    if (!parsed.offer_text?.trim()) {
+      throw new Error("Gemini zwróciło pustą treść oferty");
+    }
+
+    return {
+      offer_text: parsed.offer_text.trim(),
+      reply: parsed.reply?.trim() || "Zaktualizowałem treść oferty.",
+    };
+  } catch (err) {
+    if (err instanceof Error && err.message === "QUOTA_EXCEEDED") {
+      throw new Error(
+        "Limit API Gemini wyczerpany. Doładuj billing w Google AI Studio albo edytuj ofertę ręcznie.",
+      );
+    }
+    throw err;
   }
-
-  return {
-    offer_text: parsed.offer_text.trim(),
-    reply: parsed.reply?.trim() || "Zaktualizowałem treść oferty.",
-  };
 }

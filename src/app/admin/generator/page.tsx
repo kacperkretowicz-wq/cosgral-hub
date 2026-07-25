@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { OfferLinkResult } from "@/components/OfferLinkResult";
+import { OfferPreview } from "@/components/OfferPreview";
 import {
   OfferTextEditor,
   type OfferChatMessage,
@@ -179,6 +180,21 @@ export default function GeneratorPage() {
             chatMessages={chatMessages}
             onChatMessagesChange={setChatMessages}
           />
+
+          {offerText.trim() && companyName.trim() && (
+            <div className="space-y-2 rounded-sm border border-white/10 bg-white/5 p-4">
+              <p className="text-sm font-medium text-white/80">
+                Podgląd oferty dla klienta
+              </p>
+              <OfferPreview
+                companyName={companyName}
+                industry={industry}
+                pageType={pageType}
+                deadline={deadline}
+                offerText={offerText}
+              />
+            </div>
+          )}
 
           {error && <p className="text-sm text-red-400">{error}</p>}
 

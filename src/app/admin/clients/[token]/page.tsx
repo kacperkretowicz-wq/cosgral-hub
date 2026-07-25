@@ -14,6 +14,8 @@ import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import { OfferTextManager } from "@/components/OfferTextManager";
 import type { Client, Submission, UploadedFile } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ token: string }>;
 }
@@ -120,6 +122,7 @@ export default async function ClientDetailPage({ params }: Props) {
           pageType={typedClient.page_type}
           deadline={typedClient.deadline}
           initialOfferText={typedClient.offer_text}
+          inspirations={typedClient.inspirations ?? []}
         />
 
         <GlassCard title="Link do oferty dla klienta">

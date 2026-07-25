@@ -27,7 +27,7 @@ const createSchema = z.object({
   deadline: z.string().optional(),
   crm_client_id: z.string().uuid().optional(),
   create_crm: z.boolean().optional(),
-  offer_text: z.string().min(1).optional(),
+  offer_text: z.string().min(1),
   offer_content: offerContentSchema.optional(),
 });
 
@@ -89,8 +89,8 @@ export async function POST(request: Request) {
       drive_section_folders: driveSectionFolders,
       drive_doc_id: driveDocId,
       inspirations,
-      offer_content: parsed.offer_content ?? null,
-      offer_text: parsed.offer_text?.trim() ?? null,
+      offer_content: parsed.offer_text ? null : (parsed.offer_content ?? null),
+      offer_text: parsed.offer_text.trim(),
       status: "sent",
     });
 

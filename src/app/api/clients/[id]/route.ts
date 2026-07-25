@@ -38,7 +38,12 @@ export async function PATCH(request: Request, { params }: Props) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const data = await db.updateClient(id, parsed);
+    const updates = {
+      ...parsed,
+      ...(parsed.offer_text ? { offer_content: null } : {}),
+    };
+
+    const data = await db.updateClient(id, updates);
     return NextResponse.json(data);
   } catch (err) {
     if (err instanceof z.ZodError) {

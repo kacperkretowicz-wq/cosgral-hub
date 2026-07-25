@@ -4,6 +4,8 @@ import { OfferMessage } from "@/components/OfferMessage";
 import { getDb } from "@/lib/db/client";
 import type { Client } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ token: string }>;
 }

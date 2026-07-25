@@ -1,12 +1,15 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { OfferPreview } from "@/components/OfferPreview";
 import {
   OfferTextEditor,
   type OfferChatMessage,
 } from "@/components/OfferTextEditor";
+import type { Inspiration } from "@/lib/types";
 
 interface OfferTextManagerProps {
   clientId: string;
@@ -15,6 +18,7 @@ interface OfferTextManagerProps {
   pageType: "onepage" | "multipage";
   deadline?: string | null;
   initialOfferText: string | null;
+  inspirations?: Inspiration[];
 }
 
 export function OfferTextManager({
@@ -24,7 +28,9 @@ export function OfferTextManager({
   pageType,
   deadline,
   initialOfferText,
+  inspirations = [],
 }: OfferTextManagerProps) {
+  const router = useRouter();
   const [offerText, setOfferText] = useState(initialOfferText ?? "");
   const [chatMessages, setChatMessages] = useState<OfferChatMessage[]>([]);
   const [saving, setSaving] = useState(false);
@@ -43,7 +49,14 @@ export function OfferTextManager({
     });
 
     setSaving(false);
-    setMessage(res.ok ? "Zapisano treść oferty." : "Błąd zapisu treści oferty.");
+
+    if (!res.ok) {
+      setMessage("Błąd zapisu treści oferty.");
+      return;
+    }
+
+    setMessage("Zapisano treść oferty.");
+    router.refresh();
   };
 
   return (
@@ -67,6 +80,22 @@ export function OfferTextManager({
         )}
 
         {message && <p className="text-sm text-white/60">{message}</p>}
+
+        {offerText.trim() && (
+          <div className="space-y-2 border-t border-white/10 pt-4">
+            <p className="text-sm font-medium text-white/80">
+              Podgląd na żywo (tak zobaczy klient)
+            </p>
+            <OfferPreview
+              companyName={companyName}
+              industry={industry ?? undefined}
+              pageType={pageType}
+              deadline={deadline ?? undefined}
+              offerText={offerText}
+              inspirations={inspirations}
+            />
+          </div>
+        )}
       </div>
     </GlassCard>
   );
