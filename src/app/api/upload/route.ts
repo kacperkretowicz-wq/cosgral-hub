@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getDb, isSupabaseConfigured } from "@/lib/db/client";
 import { uploadFileToDrive, isDriveConfigured } from "@/lib/google-drive";
 import { uploadFileToSupabaseStorage } from "@/lib/supabase-storage";
+import { ensureClientWorkspace } from "@/lib/google-workspace";
+import { isDocsConfigured } from "@/lib/google-docs";
 
 const MAX_SIZE = 50 * 1024 * 1024;
 const ALLOWED_TYPES = [
@@ -41,9 +43,23 @@ export async function POST(request: Request) {
     }
 
     const db = getDb();
-    const client = await db.getClientByToken(token);
+    let client = await db.getClientByToken(token);
     if (!client) {
       return NextResponse.json({ error: "Invalid token" }, { status: 404 });
+    }
+
+    if (isDocsConfigured()) {
+      const workspace = await ensureClientWorkspace(client);
+      if (
+        workspace.drive_folder_id !== client.drive_folder_id ||
+        workspace.drive_doc_id !== client.drive_doc_id
+      ) {
+        client = await db.updateClient(client.id, {
+          drive_folder_id: workspace.drive_folder_id,
+          drive_section_folders: workspace.drive_section_folders,
+          drive_doc_id: workspace.drive_doc_id,
+        });
+      }
     }
 
     const sectionFolders = client.drive_section_folders ?? {};

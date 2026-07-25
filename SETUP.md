@@ -27,23 +27,26 @@ Portal ofert i materiałów klienta dla Cosgral Agency.
 
 ---
 
-## 2. Google Drive API (upload plików)
+## 2. Google Drive + Docs (materiały klientów — zalecane)
+
+Szczegółowa instrukcja: [GOOGLE-SETUP.md](./GOOGLE-SETUP.md)
 
 1. Wejdź na [Google Cloud Console](https://console.cloud.google.com/)
 2. Utwórz projekt **Cosgral Portal**
-3. Włącz **Google Drive API** (APIs & Services → Library)
+3. Włącz **Google Drive API** i **Google Docs API** (APIs & Services → Library)
 4. Utwórz **Service Account** (APIs & Services → Credentials → Create Credentials)
 5. Pobierz plik JSON z kluczem
 6. Skopiuj email service account (np. `...@....iam.gserviceaccount.com`)
 7. W Google Drive udostępnij główny folder klientów temu emailowi z uprawnieniem **Edytor**:
    - Folder: [Cosgral — materiały klientów](https://drive.google.com/drive/folders/1HtZichmlL31RY3LKS7Z_P4AbBdpjcy1D)
    - ID folderu: `1HtZichmlL31RY3LKS7Z_P4AbBdpjcy1D`
-8. Ustaw zmienne env:
+8. Uruchom migrację `supabase/migrations/004_drive_doc_id.sql` w Supabase SQL Editor
+9. Ustaw zmienne env (lokalnie i Netlify):
    - `GOOGLE_SERVICE_ACCOUNT_EMAIL` — email z JSON
    - `GOOGLE_PRIVATE_KEY` — klucz prywatny z JSON (z `\n` jako newline)
    - `GOOGLE_DRIVE_ROOT_FOLDER_ID` — ID folderu
 
-Bez Google Drive aplikacja działa — pliki zapisywane są w bazie, upload na Drive pomijany.
+Bez Google Drive pliki trafiają do Supabase Storage (limit 1 GB). Teksty zapisują się w bazie.
 
 ---
 

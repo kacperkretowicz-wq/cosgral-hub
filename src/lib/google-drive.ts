@@ -1,34 +1,21 @@
 import { Readable } from "stream";
 import { google } from "googleapis";
 import { DRIVE_SECTION_FOLDERS } from "./offer-templates";
-
-function getAuth() {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-
-  if (!email || !key) {
-    return null;
-  }
-
-  return new google.auth.JWT({
-    email,
-    key,
-    scopes: ["https://www.googleapis.com/auth/drive"],
-  });
-}
+import { getGoogleAuth, isGoogleWorkspaceConfigured } from "./google-auth";
 
 function getDrive() {
-  const auth = getAuth();
+  const auth = getGoogleAuth();
   if (!auth) return null;
   return google.drive({ version: "v3", auth });
 }
 
 export function isDriveConfigured(): boolean {
-  return Boolean(
-    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-      process.env.GOOGLE_PRIVATE_KEY &&
-      process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID,
-  );
+  return isGoogleWorkspaceConfigured();
+}
+
+export function getClientMaterialsFolderName(companyName: string): string {
+  const safeName = companyName.replace(/[/\\?%*:|"<>]/g, "-").trim();
+  return `${safeName} materiały`;
 }
 
 export async function createClientFolder(companyName: string): Promise<{
@@ -39,11 +26,11 @@ export async function createClientFolder(companyName: string): Promise<{
   const rootId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
   if (!drive || !rootId) return null;
 
-  const safeName = companyName.replace(/[/\\?%*:|"<>]/g, "-");
+  const folderName = getClientMaterialsFolderName(companyName);
 
   const mainFolder = await drive.files.create({
     requestBody: {
-      name: safeName,
+      name: folderName,
       mimeType: "application/vnd.google-apps.folder",
       parents: [rootId],
     },

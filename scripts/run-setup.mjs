@@ -82,6 +82,7 @@ async function runMigrationStatements(supabase) {
       token TEXT UNIQUE NOT NULL,
       drive_folder_id TEXT,
       drive_section_folders JSONB DEFAULT '{}',
+      drive_doc_id TEXT,
       inspirations JSONB DEFAULT '[]',
       status client_status NOT NULL DEFAULT 'draft',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

@@ -294,9 +294,7 @@ export const MATERIAL_SECTIONS: MaterialSection[] = [
   },
 ];
 
-export const DRIVE_SECTION_FOLDERS = MATERIAL_SECTIONS.filter(
-  (s) => s.uploadLabel,
-).map((s) => ({
+export const DRIVE_SECTION_FOLDERS = MATERIAL_SECTIONS.map((s) => ({
   key: s.key,
   name: s.title.replace(/^\d+[ab]?\.\s*/, ""),
 }));

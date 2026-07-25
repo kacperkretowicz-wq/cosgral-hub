@@ -47,15 +47,21 @@ export async function POST(request: Request) {
     const { createClientFolder, isDriveConfigured } = await import(
       "@/lib/google-drive"
     );
+    const { createClientDoc } = await import("@/lib/google-docs");
 
     let driveFolderId: string | null = null;
     let driveSectionFolders: Record<string, string> = {};
+    let driveDocId: string | null = null;
 
     if (isDriveConfigured()) {
       const driveResult = await createClientFolder(parsed.company_name);
       if (driveResult) {
         driveFolderId = driveResult.folderId;
         driveSectionFolders = driveResult.sectionFolders;
+        driveDocId = await createClientDoc(
+          parsed.company_name,
+          driveResult.folderId,
+        );
       }
     }
 
@@ -71,6 +77,7 @@ export async function POST(request: Request) {
       token,
       drive_folder_id: driveFolderId,
       drive_section_folders: driveSectionFolders,
+      drive_doc_id: driveDocId,
       inspirations,
       status: "sent",
     });

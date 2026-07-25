@@ -18,6 +18,7 @@ export interface Client {
   token: string;
   drive_folder_id: string | null;
   drive_section_folders: Record<string, string> | null;
+  drive_doc_id: string | null;
   inspirations: Inspiration[] | null;
   status: ClientStatus;
   created_at: string;

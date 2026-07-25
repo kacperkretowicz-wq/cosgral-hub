@@ -9,6 +9,7 @@ import { MATERIAL_SECTIONS } from "@/lib/offer-templates";
 import { getStoredFileUrl } from "@/lib/file-url";
 import { getOfferUrl } from "@/lib/app-url";
 import { getDriveFolderUrl } from "@/lib/google-drive";
+import { getGoogleDocUrl } from "@/lib/google-docs";
 import type { Client, Submission, UploadedFile } from "@/lib/types";
 
 interface Props {
@@ -85,6 +86,15 @@ export default async function ClientDetailPage({ params }: Props) {
                 rel="noopener noreferrer"
               >
                 <Button variant="ghost">Google Drive ↗</Button>
+              </a>
+            )}
+            {typedClient.drive_doc_id && (
+              <a
+                href={getGoogleDocUrl(typedClient.drive_doc_id)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="ghost">Google Doc ↗</Button>
               </a>
             )}
           </div>
