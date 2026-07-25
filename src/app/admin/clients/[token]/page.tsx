@@ -6,8 +6,9 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { InspirationsManager } from "@/components/InspirationsManager";
 import { getDb } from "@/lib/db/client";
 import { MATERIAL_SECTIONS } from "@/lib/offer-templates";
+import { getStoredFileUrl } from "@/lib/file-url";
 import { getOfferUrl } from "@/lib/app-url";
-import { getDriveFileUrl, getDriveFolderUrl } from "@/lib/google-drive";
+import { getDriveFolderUrl } from "@/lib/google-drive";
 import type { Client, Submission, UploadedFile } from "@/lib/types";
 
 interface Props {
@@ -43,6 +44,13 @@ export default async function ClientDetailPage({ params }: Props) {
       return acc;
     },
     {} as Record<string, UploadedFile[]>,
+  );
+
+  const fileUrls = new Map<string, string | null>();
+  await Promise.all(
+    files.map(async (f) => {
+      fileUrls.set(f.id, await getStoredFileUrl(f.drive_file_id));
+    }),
   );
 
   return (
@@ -134,22 +142,25 @@ export default async function ClientDetailPage({ params }: Props) {
                     })}
                     {sectionFiles.length > 0 && (
                       <ul className="space-y-1 text-sm">
-                        {sectionFiles.map((f) => (
+                        {sectionFiles.map((f) => {
+                          const href = fileUrls.get(f.id);
+                          return (
                           <li key={f.id}>
+                            {href ? (
                             <a
-                              href={
-                                f.drive_file_id.startsWith("local-")
-                                  ? "#"
-                                  : getDriveFileUrl(f.drive_file_id)
-                              }
+                              href={href}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-white/70 underline hover:text-white"
                             >
                               📎 {f.file_name}
                             </a>
+                            ) : (
+                              <span className="text-white/70">📎 {f.file_name}</span>
+                            )}
                           </li>
-                        ))}
+                          );
+                        })}
                       </ul>
                     )}
                   </div>

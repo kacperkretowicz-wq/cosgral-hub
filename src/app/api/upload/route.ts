@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db/client";
+import { getDb, isSupabaseConfigured } from "@/lib/db/client";
 import { uploadFileToDrive, isDriveConfigured } from "@/lib/google-drive";
+import { uploadFileToSupabaseStorage } from "@/lib/supabase-storage";
 
 const MAX_SIZE = 50 * 1024 * 1024;
 const ALLOWED_TYPES = [
@@ -61,6 +62,23 @@ export async function POST(request: Request) {
       if (result) {
         driveFileId = result.fileId;
       }
+    } else if (isSupabaseConfigured()) {
+      const result = await uploadFileToSupabaseStorage(
+        client.id,
+        sectionKey,
+        file.name,
+        file.type,
+        buffer,
+      );
+      driveFileId = result.fileId;
+    } else if (process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        {
+          error:
+            "Upload niedostępny — skonfiguruj Supabase Storage lub Google Drive.",
+        },
+        { status: 503 },
+      );
     } else {
       const uploadsDir = `${process.cwd()}/data/uploads/${client.id}/${sectionKey}`;
       const { mkdir, writeFile } = await import("fs/promises");
