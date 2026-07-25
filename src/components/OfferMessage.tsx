@@ -8,20 +8,25 @@ import {
   getOfferSubject,
   type OfferData,
 } from "@/lib/offer-templates";
+import type { OfferContent } from "@/lib/offer-content";
 import { Button } from "./ui/Button";
 
 interface OfferMessageProps {
   data: OfferData;
+  offerContent?: OfferContent | null;
   showMaterialsLink?: boolean;
   token?: string;
 }
 
 export function OfferMessage({
   data,
+  offerContent,
   showMaterialsLink = true,
   token,
 }: OfferMessageProps) {
-  const sections = getOfferSections(data);
+  const intro = offerContent?.intro ?? getOfferIntro(data);
+  const sections = offerContent?.sections ?? getOfferSections(data);
+  const closing = offerContent?.closing ?? getOfferClosing(data);
   const inspirations = data.inspirations ?? [];
 
   return (
@@ -36,7 +41,7 @@ export function OfferMessage({
       </header>
 
       <div className="space-y-4 text-sm leading-relaxed whitespace-pre-line text-white/80 md:text-base">
-        {getOfferIntro(data)}
+        {intro}
       </div>
 
       {sections.map((section) => (
@@ -57,7 +62,7 @@ export function OfferMessage({
       ))}
 
       <p className="text-sm leading-relaxed whitespace-pre-line text-white/80 md:text-base">
-        {getOfferClosing(data)}
+        {closing}
       </p>
 
       {inspirations.length > 0 && (

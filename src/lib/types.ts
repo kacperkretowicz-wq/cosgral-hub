@@ -9,6 +9,9 @@ export interface Inspiration {
   whyWorks: string;
 }
 
+export type { OfferContent, OfferContentSection } from "./offer-content";
+import type { OfferContent } from "./offer-content";
+
 export interface Client {
   id: string;
   company_name: string;
@@ -20,6 +23,7 @@ export interface Client {
   drive_section_folders: Record<string, string> | null;
   drive_doc_id: string | null;
   inspirations: Inspiration[] | null;
+  offer_content: OfferContent | null;
   status: ClientStatus;
   created_at: string;
 }

@@ -3,12 +3,25 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/api-auth";
 import { getDb } from "@/lib/db/client";
+import { normalizeOptionalDate } from "@/lib/date-utils";
 import { getIntranetDb } from "@/lib/intranet-db";
 import { getAppBaseUrl, getOfferUrl } from "@/lib/app-url";
 import {
   inspirationSchema,
   normalizeInspiration,
 } from "@/lib/inspiration-utils";
+
+const offerContentSchema = z.object({
+  intro: z.string(),
+  closing: z.string(),
+  sections: z.array(
+    z.object({
+      number: z.string(),
+      title: z.string(),
+      items: z.array(z.string()),
+    }),
+  ),
+});
 
 const createSchema = z.object({
   company_name: z.string().min(1),
@@ -18,6 +31,7 @@ const createSchema = z.object({
   crm_client_id: z.string().uuid().optional(),
   create_crm: z.boolean().optional(),
   custom_inspirations: z.array(inspirationSchema).optional(),
+  offer_content: offerContentSchema.optional(),
 });
 
 export async function GET() {
@@ -41,6 +55,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = createSchema.parse(body);
+    const deadline = normalizeOptionalDate(parsed.deadline);
     const token = uuidv4();
     const db = getDb();
 
@@ -73,12 +88,13 @@ export async function POST(request: Request) {
       company_name: parsed.company_name,
       industry: parsed.industry ?? null,
       page_type: parsed.page_type,
-      deadline: parsed.deadline ?? null,
+      deadline,
       token,
       drive_folder_id: driveFolderId,
       drive_section_folders: driveSectionFolders,
       drive_doc_id: driveDocId,
       inspirations,
+      offer_content: parsed.offer_content ?? null,
       status: "sent",
     });
 
@@ -116,7 +132,7 @@ export async function POST(request: Request) {
         service_type: "strona_www",
         status: "nowe",
         assigned_to: null,
-        deadline: parsed.deadline ?? null,
+        deadline,
         description: `${parsed.page_type === "onepage" ? "Onepage" : "Multipage"}${parsed.industry ? ` · ${parsed.industry}` : ""}`,
       });
       projectId = project.id;

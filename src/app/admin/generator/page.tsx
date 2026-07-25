@@ -6,7 +6,17 @@ import { Input } from "@/components/ui/Input";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { OfferLinkResult } from "@/components/OfferLinkResult";
 import { InspirationsEditor } from "@/components/InspirationsEditor";
+import { OfferContentEditor } from "@/components/OfferContentEditor";
 import type { CrmClient, Inspiration } from "@/lib/types";
+import type { OfferContent } from "@/lib/offer-content";
+
+function formatApiError(error: unknown): string {
+  if (typeof error === "string") return error;
+  if (Array.isArray(error)) {
+    return error.map((item) => JSON.stringify(item)).join(", ");
+  }
+  return "Błąd generowania";
+}
 
 export default function GeneratorPage() {
   const [companyName, setCompanyName] = useState("");
@@ -19,6 +29,8 @@ export default function GeneratorPage() {
   const [customInspirations, setCustomInspirations] = useState<Inspiration[]>(
     [],
   );
+  const [offerContent, setOfferContent] = useState<OfferContent | null>(null);
+  const [generatingOfferText, setGeneratingOfferText] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{
@@ -36,8 +48,44 @@ export default function GeneratorPage() {
       .catch(() => {});
   }, []);
 
+  const handleGenerateOfferText = async () => {
+    if (!companyName.trim()) return;
+
+    setGeneratingOfferText(true);
+    setError("");
+
+    const res = await fetch("/api/offer/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_name: companyName,
+        industry,
+        page_type: pageType,
+        deadline: deadline || undefined,
+        inspirations: customInspirations,
+        use_gemini: true,
+      }),
+    });
+
+    const data = await res.json();
+    setGeneratingOfferText(false);
+
+    if (!res.ok) {
+      setError(formatApiError(data.error));
+      return;
+    }
+
+    setOfferContent(data.offer_content);
+  };
+
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!offerContent) {
+      setError("Najpierw zaproponuj tekst oferty (Gemini) i ewentualnie go edytuj.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setResult(null);
@@ -49,17 +97,18 @@ export default function GeneratorPage() {
         company_name: companyName,
         industry,
         page_type: pageType,
-        deadline,
+        deadline: deadline || undefined,
         crm_client_id: crmClientId || undefined,
         create_crm: createCrm && !crmClientId,
         custom_inspirations: customInspirations,
+        offer_content: offerContent,
       }),
     });
 
     const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error ?? "Błąd generowania");
+      setError(formatApiError(data.error));
       setLoading(false);
       return;
     }
@@ -73,7 +122,7 @@ export default function GeneratorPage() {
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">Generator WWW</h1>
         <p className="mt-1 text-sm text-white/50">
-          Wygeneruj ofertę → skopiuj jeden link → wyślij klientowi
+          Gemini proponuje tekst → edytujesz → generujesz link dla klienta
         </p>
       </div>
 
@@ -83,14 +132,14 @@ export default function GeneratorPage() {
             label="Nazwa firmy"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="np. Juicy Events"
+            placeholder="np. Anna Rumińska"
             required
           />
           <Input
             label="Branża (opcjonalnie)"
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
-            placeholder="np. agencja eventowa"
+            placeholder="np. beauty, makijaż"
           />
 
           <div className="space-y-2">
@@ -147,7 +196,7 @@ export default function GeneratorPage() {
           </div>
 
           <Input
-            label="Deadline przesłania materiałów"
+            label="Deadline przesłania materiałów (opcjonalnie)"
             type="date"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
@@ -158,13 +207,17 @@ export default function GeneratorPage() {
             onChange={setCustomInspirations}
           />
 
-          {error && (
-            <p className="text-sm text-red-400">
-              {typeof error === "string" ? error : "Błąd walidacji"}
-            </p>
-          )}
+          <OfferContentEditor
+            value={offerContent}
+            onChange={setOfferContent}
+            onGenerate={handleGenerateOfferText}
+            generating={generatingOfferText}
+            companyName={companyName}
+          />
 
-          <Button type="submit" disabled={loading}>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          <Button type="submit" disabled={loading || !offerContent}>
             {loading ? "Generowanie..." : "Generuj ofertę"}
           </Button>
         </form>

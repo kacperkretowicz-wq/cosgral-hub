@@ -11,6 +11,7 @@ import { getOfferUrl } from "@/lib/app-url";
 import { getDriveFolderUrl } from "@/lib/google-drive";
 import { getGoogleDocUrl } from "@/lib/google-docs";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
+import { OfferContentManager } from "@/components/OfferContentManager";
 import type { Client, Submission, UploadedFile } from "@/lib/types";
 
 interface Props {
@@ -112,6 +113,15 @@ export default async function ClientDetailPage({ params }: Props) {
           initialInspirations={typedClient.inspirations ?? []}
         />
 
+        <OfferContentManager
+          clientId={typedClient.id}
+          companyName={typedClient.company_name}
+          industry={typedClient.industry}
+          pageType={typedClient.page_type}
+          deadline={typedClient.deadline}
+          initialOfferContent={typedClient.offer_content}
+        />
+
         <GlassCard title="Link do oferty dla klienta">
           <div className="space-y-2 text-sm">
             <p>
@@ -196,6 +206,7 @@ export default async function ClientDetailPage({ params }: Props) {
               industry: typedClient.industry ?? undefined,
               inspirations: typedClient.inspirations ?? [],
             }}
+            offerContent={typedClient.offer_content}
             showMaterialsLink={false}
           />
         </GlassCard>

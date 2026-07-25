@@ -28,6 +28,7 @@ export default async function OfferPage({ params }: Props) {
             industry: typedClient.industry ?? undefined,
             inspirations: typedClient.inspirations ?? [],
           }}
+          offerContent={typedClient.offer_content}
           showMaterialsLink
           token={token}
         />
