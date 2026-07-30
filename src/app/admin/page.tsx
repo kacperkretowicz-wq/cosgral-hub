@@ -20,11 +20,12 @@ export default async function AdminDashboard() {
   let recentProjects: Awaited<
     ReturnType<ReturnType<typeof getIntranetDb>["getProjects"]>
   > = [];
+  let projectsError = "";
   try {
     const all = await getIntranetDb().getProjects();
     recentProjects = all.slice(0, 5);
-  } catch {
-    // intranet tables may not exist yet
+  } catch (e) {
+    projectsError = e instanceof Error ? e.message : "Błąd ładowania zleceń";
   }
 
   const statusLabel: Record<string, string> = {
@@ -42,11 +43,17 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-8">
       {!isSupabaseConfigured() && (
-        <div className="rounded-sm border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">
-          Tryb lokalny aktywny.{" "}
-          <Link href="/admin/setup" className="underline">
-            Połącz Supabase →
-          </Link>
+        <div className="rounded-sm border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+          <p className="font-medium">Baza nie jest podpięta — dane się nie zapisują.</p>
+          <p className="mt-1 text-red-100/80">
+            Na Netlify/Vercel tryb lokalny nie działa (plik znika po restarcie).
+            Ustaw klucze Supabase (w tym{" "}
+            <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code>) i uruchom
+            migracje SQL 001 + 002.{" "}
+            <Link href="/admin/setup" className="underline">
+              Przejdź do setup →
+            </Link>
+          </p>
         </div>
       )}
 
@@ -83,6 +90,21 @@ export default async function AdminDashboard() {
           </GlassCard>
         </Link>
       </div>
+
+      {projectsError && (
+        <div className="rounded-sm border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          Nie udało się wczytać zleceń: {projectsError}
+          {projectsError.toLowerCase().includes("projects") ||
+          projectsError.toLowerCase().includes("schema") ? (
+            <>
+              {" "}
+              — uruchom migrację{" "}
+              <code className="text-xs">002_intranet_schema.sql</code> w
+              Supabase.
+            </>
+          ) : null}
+        </div>
+      )}
 
       {recentProjects.length > 0 && (
         <div className="space-y-4">

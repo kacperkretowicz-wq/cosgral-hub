@@ -37,11 +37,11 @@ export default async function ZleceniaPage() {
 
       {error && (
         <div className="rounded-sm border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {error.includes("projects") ? (
+          {error.includes("projects") || error.toLowerCase().includes("schema") ? (
             <>
               Uruchom migrację SQL{" "}
               <code className="text-xs">002_intranet_schema.sql</code> w
-              Supabase.
+              Supabase — bez tego zlecenia się nie zapisują.
             </>
           ) : (
             error
@@ -51,7 +51,7 @@ export default async function ZleceniaPage() {
 
       {!projects.length ? (
         <GlassCard>
-          <p className="text-white/50">Brak zleceń. Utwórz pierwsze.</p>
+          <p className="text-white/50">Brak zleceń. Utwórz pierwsze i przypisz klienta CRM.</p>
         </GlassCard>
       ) : (
         <div className="space-y-3">

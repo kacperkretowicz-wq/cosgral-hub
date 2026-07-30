@@ -13,6 +13,7 @@ interface OfferLinkResultProps {
   token: string;
   projectId?: string;
   crmClientId?: string;
+  warning?: string;
 }
 
 export function OfferLinkResult({
@@ -21,6 +22,7 @@ export function OfferLinkResult({
   token,
   projectId,
   crmClientId,
+  warning,
 }: OfferLinkResultProps) {
   const [copied, setCopied] = useState(false);
   const isLocal = isLocalUrl(offerUrl);
@@ -40,6 +42,20 @@ export function OfferLinkResult({
           „Prześlij materiały”.
         </p>
       </div>
+
+      {warning && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          {warning}
+        </div>
+      )}
+
+      {!projectId && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          Oferta powstała, ale nie utworzono zlecenia CRM. Sprawdź konfigurację
+          Supabase i migrację{" "}
+          <code className="text-xs">002_intranet_schema.sql</code>.
+        </div>
+      )}
 
       {isLocal && (
         <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">

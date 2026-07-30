@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db/client";
 import { normalizeOptionalDate } from "@/lib/date-utils";
 import { getIntranetDb } from "@/lib/intranet-db";
 import { getAppBaseUrl, getOfferUrl } from "@/lib/app-url";
+import { assertPersistentDb, getDbMode } from "@/lib/persistence";
 import type { Inspiration } from "@/lib/types";
 
 const offerContentSchema = z.object({
@@ -40,7 +41,12 @@ export async function GET() {
   try {
     const db = getDb();
     const data = await db.getClients();
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "no-store",
+        "X-Cosgral-Db-Mode": getDbMode(),
+      },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -52,11 +58,14 @@ export async function POST(request: Request) {
   if ("error" in auth) return auth.error;
 
   try {
+    assertPersistentDb("generowanie oferty");
+
     const body = await request.json();
     const parsed = createSchema.parse(body);
     const deadline = normalizeOptionalDate(parsed.deadline);
     const token = uuidv4();
     const db = getDb();
+    const intranet = getIntranetDb();
 
     const { parseDriveFolderId } = await import("@/lib/drive-folder");
     const driveFolderId = parsed.drive_folder_url
@@ -73,8 +82,48 @@ export async function POST(request: Request) {
       );
     }
 
-    const inspirations: Inspiration[] = [];
+    // 1) CRM client — required so zlecenie shows on the client card
+    let crmClientId = parsed.crm_client_id ?? null;
+    if (!crmClientId) {
+      if (parsed.create_crm === false) {
+        return NextResponse.json(
+          {
+            error:
+              "Wybierz klienta CRM albo zostaw włączone „Utwórz wpis w CRM automatycznie”.",
+          },
+          { status: 400 },
+        );
+      }
 
+      const existing = (await intranet.getCrmClients()).find(
+        (c) =>
+          c.company_name.toLowerCase() === parsed.company_name.toLowerCase(),
+      );
+      if (existing) {
+        crmClientId = existing.id;
+      } else {
+        const crm = await intranet.createCrmClient({
+          company_name: parsed.company_name,
+          contact_name: null,
+          email: null,
+          phone: null,
+          industry: parsed.industry ?? null,
+          notes: "",
+        });
+        crmClientId = crm.id;
+      }
+    } else {
+      const crm = await intranet.getCrmClient(crmClientId);
+      if (!crm) {
+        return NextResponse.json(
+          { error: "Wybrany klient CRM nie istnieje." },
+          { status: 400 },
+        );
+      }
+    }
+
+    // 2) WWW offer / materials client
+    const inspirations: Inspiration[] = [];
     const data = await db.createClient({
       company_name: parsed.company_name,
       industry: parsed.industry ?? null,
@@ -90,47 +139,17 @@ export async function POST(request: Request) {
       status: "sent",
     });
 
-    let crmClientId = parsed.crm_client_id ?? null;
-    let projectId: string | null = null;
-
-    try {
-      const intranet = getIntranetDb();
-
-      if (!crmClientId && parsed.create_crm !== false) {
-        const existing = (await intranet.getCrmClients()).find(
-          (c) =>
-            c.company_name.toLowerCase() ===
-            parsed.company_name.toLowerCase(),
-        );
-        if (existing) {
-          crmClientId = existing.id;
-        } else {
-          const crm = await intranet.createCrmClient({
-            company_name: parsed.company_name,
-            contact_name: null,
-            email: null,
-            phone: null,
-            industry: parsed.industry ?? null,
-            notes: "",
-          });
-          crmClientId = crm.id;
-        }
-      }
-
-      const project = await intranet.createProject({
-        title: `Strona WWW — ${parsed.company_name}`,
-        crm_client_id: crmClientId,
-        website_client_id: data.id,
-        service_type: "strona_www",
-        status: "nowe",
-        assigned_to: null,
-        deadline,
-        description: `${parsed.page_type === "onepage" ? "Onepage" : "Multipage"}${parsed.industry ? ` · ${parsed.industry}` : ""}`,
-      });
-      projectId = project.id;
-    } catch {
-      // intranet tables may not exist yet — offer still works
-    }
+    // 3) Project linked to CRM + offer
+    const project = await intranet.createProject({
+      title: `Strona WWW — ${parsed.company_name}`,
+      crm_client_id: crmClientId,
+      website_client_id: data.id,
+      service_type: "strona_www",
+      status: "nowe",
+      assigned_to: null,
+      deadline,
+      description: `${parsed.page_type === "onepage" ? "Onepage" : "Multipage"}${parsed.industry ? ` · ${parsed.industry}` : ""}`,
+    });
 
     const baseUrl = getAppBaseUrl(request);
 
@@ -138,7 +157,7 @@ export async function POST(request: Request) {
       ...data,
       offer_url: getOfferUrl(token, request),
       materials_url: `${baseUrl}/o/${token}/materialy`,
-      project_id: projectId,
+      project_id: project.id,
       crm_client_id: crmClientId,
     });
   } catch (err) {

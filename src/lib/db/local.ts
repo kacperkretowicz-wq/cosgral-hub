@@ -3,6 +3,7 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import type { DbClient } from "./index";
 import type { Client, Submission, UploadedFile } from "../types";
+import { assertPersistentDb } from "../persistence";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 
@@ -21,6 +22,7 @@ async function readJson<T>(file: string, fallback: T): Promise<T> {
 }
 
 async function writeJson<T>(file: string, data: T): Promise<void> {
+  assertPersistentDb("zapis oferty / klienta");
   await ensureDataDir();
   await fs.writeFile(
     path.join(DATA_DIR, file),

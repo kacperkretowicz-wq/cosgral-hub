@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinksPanel } from "@/components/ResourceLinksPanel";
@@ -19,12 +20,42 @@ interface Props {
 
 export default async function KlientDetailPage({ params }: Props) {
   const { id } = await params;
-  const client = await getIntranetDb().getCrmClient(id);
+
+  let client = null;
+  let loadError = "";
+  try {
+    client = await getIntranetDb().getCrmClient(id);
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : "Błąd ładowania klienta";
+  }
+
+  if (loadError) {
+    return (
+      <div className="space-y-4">
+        <Link
+          href="/admin/klienci"
+          className="text-sm text-white/50 hover:text-white"
+        >
+          ← Klienci
+        </Link>
+        <div className="rounded-sm border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {loadError}
+        </div>
+      </div>
+    );
+  }
+
   if (!client) notFound();
 
-  const projects = (await getIntranetDb().getProjects()).filter(
-    (p) => p.crm_client_id === id,
-  );
+  let projects: Awaited<
+    ReturnType<ReturnType<typeof getIntranetDb>["getProjects"]>
+  > = [];
+  let projectsError = "";
+  try {
+    projects = await getIntranetDb().getProjects({ crm_client_id: id });
+  } catch (e) {
+    projectsError = e instanceof Error ? e.message : "Błąd ładowania zleceń";
+  }
 
   return (
     <div className="space-y-8">
@@ -44,12 +75,17 @@ export default async function KlientDetailPage({ params }: Props) {
             {client.industry ? ` · ${client.industry}` : ""}
           </p>
         </div>
-        <DeleteRecordButton
-          apiUrl={`/api/crm-clients/${id}`}
-          redirectTo="/admin/klienci"
-          label="Usuń klienta"
-          confirmMessage={`Usunąć klienta CRM „${client.company_name}”? Powiązane zlecenia, oferty WWW, notatki i linki też zostaną usunięte.`}
-        />
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/admin/zlecenia/nowe?crm_client_id=${id}`}>
+            <Button>+ Nowe zlecenie</Button>
+          </Link>
+          <DeleteRecordButton
+            apiUrl={`/api/crm-clients/${id}`}
+            redirectTo="/admin/klienci"
+            label="Usuń klienta"
+            confirmMessage={`Usunąć klienta CRM „${client.company_name}”? Powiązane zlecenia, oferty WWW, notatki i linki też zostaną usunięte.`}
+          />
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -73,8 +109,15 @@ export default async function KlientDetailPage({ params }: Props) {
         </GlassCard>
 
         <GlassCard title="Zlecenia">
-          {!projects.length ? (
-            <p className="text-sm text-white/40">Brak przypisanych zleceń.</p>
+          {projectsError ? (
+            <p className="text-sm text-red-300">{projectsError}</p>
+          ) : !projects.length ? (
+            <div className="space-y-3">
+              <p className="text-sm text-white/40">Brak przypisanych zleceń.</p>
+              <Link href={`/admin/zlecenia/nowe?crm_client_id=${id}`}>
+                <Button variant="secondary">Utwórz pierwsze zlecenie</Button>
+              </Link>
+            </div>
           ) : (
             <div className="space-y-2">
               {projects.map((p) => (

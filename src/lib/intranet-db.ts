@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { isSupabaseConfigured } from "./db";
 import { createLocalIntranetDb } from "./intranet-local";
+import { assertPersistentDb } from "./persistence";
 import type { CrmClient, Note, Project, ResourceLink } from "./types";
 
 function getSupabaseClient() {
@@ -21,6 +22,17 @@ export function getIntranetDb() {
   return db;
 }
 
+export function resetIntranetDb() {
+  db = null;
+}
+
+function isNotFoundError(error: { code?: string; message?: string }): boolean {
+  return (
+    error.code === "PGRST116" ||
+    (error.message ?? "").toLowerCase().includes("no rows")
+  );
+}
+
 function createSupabaseIntranetDb() {
   return {
     async getCrmClients(): Promise<CrmClient[]> {
@@ -38,13 +50,17 @@ function createSupabaseIntranetDb() {
         .select("*")
         .eq("id", id)
         .single();
-      if (error) return null;
+      if (error) {
+        if (isNotFoundError(error)) return null;
+        throw new Error(error.message);
+      }
       return data;
     },
 
     async createCrmClient(
       input: Omit<CrmClient, "id" | "created_at" | "updated_at">,
     ): Promise<CrmClient> {
+      assertPersistentDb("utworzenie klienta CRM");
       const { data, error } = await getSupabaseClient()
         .from("crm_clients")
         .insert({ ...input, updated_at: new Date().toISOString() })
@@ -58,6 +74,7 @@ function createSupabaseIntranetDb() {
       id: string,
       input: Partial<CrmClient>,
     ): Promise<CrmClient> {
+      assertPersistentDb("aktualizacja klienta CRM");
       const { data, error } = await getSupabaseClient()
         .from("crm_clients")
         .update({ ...input, updated_at: new Date().toISOString() })
@@ -71,6 +88,7 @@ function createSupabaseIntranetDb() {
     async getProjects(filters?: {
       status?: string;
       service_type?: string;
+      crm_client_id?: string;
     }): Promise<Project[]> {
       let q = getSupabaseClient()
         .from("projects")
@@ -78,6 +96,8 @@ function createSupabaseIntranetDb() {
         .order("updated_at", { ascending: false });
       if (filters?.status) q = q.eq("status", filters.status);
       if (filters?.service_type) q = q.eq("service_type", filters.service_type);
+      if (filters?.crm_client_id)
+        q = q.eq("crm_client_id", filters.crm_client_id);
       const { data, error } = await q;
       if (error) throw new Error(error.message);
       return (data ?? []) as Project[];
@@ -89,13 +109,17 @@ function createSupabaseIntranetDb() {
         .select("*, crm_clients(*)")
         .eq("id", id)
         .single();
-      if (error) return null;
+      if (error) {
+        if (isNotFoundError(error)) return null;
+        throw new Error(error.message);
+      }
       return data as Project;
     },
 
     async createProject(
       input: Omit<Project, "id" | "created_at" | "updated_at" | "crm_clients">,
     ): Promise<Project> {
+      assertPersistentDb("utworzenie zlecenia");
       const { data, error } = await getSupabaseClient()
         .from("projects")
         .insert({ ...input, updated_at: new Date().toISOString() })
@@ -109,6 +133,7 @@ function createSupabaseIntranetDb() {
       id: string,
       input: Partial<Project>,
     ): Promise<Project> {
+      assertPersistentDb("aktualizacja zlecenia");
       const { crm_clients: _, ...rest } = input as Project;
       const { data, error } = await getSupabaseClient()
         .from("projects")
@@ -137,6 +162,7 @@ function createSupabaseIntranetDb() {
     },
 
     async createNote(input: Omit<Note, "id" | "created_at">): Promise<Note> {
+      assertPersistentDb("utworzenie notatki");
       const { data, error } = await getSupabaseClient()
         .from("notes")
         .insert(input)
@@ -165,6 +191,7 @@ function createSupabaseIntranetDb() {
     async createResourceLink(
       input: Omit<ResourceLink, "id" | "created_at">,
     ): Promise<ResourceLink> {
+      assertPersistentDb("utworzenie linku");
       const { data, error } = await getSupabaseClient()
         .from("resource_links")
         .insert(input)
@@ -175,6 +202,7 @@ function createSupabaseIntranetDb() {
     },
 
     async deleteResourceLink(id: string): Promise<void> {
+      assertPersistentDb("usunięcie linku");
       const { error } = await getSupabaseClient()
         .from("resource_links")
         .delete()
@@ -183,6 +211,7 @@ function createSupabaseIntranetDb() {
     },
 
     async deleteCrmClient(id: string): Promise<void> {
+      assertPersistentDb("usunięcie klienta CRM");
       const { error } = await getSupabaseClient()
         .from("crm_clients")
         .delete()
@@ -191,6 +220,7 @@ function createSupabaseIntranetDb() {
     },
 
     async deleteProject(id: string): Promise<void> {
+      assertPersistentDb("usunięcie zlecenia");
       const { error } = await getSupabaseClient()
         .from("projects")
         .delete()
@@ -199,6 +229,7 @@ function createSupabaseIntranetDb() {
     },
 
     async deleteNote(id: string): Promise<void> {
+      assertPersistentDb("usunięcie notatki");
       const { error } = await getSupabaseClient()
         .from("notes")
         .delete()

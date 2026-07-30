@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/api-auth";
 import { getIntranetDb } from "@/lib/intranet-db";
+import { assertPersistentDb, getDbMode } from "@/lib/persistence";
 
 const createSchema = z.object({
   title: z.string().min(1),
-  crm_client_id: z.string().uuid().nullable().optional(),
+  crm_client_id: z.string().uuid({
+    message: "Wybierz klienta CRM — zlecenie musi być do kogoś przypisane.",
+  }),
   website_client_id: z.string().uuid().nullable().optional(),
   service_type: z.enum([
     "strona_www",
@@ -32,10 +35,20 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") ?? undefined;
   const service_type = searchParams.get("service_type") ?? undefined;
+  const crm_client_id = searchParams.get("crm_client_id") ?? undefined;
 
   try {
-    const data = await getIntranetDb().getProjects({ status, service_type });
-    return NextResponse.json(data);
+    const data = await getIntranetDb().getProjects({
+      status,
+      service_type,
+      crm_client_id,
+    });
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "no-store",
+        "X-Cosgral-Db-Mode": getDbMode(),
+      },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -47,11 +60,22 @@ export async function POST(request: Request) {
   if ("error" in auth) return auth.error;
 
   try {
+    assertPersistentDb("utworzenie zlecenia");
     const body = await request.json();
     const parsed = createSchema.parse(body);
-    const data = await getIntranetDb().createProject({
+
+    const intranet = getIntranetDb();
+    const crm = await intranet.getCrmClient(parsed.crm_client_id);
+    if (!crm) {
+      return NextResponse.json(
+        { error: "Wybrany klient CRM nie istnieje." },
+        { status: 400 },
+      );
+    }
+
+    const data = await intranet.createProject({
       title: parsed.title,
-      crm_client_id: parsed.crm_client_id ?? null,
+      crm_client_id: parsed.crm_client_id,
       website_client_id: parsed.website_client_id ?? null,
       service_type: parsed.service_type,
       status: parsed.status ?? "nowe",
@@ -59,10 +83,13 @@ export async function POST(request: Request) {
       deadline: parsed.deadline ?? null,
       description: parsed.description ?? "",
     });
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.errors }, { status: 400 });
+      const first = err.errors[0]?.message ?? "Niepoprawne dane";
+      return NextResponse.json({ error: first, details: err.errors }, { status: 400 });
     }
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

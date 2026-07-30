@@ -2,6 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import type { CrmClient, Note, Project, ResourceLink } from "./types";
+import { assertPersistentDb } from "./persistence";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 
@@ -16,6 +17,7 @@ async function readJson<T>(file: string, fallback: T): Promise<T> {
 }
 
 async function writeJson<T>(file: string, data: T): Promise<void> {
+  assertPersistentDb("zapis danych intranetu");
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(
     path.join(DATA_DIR, file),
@@ -74,6 +76,7 @@ export function createLocalIntranetDb() {
     async getProjects(filters?: {
       status?: string;
       service_type?: string;
+      crm_client_id?: string;
     }): Promise<Project[]> {
       let projects = await readJson<Project[]>("projects.json", []);
       const crmClients = await readJson<CrmClient[]>("crm_clients.json", []);
@@ -83,6 +86,11 @@ export function createLocalIntranetDb() {
       if (filters?.service_type) {
         projects = projects.filter(
           (p) => p.service_type === filters.service_type,
+        );
+      }
+      if (filters?.crm_client_id) {
+        projects = projects.filter(
+          (p) => p.crm_client_id === filters.crm_client_id,
         );
       }
       return projects
