@@ -11,6 +11,7 @@ import {
   SERVICE_TYPE_LABELS,
   SERVICE_TYPES,
 } from "@/lib/intranet-labels";
+import { TEAM } from "@/lib/team";
 import type { CrmClient, ProjectStatus, ServiceType } from "@/lib/types";
 
 export default function NoweZlecenieForm() {
@@ -23,7 +24,7 @@ export default function NoweZlecenieForm() {
   );
   const [serviceType, setServiceType] = useState<ServiceType>("inne");
   const [status, setStatus] = useState<ProjectStatus>("nowe");
-  const [assignedTo, setAssignedTo] = useState("");
+  const [assignedTo, setAssignedTo] = useState("jakub");
   const [deadline, setDeadline] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
@@ -172,12 +173,20 @@ export default function NoweZlecenieForm() {
             </div>
           </div>
 
-          <Input
-            label="Przypisane do (email)"
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
-            placeholder="np. jakub.gral00@gmail.com"
-          />
+          <div className="space-y-2">
+            <label className="block text-sm text-white/70">Przypisane do</label>
+            <select
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+            >
+              {TEAM.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <Input
             label="Deadline"
             type="date"

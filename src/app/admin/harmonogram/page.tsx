@@ -24,11 +24,66 @@ function addDays(d: Date, n: number): Date {
   return x;
 }
 
+/** Local YYYY-MM-DD (avoids UTC skew). */
 function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 const DAY_LABELS = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Ndz"];
+
+function TaskCard({
+  task,
+  onStatus,
+  onRemove,
+}: {
+  task: Task;
+  onStatus: (id: string, status: TaskStatus) => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <div className="rounded-sm bg-black/40 p-3 text-sm">
+      <p className="font-medium leading-snug">{task.title}</p>
+      <p className="mt-1 text-xs text-white/40">
+        {teamLabel(task.assignee)}
+        {task.projects?.title ? ` · ${task.projects.title}` : ""}
+      </p>
+      <div className="mt-2 flex flex-wrap gap-1">
+        {(Object.keys(TASK_STATUS_LABELS) as TaskStatus[]).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onStatus(task.id, s)}
+            className={`rounded px-1.5 py-0.5 text-xs ${
+              task.status === s
+                ? "bg-white text-black"
+                : "bg-white/10 text-white/50"
+            }`}
+          >
+            {TASK_STATUS_LABELS[s]}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => onRemove(task.id)}
+          className="ml-auto text-red-300/70"
+        >
+          ×
+        </button>
+      </div>
+      {task.project_id && (
+        <Link
+          href={`/admin/zlecenia/${task.project_id}`}
+          className="mt-1 inline-block text-xs text-white/40 underline"
+        >
+          zlecenie
+        </Link>
+      )}
+    </div>
+  );
+}
 
 export default function HarmonogramPage() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek());
@@ -37,9 +92,11 @@ export default function HarmonogramPage() {
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
   const [assignee, setAssignee] = useState("jakub");
+  const [filterAssignee, setFilterAssignee] = useState("");
   const [dueDate, setDueDate] = useState(isoDate(new Date()));
   const [projectId, setProjectId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(isoDate(new Date()));
 
   const from = isoDate(weekStart);
   const to = isoDate(addDays(weekStart, 6));
@@ -47,8 +104,10 @@ export default function HarmonogramPage() {
   const load = useCallback(async () => {
     setError("");
     try {
+      const q = new URLSearchParams({ from, to });
+      if (filterAssignee) q.set("assignee", filterAssignee);
       const [tasksRes, projectsRes] = await Promise.all([
-        fetch(`/api/tasks?from=${from}&to=${to}`, { cache: "no-store" }),
+        fetch(`/api/tasks?${q}`, { cache: "no-store" }),
         fetch("/api/projects", { cache: "no-store" }),
       ]);
       const tasksData = await tasksRes.json();
@@ -57,7 +116,7 @@ export default function HarmonogramPage() {
         setError(
           typeof tasksData.error === "string"
             ? tasksData.error
-            : "Błąd ładowania zadań — uruchom migrację 008_agency_os.sql",
+            : "Błąd ładowania zadań",
         );
         setTasks([]);
       } else {
@@ -67,7 +126,7 @@ export default function HarmonogramPage() {
     } catch {
       setError("Błąd sieci");
     }
-  }, [from, to]);
+  }, [from, to, filterAssignee]);
 
   useEffect(() => {
     load();
@@ -103,19 +162,30 @@ export default function HarmonogramPage() {
   };
 
   const setStatus = async (id: string, status: TaskStatus) => {
-    await fetch(`/api/tasks/${id}`, {
+    const res = await fetch(`/api/tasks/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(typeof data.error === "string" ? data.error : "Błąd statusu");
+      return;
+    }
     await load();
   };
 
   const remove = async (id: string) => {
     if (!confirm("Usunąć zadanie?")) return;
-    await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      setError("Nie udało się usunąć");
+      return;
+    }
     await load();
   };
+
+  const selectedTasks = tasks.filter((t) => t.due_date === selectedDay);
 
   return (
     <div className="space-y-8">
@@ -137,7 +207,11 @@ export default function HarmonogramPage() {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => setWeekStart(startOfWeek())}
+            onClick={() => {
+              const start = startOfWeek();
+              setWeekStart(start);
+              setSelectedDay(isoDate(new Date()));
+            }}
           >
             Ten tydzień
           </Button>
@@ -149,6 +223,32 @@ export default function HarmonogramPage() {
             →
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setFilterAssignee("")}
+          className={`rounded-sm px-3 py-1.5 text-xs ${
+            !filterAssignee ? "bg-white text-black" : "bg-white/10 text-white/60"
+          }`}
+        >
+          Obaj
+        </button>
+        {TEAM.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setFilterAssignee(m.id)}
+            className={`rounded-sm px-3 py-1.5 text-xs ${
+              filterAssignee === m.id
+                ? "bg-white text-black"
+                : "bg-white/10 text-white/60"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
       </div>
 
       {error && (
@@ -209,7 +309,61 @@ export default function HarmonogramPage() {
         </form>
       </GlassCard>
 
-      <div className="grid gap-3 md:grid-cols-7">
+      {/* Mobile: day picker + list */}
+      <div className="space-y-3 md:hidden">
+        <div className="flex gap-1 overflow-x-auto pb-1">
+          {days.map((day, i) => {
+            const key = isoDate(day);
+            const count = tasks.filter((t) => t.due_date === key).length;
+            const isSelected = key === selectedDay;
+            const isToday = key === isoDate(new Date());
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  setSelectedDay(key);
+                  setDueDate(key);
+                }}
+                className={`min-w-[3.25rem] rounded-sm px-2 py-2 text-center ${
+                  isSelected
+                    ? "bg-white text-black"
+                    : isToday
+                      ? "bg-white/20 text-white"
+                      : "bg-white/5 text-white/60"
+                }`}
+              >
+                <span className="block text-[10px] uppercase">
+                  {DAY_LABELS[i]}
+                </span>
+                <span className="block text-sm font-medium">
+                  {day.getDate()}
+                </span>
+                {count > 0 && (
+                  <span className="block text-[10px] opacity-70">{count}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="space-y-2">
+          {!selectedTasks.length ? (
+            <p className="text-sm text-white/40">Brak zadań tego dnia.</p>
+          ) : (
+            selectedTasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onStatus={setStatus}
+                onRemove={remove}
+              />
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Desktop week grid */}
+      <div className="hidden gap-3 md:grid md:grid-cols-7">
         {days.map((day, i) => {
           const key = isoDate(day);
           const dayTasks = tasks.filter((t) => t.due_date === key);
@@ -237,51 +391,12 @@ export default function HarmonogramPage() {
                   <p className="text-xs text-white/30">—</p>
                 )}
                 {dayTasks.map((task) => (
-                  <div
+                  <TaskCard
                     key={task.id}
-                    className="rounded-sm bg-black/40 p-2 text-xs"
-                  >
-                    <p className="font-medium leading-snug">{task.title}</p>
-                    <p className="mt-1 text-white/40">
-                      {teamLabel(task.assignee)}
-                      {task.projects?.title
-                        ? ` · ${task.projects.title}`
-                        : ""}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {(
-                        Object.keys(TASK_STATUS_LABELS) as TaskStatus[]
-                      ).map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setStatus(task.id, s)}
-                          className={`rounded px-1.5 py-0.5 ${
-                            task.status === s
-                              ? "bg-white text-black"
-                              : "bg-white/10 text-white/50"
-                          }`}
-                        >
-                          {TASK_STATUS_LABELS[s].slice(0, 4)}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => remove(task.id)}
-                        className="ml-auto text-red-300/70"
-                      >
-                        ×
-                      </button>
-                    </div>
-                    {task.project_id && (
-                      <Link
-                        href={`/admin/zlecenia/${task.project_id}`}
-                        className="mt-1 inline-block text-white/40 underline"
-                      >
-                        zlecenie
-                      </Link>
-                    )}
-                  </div>
+                    task={task}
+                    onStatus={setStatus}
+                    onRemove={remove}
+                  />
                 ))}
               </div>
             </div>

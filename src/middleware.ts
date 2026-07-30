@@ -1,11 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { TEAM } from "@/lib/team";
 
 const SESSION_COOKIE = "cosgral_admin_session";
-const LOCAL_ADMIN_EMAILS = [
-  "jakub.gral00@gmail.com",
-  "kacper.kretowicz@op.pl",
-];
+const ADMIN_EMAILS = TEAM.map((m) => m.email.toLowerCase());
 
 function isSupabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -27,13 +25,17 @@ function isSupabaseConfigured(): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login") && !pathname.startsWith("/admin/setup")) {
+  if (
+    pathname.startsWith("/admin") &&
+    !pathname.startsWith("/admin/login") &&
+    !pathname.startsWith("/admin/setup")
+  ) {
     if (isSupabaseConfigured()) {
       return updateSession(request);
     }
 
-    const session = request.cookies.get(SESSION_COOKIE)?.value;
-    const isAuthed = LOCAL_ADMIN_EMAILS.includes(session ?? "");
+    const session = request.cookies.get(SESSION_COOKIE)?.value?.toLowerCase();
+    const isAuthed = Boolean(session && ADMIN_EMAILS.includes(session));
 
     if (!isAuthed) {
       const url = request.nextUrl.clone();
@@ -47,8 +49,8 @@ export async function middleware(request: NextRequest) {
       return updateSession(request);
     }
 
-    const session = request.cookies.get(SESSION_COOKIE)?.value;
-    if (LOCAL_ADMIN_EMAILS.includes(session ?? "")) {
+    const session = request.cookies.get(SESSION_COOKIE)?.value?.toLowerCase();
+    if (session && ADMIN_EMAILS.includes(session)) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin";
       return NextResponse.redirect(url);

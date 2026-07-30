@@ -91,6 +91,24 @@ export default function LeadyPage() {
     }
   };
 
+  const convertToProject = async (id: string) => {
+    const res = await fetch(`/api/leads/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ convert_to_project: true }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(typeof data.error === "string" ? data.error : "Błąd tworzenia zlecenia");
+      return;
+    }
+    if (data.project_id) {
+      window.location.assign(`/admin/zlecenia/${data.project_id}`);
+      return;
+    }
+    await load();
+  };
+
   const openOffer = async (lead: Lead) => {
     if (lead.status !== "oferta" && lead.status !== "wygrana") {
       await fetch(`/api/leads/${lead.id}`, {
@@ -246,6 +264,14 @@ export default function LeadyPage() {
                   onClick={() => openOffer(lead)}
                 >
                   → Oferta Cosgral
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="px-3 py-1 text-xs"
+                  onClick={() => convertToProject(lead.id)}
+                >
+                  → Zlecenie
                 </Button>
               </div>
             </div>

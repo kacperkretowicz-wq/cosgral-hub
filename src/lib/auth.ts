@@ -1,25 +1,39 @@
 import { cookies } from "next/headers";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/db";
+import { TEAM } from "@/lib/team";
 
-const LOCAL_ADMINS = [
-  { email: "jakub.gral00@gmail.com", password: "Cosgral2026!Jakub" },
-  { email: "kacper.kretowicz@op.pl", password: "Cosgral2026!Kacper" },
-];
+/** Only these emails may use the admin panel. */
+export const ADMIN_EMAILS = TEAM.map((m) => m.email.toLowerCase());
+
+const LOCAL_ADMIN_PASSWORDS: Record<string, string> = {
+  "jakub.gral00@gmail.com": "Cosgral2026!Jakub",
+  "kacper.kretowicz@op.pl": "Cosgral2026!Kacper",
+};
 
 const SESSION_COOKIE = "cosgral_admin_session";
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.toLowerCase());
+}
 
 export async function loginAdmin(
   email: string,
   password: string,
   remember = true,
 ): Promise<{ ok: boolean; error?: string }> {
+  const normalized = email.trim().toLowerCase();
+  if (!isAdminEmail(normalized)) {
+    return { ok: false, error: "Nieprawidłowy email lub hasło" };
+  }
+
   const maxAge = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
 
   if (isSupabaseConfigured()) {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: normalized,
       password,
     });
     if (error) return { ok: false, error: "Nieprawidłowy email lub hasło" };
@@ -36,13 +50,12 @@ export async function loginAdmin(
     return { ok: true };
   }
 
-  const admin = LOCAL_ADMINS.find((a) => a.email === email);
-  if (!admin || admin.password !== password) {
+  if (LOCAL_ADMIN_PASSWORDS[normalized] !== password) {
     return { ok: false, error: "Nieprawidłowy email lub hasło" };
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, email, {
+  cookieStore.set(SESSION_COOKIE, normalized, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -59,11 +72,13 @@ export async function getAdminEmail(): Promise<string | null> {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    return user?.email ?? null;
+    const email = user?.email?.toLowerCase() ?? null;
+    return isAdminEmail(email) ? email : null;
   }
 
   const cookieStore = await cookies();
-  return cookieStore.get(SESSION_COOKIE)?.value ?? null;
+  const session = cookieStore.get(SESSION_COOKIE)?.value?.toLowerCase() ?? null;
+  return isAdminEmail(session) ? session : null;
 }
 
 export async function logoutAdmin(): Promise<void> {
@@ -78,19 +93,5 @@ export async function logoutAdmin(): Promise<void> {
 }
 
 export async function isAdminAuthenticated(): Promise<boolean> {
-  if (isSupabaseConfigured()) {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return Boolean(user);
-  }
-
-  const cookieStore = await cookies();
-  const session = cookieStore.get(SESSION_COOKIE)?.value;
-  return LOCAL_ADMINS.some((a) => a.email === session);
-}
-
-export function getLocalAdminCredentials() {
-  return LOCAL_ADMINS.map((a) => ({ email: a.email, password: a.password }));
+  return Boolean(await getAdminEmail());
 }

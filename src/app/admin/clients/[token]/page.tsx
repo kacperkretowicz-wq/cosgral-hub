@@ -12,6 +12,7 @@ import { getDriveFolderUrl } from "@/lib/google-drive";
 import { getGoogleDocUrl } from "@/lib/google-docs";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import { OfferTextManager } from "@/components/OfferTextManager";
+import { OfferDocumentManager } from "@/components/OfferDocumentManager";
 import type { Client, Submission, UploadedFile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -113,6 +114,11 @@ export default async function ClientDetailPage({ params }: Props) {
         <InspirationsManager
           clientId={typedClient.id}
           initialInspirations={typedClient.inspirations ?? []}
+        />
+
+        <OfferDocumentManager
+          clientId={typedClient.id}
+          initialDocument={typedClient.offer_document}
         />
 
         <OfferTextManager

@@ -11,8 +11,11 @@ const NAV = [
   { href: "/admin/zlecenia", label: "Zlecenia", icon: "◫" },
   { href: "/admin/leady", label: "Leady", icon: "◉" },
   { href: "/admin/klienci", label: "Klienci", icon: "◎" },
+  { href: "/admin/finanse", label: "Kasa", icon: "◈" },
   { href: "/admin/generator", label: "Oferta", icon: "✦" },
 ];
+
+const MOBILE_NAV = NAV.filter((item) => item.href !== "/admin/finanse");
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -37,7 +40,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     <div className="relative min-h-screen bg-black pb-20 md:pb-0">
       <div className="pointer-events-none fixed inset-0 grid-bg glow-center" />
 
-      {/* Desktop sidebar */}
       <aside className="fixed left-0 top-0 z-20 hidden h-full w-56 border-r border-white/10 bg-black/80 backdrop-blur-xl md:block">
         <div className="flex h-full flex-col p-6">
           <Link href="/admin" className="mb-8">
@@ -78,7 +80,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </aside>
 
-      {/* Mobile header */}
       <header className="relative z-10 flex items-center justify-between border-b border-white/10 px-4 py-4 md:hidden">
         <Link href="/admin" className="flex items-center gap-2">
           <CosgralLogo size="sm" />
@@ -89,17 +90,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </Button>
       </header>
 
-      {/* Main content */}
       <main className="relative z-10 md:ml-56">
         <div className="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-10">
           {children}
         </div>
       </main>
 
-      {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-black/90 backdrop-blur-xl md:hidden">
         <div className="flex">
-          {NAV.map((item) => (
+          {MOBILE_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}

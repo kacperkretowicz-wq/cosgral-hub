@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { getIntranetDb } from "@/lib/intranet-db";
 import {
+  BILLING_STATUS_LABELS,
   PROJECT_STATUS_COLORS,
   PROJECT_STATUS_LABELS,
   SERVICE_TYPE_LABELS,
 } from "@/lib/intranet-labels";
+import { teamLabel } from "@/lib/team";
 import type { Project } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +65,14 @@ export default async function ZleceniaPage() {
                     <h2 className="font-bold">{project.title}</h2>
                     <p className="text-sm text-white/50">
                       {project.crm_clients?.company_name ?? "Bez klienta CRM"} ·{" "}
-                      {SERVICE_TYPE_LABELS[project.service_type]}
+                      {SERVICE_TYPE_LABELS[project.service_type]} ·{" "}
+                      {teamLabel(project.assigned_to)}
+                    </p>
+                    <p className="mt-1 text-xs text-white/35">
+                      {BILLING_STATUS_LABELS[project.billing_status ?? "wycena"]}
+                      {project.value_pln != null
+                        ? ` · ${project.value_pln.toLocaleString("pl-PL")} zł`
+                        : ""}
                     </p>
                   </div>
                   <div className="text-right">

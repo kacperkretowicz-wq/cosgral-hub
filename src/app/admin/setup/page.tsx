@@ -15,6 +15,7 @@ type Health = {
   tasks?: boolean;
   leads?: boolean;
   billing?: boolean;
+  paid_at?: boolean;
 };
 
 export default function SetupPage() {
@@ -161,6 +162,9 @@ export default function SetupPage() {
               </li>
               <li className={health.billing ? "text-green-400" : "text-red-300"}>
                 {health.billing ? "✓" : "✗"} finanse zleceń
+              </li>
+              <li className={health.paid_at ? "text-green-400" : "text-red-300"}>
+                {health.paid_at ? "✓" : "✗"} paid_at (009)
               </li>
               <li className={health.tasks ? "text-green-400" : "text-red-300"}>
                 {health.tasks ? "✓" : "✗"} tasks (harmonogram)

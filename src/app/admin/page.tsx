@@ -76,17 +76,16 @@ export default async function AdminDashboard() {
     (p) =>
       p.billing_status === "oplacone" &&
       p.value_pln != null &&
-      isThisMonth(p.updated_at),
+      (isThisMonth(p.paid_at ?? "") || (!p.paid_at && isThisMonth(p.updated_at))),
   );
-  const mtdFromPaid = paidThisMonth.reduce(
+  const mtdRevenue = paidThisMonth.reduce(
     (sum, p) => sum + (p.value_pln ?? 0),
     0,
   );
-  const mtdFallback = activeProjects.reduce(
-    (sum, p) => sum + (p.value_pln ?? 0),
+  const mtdCosts = paidThisMonth.reduce(
+    (sum, p) => sum + (p.cost_pln ?? 0),
     0,
   );
-  const mtdRevenue = paidThisMonth.length > 0 ? mtdFromPaid : mtdFallback;
 
   const unpaidPipeline = allProjects
     .filter(
@@ -130,7 +129,7 @@ export default async function AdminDashboard() {
           <p className="font-medium">Schema Cosgral OS niekompletna</p>
           <p className="mt-1 text-amber-100/80">
             Brakuje: {schemaMissing.join(", ") || "elementów schematu"}. Wejdź w
-            setup, wklej hasło bazy Supabase raz i uruchom migracje 001–008.{" "}
+            setup i uruchom migracje (albo wklej SQL 007–009).{" "}
             <Link href="/admin/setup" className="underline">
               Setup / migracje →
             </Link>
@@ -170,9 +169,8 @@ export default async function AdminDashboard() {
           </p>
           <p className="mt-2 text-3xl font-bold">{formatPln(mtdRevenue)} zł</p>
           <p className="mt-1 text-xs text-white/40">
-            {paidThisMonth.length > 0
-              ? "opłacone w tym miesiącu"
-              : "suma wartości aktywnych"}
+            marża {formatPln(mtdRevenue - mtdCosts)} zł ·{" "}
+            {paidThisMonth.length} opłaconych
           </p>
         </GlassCard>
         <GlassCard>
@@ -189,6 +187,13 @@ export default async function AdminDashboard() {
             <p className="text-2xl">✦</p>
             <p className="mt-2 font-bold">Generator WWW</p>
             <p className="text-sm text-white/50">Oferta + formularz materiałów</p>
+          </GlassCard>
+        </Link>
+        <Link href="/admin/finanse">
+          <GlassCard>
+            <p className="text-2xl">◈</p>
+            <p className="mt-2 font-bold">Finanse</p>
+            <p className="text-sm text-white/50">Przychód, marża, pipeline</p>
           </GlassCard>
         </Link>
         <Link href="/admin/zlecenia">

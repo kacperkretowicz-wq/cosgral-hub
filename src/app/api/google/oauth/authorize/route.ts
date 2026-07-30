@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
 import {
   createGoogleOAuth2Client,
   GOOGLE_OAUTH_SCOPES,
 } from "@/lib/google-auth";
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+
   const oauth2Client = createGoogleOAuth2Client();
   if (!oauth2Client) {
     return NextResponse.json(

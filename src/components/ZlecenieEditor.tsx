@@ -280,6 +280,18 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
               ))}
             </select>
           </div>
+          <div className="space-y-2 sm:col-span-2">
+            <label className="block text-sm text-white/70">Data płatności</label>
+            <input
+              type="date"
+              value={project.paid_at ?? ""}
+              onChange={(e) =>
+                updateField({ paid_at: e.target.value || null })
+              }
+              disabled={saving}
+              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+            />
+          </div>
         </div>
         {project.value_pln != null && project.cost_pln != null && (
           <p className="mt-3 text-sm text-white/60">

@@ -85,6 +85,7 @@ export async function POST(request: Request) {
       value_pln: null,
       cost_pln: null,
       billing_status: "wycena",
+      paid_at: null,
     });
     return NextResponse.json(data, {
       headers: { "Cache-Control": "no-store" },

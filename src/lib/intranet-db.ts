@@ -5,7 +5,7 @@ import { assertPersistentDb } from "./persistence";
 import { isMissingColumnError } from "./schema-errors";
 import type { CrmClient, Note, Project, ResourceLink } from "./types";
 
-const MONEY_KEYS = ["value_pln", "cost_pln", "billing_status"] as const;
+const MONEY_KEYS = ["value_pln", "cost_pln", "billing_status", "paid_at"] as const;
 
 function withMoneyDefaults(project: Project): Project {
   return {
@@ -13,6 +13,7 @@ function withMoneyDefaults(project: Project): Project {
     value_pln: project.value_pln ?? null,
     cost_pln: project.cost_pln ?? null,
     billing_status: project.billing_status ?? "wycena",
+    paid_at: project.paid_at ?? null,
   };
 }
 

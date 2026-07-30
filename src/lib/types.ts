@@ -123,6 +123,7 @@ export interface Project {
   value_pln: number | null;
   cost_pln: number | null;
   billing_status: BillingStatus;
+  paid_at: string | null;
   created_at: string;
   updated_at: string;
   crm_clients?: CrmClient | null;

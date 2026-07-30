@@ -10,6 +10,7 @@ const MIGRATION_FILES = [
   "006_offer_text.sql",
   "007_offer_document.sql",
   "008_agency_os.sql",
+  "009_paid_at.sql",
 ];
 
 function projectRef(): string {
@@ -53,6 +54,7 @@ export async function loadCriticalMigrationSql(): Promise<string> {
   return loadMigrationSql([
     "007_offer_document.sql",
     "008_agency_os.sql",
+    "009_paid_at.sql",
   ]);
 }
 
@@ -131,6 +133,7 @@ export type SchemaHealth = {
   tasks: boolean;
   leads: boolean;
   billing: boolean;
+  paid_at: boolean;
   ready: boolean;
   missing: string[];
 };
@@ -149,6 +152,7 @@ export async function probeSchemaHealth(): Promise<SchemaHealth> {
     tasks: false,
     leads: false,
     billing: false,
+    paid_at: false,
     ready: false,
     missing: ["supabase_not_configured"],
   };
@@ -182,13 +186,18 @@ export async function probeSchemaHealth(): Promise<SchemaHealth> {
   if (!projects) missing.push("projects (002)");
 
   let billing = false;
+  let paid_at = false;
   if (projects) {
-    const { error } = await supabase
+    const money = await supabase
       .from("projects")
       .select("value_pln, billing_status")
       .limit(1);
-    billing = !error;
+    billing = !money.error;
     if (!billing) missing.push("project finances (008)");
+
+    const paid = await supabase.from("projects").select("paid_at").limit(1);
+    paid_at = !paid.error;
+    if (!paid_at) missing.push("paid_at (009)");
   }
 
   const tasks = await checkTable("tasks");
@@ -198,7 +207,13 @@ export async function probeSchemaHealth(): Promise<SchemaHealth> {
   if (!leads) missing.push("leads (008)");
 
   const ready =
-    clients && offer_document && projects && billing && tasks && leads;
+    clients &&
+    offer_document &&
+    projects &&
+    billing &&
+    paid_at &&
+    tasks &&
+    leads;
 
   return {
     clients,
@@ -207,6 +222,7 @@ export async function probeSchemaHealth(): Promise<SchemaHealth> {
     tasks,
     leads,
     billing,
+    paid_at,
     ready,
     missing,
   };

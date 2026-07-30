@@ -30,6 +30,7 @@ const updateSchema = z.object({
   billing_status: z
     .enum(["wycena", "faktura", "oplacone", "anulowane"])
     .optional(),
+  paid_at: z.string().nullable().optional(),
 });
 
 interface Props {
@@ -56,7 +57,27 @@ export async function PATCH(request: Request, { params }: Props) {
     const { id } = await params;
     const body = await request.json();
     const parsed = updateSchema.parse(body);
-    const data = await getIntranetDb().updateProject(id, parsed);
+
+    const patch: typeof parsed & { paid_at?: string | null } = { ...parsed };
+    if (parsed.billing_status === "oplacone" && parsed.paid_at === undefined) {
+      const existing = await getIntranetDb().getProject(id);
+      if (existing && !existing.paid_at) {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, "0");
+        const d = String(today.getDate()).padStart(2, "0");
+        patch.paid_at = `${y}-${m}-${d}`;
+      }
+    }
+    if (
+      parsed.billing_status &&
+      parsed.billing_status !== "oplacone" &&
+      parsed.paid_at === undefined
+    ) {
+      patch.paid_at = null;
+    }
+
+    const data = await getIntranetDb().updateProject(id, patch);
     return NextResponse.json(data);
   } catch (err) {
     if (err instanceof z.ZodError) {

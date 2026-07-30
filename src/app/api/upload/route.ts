@@ -127,6 +127,9 @@ export async function GET(request: Request) {
     const db = getDb();
 
     if (clientId) {
+      const { requireAdmin } = await import("@/lib/api-auth");
+      const auth = await requireAdmin();
+      if ("error" in auth) return auth.error;
       const data = await db.getFiles(clientId);
       return NextResponse.json(data);
     }
