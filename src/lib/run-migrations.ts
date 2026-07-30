@@ -35,14 +35,25 @@ export function buildDatabaseUrl(dbPassword: string): string {
   return buildDatabaseUrls(dbPassword)[0];
 }
 
-export async function loadAllMigrationSql(): Promise<string> {
+export async function loadMigrationSql(files: string[]): Promise<string> {
   const dir = path.join(process.cwd(), "supabase/migrations");
   const parts: string[] = [];
-  for (const file of MIGRATION_FILES) {
+  for (const file of files) {
     const sql = await fs.readFile(path.join(dir, file), "utf-8");
     parts.push(`-- ===== ${file} =====\n${sql}`);
   }
   return parts.join("\n\n");
+}
+
+export async function loadAllMigrationSql(): Promise<string> {
+  return loadMigrationSql(MIGRATION_FILES);
+}
+
+export async function loadCriticalMigrationSql(): Promise<string> {
+  return loadMigrationSql([
+    "007_offer_document.sql",
+    "008_agency_os.sql",
+  ]);
 }
 
 async function tryConnect(connectionString: string) {

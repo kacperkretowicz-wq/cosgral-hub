@@ -24,6 +24,11 @@ export default function SetupPage() {
     hasSecret?: boolean;
   } | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
+  const [criticalSql, setCriticalSql] = useState<string | null>(null);
+  const [sqlEditorUrl, setSqlEditorUrl] = useState(
+    "https://supabase.com/dashboard/project/bduwbnnvhahtcjjxaazv/sql/new",
+  );
+  const [copied, setCopied] = useState(false);
   const [dbPassword, setDbPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [migrating, setMigrating] = useState(false);
@@ -42,7 +47,11 @@ export default function SetupPage() {
   const refreshHealth = () => {
     fetch("/api/setup/migrate", { cache: "no-store" })
       .then((r) => r.json())
-      .then((data) => setHealth(data.health ?? null))
+      .then((data) => {
+        setHealth(data.health ?? null);
+        setCriticalSql(data.criticalSql ?? null);
+        if (data.sqlEditorUrl) setSqlEditorUrl(data.sqlEditorUrl);
+      })
       .catch(() => {});
   };
 
@@ -78,6 +87,21 @@ export default function SetupPage() {
     setResult(data);
     if (data.health) setHealth(data.health);
     else refreshHealth();
+  };
+
+  const copyCriticalSql = async () => {
+    if (!criticalSql) return;
+    try {
+      await navigator.clipboard.writeText(criticalSql);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setResult({
+        error: "Nie udało się skopiować — zaznacz SQL poniżej ręcznie.",
+        sql: criticalSql,
+        sqlEditorUrl,
+      });
+    }
   };
 
   const keysReady = status?.hasPublishable && status?.hasSecret;
@@ -174,19 +198,44 @@ export default function SetupPage() {
                   ? "Uruchamiam migracje…"
                   : "Uruchom wszystkie migracje (001–008)"}
               </Button>
+
+              {criticalSql && (
+                <div className="space-y-2 rounded-sm border border-white/15 bg-white/5 p-3">
+                  <p className="text-xs text-white/60">
+                    Bez hasła: skopiuj SQL 007+008 i wklej w SQL Editor (10 s).
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={copyCriticalSql}
+                      className="flex-1"
+                    >
+                      {copied ? "Skopiowano ✓" : "Kopiuj SQL 007+008"}
+                    </Button>
+                    <a
+                      href={sqlEditorUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex flex-1 items-center justify-center rounded-sm border border-white/20 px-3 py-2 text-sm text-white/80 hover:bg-white/5"
+                    >
+                      Otwórz SQL Editor →
+                    </a>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={criticalSql}
+                    rows={6}
+                    className="w-full rounded-sm border border-white/10 bg-black/40 p-2 font-mono text-[10px] text-white/60"
+                    onFocus={(e) => e.target.select()}
+                  />
+                </div>
+              )}
+
               <p className="text-xs text-white/40">
                 Albo ustaw{" "}
                 <code className="text-white/60">DATABASE_URL</code> w Netlify i
-                kliknij bez hasła. SQL Editor:{" "}
-                <a
-                  href="https://supabase.com/dashboard/project/bduwbnnvhahtcjjxaazv/sql/new"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  otwórz
-                </a>
-                .
+                kliknij bez hasła.
               </p>
             </div>
           )}

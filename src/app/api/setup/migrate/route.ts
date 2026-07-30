@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/api-auth";
 import {
   buildDatabaseUrl,
   loadAllMigrationSql,
+  loadCriticalMigrationSql,
   probeSchemaHealth,
   runMigrations,
 } from "@/lib/run-migrations";
@@ -15,9 +16,13 @@ const schema = z.object({
 export async function GET() {
   try {
     const health = await probeSchemaHealth();
+    const criticalSql = health.ready
+      ? null
+      : await loadCriticalMigrationSql();
     return NextResponse.json({
       health,
       hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+      criticalSql,
       sqlEditorUrl:
         "https://supabase.com/dashboard/project/bduwbnnvhahtcjjxaazv/sql/new",
     });
