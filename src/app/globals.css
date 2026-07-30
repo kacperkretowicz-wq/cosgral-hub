@@ -6,6 +6,7 @@
   --color-cosgral-gray: #808080;
   --color-cosgral-white: #ffffff;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
 }
 
 @layer base {
@@ -47,5 +48,29 @@
       rgba(255, 255, 255, 0.06) 0%,
       transparent 70%
     );
+  }
+
+  .font-serif {
+    font-family: var(--font-serif);
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .offer-print-root {
+    background: white !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .offer-document {
+    max-width: none !important;
+    box-shadow: none !important;
   }
 }

@@ -7,19 +7,14 @@ import { normalizeOptionalDate } from "@/lib/date-utils";
 import { getIntranetDb } from "@/lib/intranet-db";
 import { getAppBaseUrl, getOfferUrl } from "@/lib/app-url";
 import { assertPersistentDb, getDbMode } from "@/lib/persistence";
+import {
+  buildOfferDocument,
+  offerDocumentSchema,
+  offerDocumentToPlainText,
+  parseOfferDocument,
+} from "@/lib/offer-document";
+import { getDriveFolderUrl } from "@/lib/google-drive";
 import type { Inspiration } from "@/lib/types";
-
-const offerContentSchema = z.object({
-  intro: z.string(),
-  closing: z.string(),
-  sections: z.array(
-    z.object({
-      number: z.string(),
-      title: z.string(),
-      items: z.array(z.string()),
-    }),
-  ),
-});
 
 const createSchema = z.object({
   company_name: z.string().min(1),
@@ -28,8 +23,9 @@ const createSchema = z.object({
   deadline: z.string().optional(),
   crm_client_id: z.string().uuid().optional(),
   create_crm: z.boolean().optional(),
-  offer_text: z.string().min(1),
-  offer_content: offerContentSchema.optional(),
+  offer_text: z.string().optional(),
+  offer_document: offerDocumentSchema.optional(),
+  offer_ready: z.boolean().optional(),
   /** Pasted Google Drive folder URL or ID (no auto-create). */
   drive_folder_url: z.string().optional(),
 });
@@ -123,6 +119,23 @@ export async function POST(request: Request) {
     }
 
     // 2) WWW offer / materials client
+    const driveFolderUrl = driveFolderId
+      ? getDriveFolderUrl(driveFolderId)
+      : null;
+
+    const offerDocument =
+      parseOfferDocument(parsed.offer_document) ??
+      buildOfferDocument({
+        companyName: parsed.company_name,
+        industry: parsed.industry,
+        pageType: parsed.page_type,
+        deadline,
+        driveFolderUrl,
+      });
+
+    const offerText =
+      parsed.offer_text?.trim() || offerDocumentToPlainText(offerDocument);
+
     const inspirations: Inspiration[] = [];
     const data = await db.createClient({
       company_name: parsed.company_name,
@@ -134,8 +147,10 @@ export async function POST(request: Request) {
       drive_section_folders: {},
       drive_doc_id: null,
       inspirations,
-      offer_content: parsed.offer_text ? null : (parsed.offer_content ?? null),
-      offer_text: parsed.offer_text.trim(),
+      offer_content: null,
+      offer_text: offerText,
+      offer_document: offerDocument,
+      offer_ready: parsed.offer_ready ?? true,
       status: "sent",
     });
 

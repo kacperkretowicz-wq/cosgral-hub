@@ -5,11 +5,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { OfferLinkResult } from "@/components/OfferLinkResult";
-import { OfferPreview } from "@/components/OfferPreview";
-import {
-  OfferTextEditor,
-  type OfferChatMessage,
-} from "@/components/OfferTextEditor";
+import { OfferDocumentView } from "@/components/OfferDocumentView";
+import type { OfferDocument } from "@/lib/offer-document";
 import type { CrmClient } from "@/lib/types";
 
 function formatApiError(error: unknown): string {
@@ -25,13 +22,17 @@ export default function GeneratorPage() {
   const [industry, setIndustry] = useState("");
   const [pageType, setPageType] = useState<"onepage" | "multipage">("onepage");
   const [deadline, setDeadline] = useState("");
+  const [driveFolderUrl, setDriveFolderUrl] = useState("");
   const [crmClientId, setCrmClientId] = useState("");
   const [createCrm, setCreateCrm] = useState(true);
   const [crmClients, setCrmClients] = useState<CrmClient[]>([]);
-  const [offerText, setOfferText] = useState("");
-  const [driveFolderUrl, setDriveFolderUrl] = useState("");
-  const [chatMessages, setChatMessages] = useState<OfferChatMessage[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [document, setDocument] = useState<OfferDocument | null>(null);
+  const [goalIntro, setGoalIntro] = useState("");
+  const [recommendation, setRecommendation] = useState("");
+  const [aiReply, setAiReply] = useState("");
+  const [aiProvider, setAiProvider] = useState("none");
+  const [loadingBuild, setLoadingBuild] = useState(false);
+  const [loadingSave, setLoadingSave] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{
     offer_url: string;
@@ -42,23 +43,71 @@ export default function GeneratorPage() {
   } | null>(null);
 
   useEffect(() => {
-    fetch("/api/crm-clients")
+    fetch("/api/crm-clients", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => setCrmClients(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, []);
 
-  const handleGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const applyDocument = (doc: OfferDocument) => {
+    setDocument(doc);
+    setGoalIntro(doc.goal.intro);
+    setRecommendation(doc.visual_direction.recommendation);
+  };
 
-    if (!offerText.trim()) {
-      setError("Wpisz treść oferty ręcznie lub użyj „Generuj AI”.");
+  const liveDocument: OfferDocument | null = document
+    ? {
+        ...document,
+        goal: { ...document.goal, intro: goalIntro },
+        visual_direction: {
+          ...document.visual_direction,
+          recommendation,
+        },
+      }
+    : null;
+
+  const handleBuild = async () => {
+    if (!companyName.trim()) {
+      setError("Podaj nazwę firmy.");
+      return;
+    }
+    setLoadingBuild(true);
+    setError("");
+    setResult(null);
+
+    const res = await fetch("/api/offer/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_name: companyName,
+        industry,
+        page_type: pageType,
+        deadline: deadline || undefined,
+        drive_folder_url: driveFolderUrl.trim() || undefined,
+      }),
+    });
+    const data = await res.json();
+    setLoadingBuild(false);
+
+    if (!res.ok) {
+      setError(formatApiError(data.error));
       return;
     }
 
-    setLoading(true);
+    applyDocument(data.document as OfferDocument);
+    setAiReply(data.reply ?? "");
+    setAiProvider(data.ai_provider ?? "none");
+  };
+
+  const handlePublish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!liveDocument) {
+      setError("Najpierw złóż ofertę Juicy (przycisk poniżej danych).");
+      return;
+    }
+
+    setLoadingSave(true);
     setError("");
-    setResult(null);
 
     const res = await fetch("/api/clients", {
       method: "POST",
@@ -70,21 +119,21 @@ export default function GeneratorPage() {
         deadline: deadline || undefined,
         crm_client_id: crmClientId || undefined,
         create_crm: createCrm && !crmClientId,
-        offer_text: offerText,
         drive_folder_url: driveFolderUrl.trim() || undefined,
+        offer_document: liveDocument,
+        offer_ready: true,
       }),
     });
 
     const data = await res.json();
+    setLoadingSave(false);
 
     if (!res.ok) {
       setError(formatApiError(data.error));
-      setLoading(false);
       return;
     }
 
     setResult(data);
-    setLoading(false);
   };
 
   return (
@@ -92,24 +141,25 @@ export default function GeneratorPage() {
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">Generator WWW</h1>
         <p className="mt-1 text-sm text-white/50">
-          Wypełnij dane → treść oferty (ręcznie lub AI + czat) → generuj link
+          Oferta w stylu Juicy — układ z szablonu Cosgral ($0). AI opcjonalne
+          (Groq / OpenRouter free).
         </p>
       </div>
 
-      <GlassCard title="Nowa oferta dla klienta">
-        <form onSubmit={handleGenerate} className="space-y-4">
+      <GlassCard title="Dane klienta">
+        <form onSubmit={handlePublish} className="space-y-4">
           <Input
             label="Nazwa firmy"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="np. Anna Rumińska"
+            placeholder="np. Juicy Events"
             required
           />
           <Input
             label="Branża (opcjonalnie)"
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
-            placeholder="np. beauty, makijaż"
+            placeholder="np. eventy B2B, beauty, SaaS"
           />
 
           <div className="space-y-2">
@@ -166,22 +216,20 @@ export default function GeneratorPage() {
           </div>
 
           <Input
-            label="Deadline przesłania materiałów (opcjonalnie)"
+            label="Deadline materiałów (opcjonalnie)"
             type="date"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
           />
 
           <div className="space-y-3 rounded-sm border border-white/15 bg-white/[0.03] p-4">
-            <div>
-              <p className="text-sm font-medium text-white/90">
-                Folder Google Drive na materiały klienta
-              </p>
-              <p className="mt-1 text-xs text-white/45">
-                Przygotuj folder ręcznie na Dysku, skopiuj link i wklej poniżej.
-                Aplikacja nie tworzy folderów automatycznie.
-              </p>
-            </div>
+            <p className="text-sm font-medium text-white/90">
+              Folder Google Drive na materiały
+            </p>
+            <p className="text-xs text-white/45">
+              Przygotuj folder ręcznie i wklej link — aplikacja nie tworzy
+              folderów automatycznie.
+            </p>
             <Input
               label="Link do folderu Drive"
               value={driveFolderUrl}
@@ -190,39 +238,69 @@ export default function GeneratorPage() {
             />
           </div>
 
-          <OfferTextEditor
-            value={offerText}
-            onChange={setOfferText}
-            companyName={companyName}
-            industry={industry}
-            pageType={pageType}
-            deadline={deadline}
-            chatMessages={chatMessages}
-            onChatMessagesChange={setChatMessages}
-          />
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loadingBuild || !companyName.trim()}
+              onClick={handleBuild}
+            >
+              {loadingBuild ? "Składanie…" : "Złóż ofertę Juicy"}
+            </Button>
+            <Button type="submit" disabled={loadingSave || !liveDocument}>
+              {loadingSave ? "Publikowanie…" : "Opublikuj link dla klienta"}
+            </Button>
+          </div>
 
-          {offerText.trim() && companyName.trim() && (
-            <div className="space-y-2 rounded-sm border border-white/10 bg-white/5 p-4">
-              <p className="text-sm font-medium text-white/80">
-                Podgląd oferty dla klienta
-              </p>
-              <OfferPreview
-                companyName={companyName}
-                industry={industry}
-                pageType={pageType}
-                deadline={deadline}
-                offerText={offerText}
-              />
-            </div>
+          {aiReply && (
+            <p className="text-sm text-white/60">
+              {aiReply}
+              {aiProvider !== "none" ? ` · AI: ${aiProvider}` : " · bez AI"}
+            </p>
           )}
-
           {error && <p className="text-sm text-red-400">{error}</p>}
-
-          <Button type="submit" disabled={loading || !offerText.trim()}>
-            {loading ? "Generowanie..." : "Generuj ofertę"}
-          </Button>
         </form>
       </GlassCard>
+
+      {liveDocument && (
+        <>
+          <GlassCard title="Edycja kluczowych treści (pełna kontrola)">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm text-white/70">
+                  Wstęp (cel projektu)
+                </label>
+                <textarea
+                  value={goalIntro}
+                  onChange={(e) => setGoalIntro(e.target.value)}
+                  rows={5}
+                  className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm text-white/70">
+                  Rekomendacja kierunku wizualnego
+                </label>
+                <textarea
+                  value={recommendation}
+                  onChange={(e) => setRecommendation(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+          </GlassCard>
+
+          <div className="overflow-hidden rounded-lg border border-white/10">
+            <div className="border-b border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.2em] text-white/40">
+              Podgląd oferty (styl Juicy)
+            </div>
+            <div className="bg-[#f7f5f1]">
+              <OfferDocumentView document={liveDocument} variant="print" />
+            </div>
+          </div>
+        </>
+      )}
 
       {result && (
         <OfferLinkResult

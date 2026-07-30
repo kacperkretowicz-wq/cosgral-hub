@@ -4,6 +4,10 @@ import { requireAdmin } from "@/lib/api-auth";
 import { getDb } from "@/lib/db/client";
 import { parseDriveFolderId } from "@/lib/drive-folder";
 import { getIntranetDb } from "@/lib/intranet-db";
+import {
+  offerDocumentSchema,
+  offerDocumentToPlainText,
+} from "@/lib/offer-document";
 
 const updateSchema = z.object({
   offer_text: z.string().min(1).optional(),
@@ -20,6 +24,8 @@ const updateSchema = z.object({
       ),
     })
     .optional(),
+  offer_document: offerDocumentSchema.optional(),
+  offer_ready: z.boolean().optional(),
   drive_folder_url: z.string().optional(),
   drive_folder_id: z.string().nullable().optional(),
 });
@@ -69,6 +75,16 @@ export async function PATCH(request: Request, { params }: Props) {
       ...(parsed.offer_content && !parsed.offer_text
         ? { offer_content: parsed.offer_content }
         : {}),
+      ...(parsed.offer_document
+        ? {
+            offer_document: parsed.offer_document,
+            offer_text: offerDocumentToPlainText(parsed.offer_document),
+            offer_content: null,
+          }
+        : {}),
+      ...(parsed.offer_ready !== undefined
+        ? { offer_ready: parsed.offer_ready }
+        : {}),
       ...(driveFolderId !== undefined
         ? { drive_folder_id: driveFolderId }
         : {}),
@@ -97,7 +113,6 @@ export async function DELETE(_request: Request, { params }: Props) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    // Also remove linked zlecenia so they don't linger on dashboard/lists
     try {
       const intranet = getIntranetDb();
       const projects = await intranet.getProjects();

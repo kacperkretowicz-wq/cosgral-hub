@@ -11,6 +11,7 @@ export interface Inspiration {
 
 export type { OfferContent, OfferContentSection } from "./offer-content";
 import type { OfferContent } from "./offer-content";
+import type { OfferDocument } from "./offer-document";
 
 export interface Client {
   id: string;
@@ -25,6 +26,8 @@ export interface Client {
   inspirations: Inspiration[] | null;
   offer_content: OfferContent | null;
   offer_text: string | null;
+  offer_document: OfferDocument | null;
+  offer_ready: boolean;
   status: ClientStatus;
   created_at: string;
 }
