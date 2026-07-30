@@ -105,7 +105,7 @@ export default async function ClientDetailPage({ params }: Props) {
               apiUrl={`/api/clients/${typedClient.id}`}
               redirectTo="/admin"
               label="Usuń ofertę"
-              confirmMessage={`Usunąć ofertę i formularz „${typedClient.company_name}”? Materiały w Google Drive pozostaną na dysku.`}
+              confirmMessage={`Usunąć ofertę i formularz „${typedClient.company_name}”? Powiązane zlecenie też zostanie usunięte. Folder na Google Drive pozostanie na dysku.`}
             />
           </div>
         </div>

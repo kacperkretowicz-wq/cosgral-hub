@@ -56,12 +56,33 @@ export async function DELETE(_request: Request, { params }: Props) {
 
   try {
     const { id } = await params;
-    const client = await getIntranetDb().getCrmClient(id);
+    const intranet = getIntranetDb();
+    const client = await intranet.getCrmClient(id);
     if (!client) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    await getIntranetDb().deleteCrmClient(id);
+    // Remove linked projects + WWW offers so lists stay in sync
+    try {
+      const { getDb } = await import("@/lib/db/client");
+      const db = getDb();
+      const projects = await intranet.getProjects();
+      for (const project of projects) {
+        if (project.crm_client_id !== id) continue;
+        if (project.website_client_id) {
+          try {
+            await db.deleteClient(project.website_client_id);
+          } catch {
+            // offer may already be gone
+          }
+        }
+        await intranet.deleteProject(project.id);
+      }
+    } catch {
+      // continue with CRM delete
+    }
+
+    await intranet.deleteCrmClient(id);
     return NextResponse.json({ success: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

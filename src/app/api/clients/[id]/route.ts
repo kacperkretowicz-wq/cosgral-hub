@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/api-auth";
 import { getDb } from "@/lib/db/client";
+import { parseDriveFolderId } from "@/lib/drive-folder";
+import { getIntranetDb } from "@/lib/intranet-db";
 
 const updateSchema = z.object({
   offer_text: z.string().min(1).optional(),
@@ -18,6 +20,8 @@ const updateSchema = z.object({
       ),
     })
     .optional(),
+  drive_folder_url: z.string().optional(),
+  drive_folder_id: z.string().nullable().optional(),
 });
 
 interface Props {
@@ -38,9 +42,36 @@ export async function PATCH(request: Request, { params }: Props) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    let driveFolderId = parsed.drive_folder_id;
+    if (parsed.drive_folder_url !== undefined) {
+      const trimmed = parsed.drive_folder_url.trim();
+      if (!trimmed) {
+        driveFolderId = null;
+      } else {
+        const parsedId = parseDriveFolderId(trimmed);
+        if (!parsedId) {
+          return NextResponse.json(
+            {
+              error:
+                "Niepoprawny link do folderu Google Drive. Wklej URL folderu lub jego ID.",
+            },
+            { status: 400 },
+          );
+        }
+        driveFolderId = parsedId;
+      }
+    }
+
     const updates = {
-      ...parsed,
-      ...(parsed.offer_text ? { offer_content: null } : {}),
+      ...(parsed.offer_text
+        ? { offer_text: parsed.offer_text, offer_content: null }
+        : {}),
+      ...(parsed.offer_content && !parsed.offer_text
+        ? { offer_content: parsed.offer_content }
+        : {}),
+      ...(driveFolderId !== undefined
+        ? { drive_folder_id: driveFolderId }
+        : {}),
     };
 
     const data = await db.updateClient(id, updates);
@@ -64,6 +95,19 @@ export async function DELETE(_request: Request, { params }: Props) {
     const client = await db.getClientById(id);
     if (!client) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    // Also remove linked zlecenia so they don't linger on dashboard/lists
+    try {
+      const intranet = getIntranetDb();
+      const projects = await intranet.getProjects();
+      for (const project of projects) {
+        if (project.website_client_id === id) {
+          await intranet.deleteProject(project.id);
+        }
+      }
+    } catch {
+      // intranet may be unavailable — still delete the offer
     }
 
     await db.deleteClient(id);

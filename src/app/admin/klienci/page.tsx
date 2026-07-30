@@ -4,6 +4,8 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { getIntranetDb } from "@/lib/intranet-db";
 import type { CrmClient } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function KlienciPage() {
   let clients: CrmClient[] = [];
   let error = "";

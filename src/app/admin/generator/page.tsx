@@ -29,6 +29,7 @@ export default function GeneratorPage() {
   const [createCrm, setCreateCrm] = useState(true);
   const [crmClients, setCrmClients] = useState<CrmClient[]>([]);
   const [offerText, setOfferText] = useState("");
+  const [driveFolderUrl, setDriveFolderUrl] = useState("");
   const [chatMessages, setChatMessages] = useState<OfferChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -70,6 +71,7 @@ export default function GeneratorPage() {
         crm_client_id: crmClientId || undefined,
         create_crm: createCrm && !crmClientId,
         offer_text: offerText,
+        drive_folder_url: driveFolderUrl.trim() || undefined,
       }),
     });
 
@@ -169,6 +171,24 @@ export default function GeneratorPage() {
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
           />
+
+          <div className="space-y-3 rounded-sm border border-white/15 bg-white/[0.03] p-4">
+            <div>
+              <p className="text-sm font-medium text-white/90">
+                Folder Google Drive na materiały klienta
+              </p>
+              <p className="mt-1 text-xs text-white/45">
+                Przygotuj folder ręcznie na Dysku, skopiuj link i wklej poniżej.
+                Aplikacja nie tworzy folderów automatycznie.
+              </p>
+            </div>
+            <Input
+              label="Link do folderu Drive"
+              value={driveFolderUrl}
+              onChange={(e) => setDriveFolderUrl(e.target.value)}
+              placeholder="https://drive.google.com/drive/folders/…"
+            />
+          </div>
 
           <OfferTextEditor
             value={offerText}

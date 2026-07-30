@@ -1,9 +1,11 @@
-import { createClientFolder } from "./google-drive";
-import { createClientDoc, isDocsConfigured } from "./google-docs";
 import type { Client } from "./types";
 
 export { syncClientDoc } from "./google-docs";
 
+/**
+ * Returns the client's existing Drive workspace.
+ * Does NOT auto-create folders or Docs — folder must be pasted in the generator.
+ */
 export async function ensureClientWorkspace(
   client: Client,
 ): Promise<{
@@ -11,33 +13,9 @@ export async function ensureClientWorkspace(
   drive_section_folders: Record<string, string>;
   drive_doc_id: string | null;
 }> {
-  let driveFolderId = client.drive_folder_id;
-  let driveSectionFolders = client.drive_section_folders ?? {};
-  let driveDocId = client.drive_doc_id ?? null;
-
-  if (!isDocsConfigured()) {
-    return {
-      drive_folder_id: driveFolderId,
-      drive_section_folders: driveSectionFolders,
-      drive_doc_id: driveDocId,
-    };
-  }
-
-  if (!driveFolderId || Object.keys(driveSectionFolders).length === 0) {
-    const created = await createClientFolder(client.company_name);
-    if (created) {
-      driveFolderId = created.folderId;
-      driveSectionFolders = created.sectionFolders;
-    }
-  }
-
-  if (driveFolderId && !driveDocId) {
-    driveDocId = await createClientDoc(client.company_name, driveFolderId);
-  }
-
   return {
-    drive_folder_id: driveFolderId,
-    drive_section_folders: driveSectionFolders,
-    drive_doc_id: driveDocId,
+    drive_folder_id: client.drive_folder_id,
+    drive_section_folders: client.drive_section_folders ?? {},
+    drive_doc_id: client.drive_doc_id ?? null,
   };
 }

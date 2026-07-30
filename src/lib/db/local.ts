@@ -155,6 +155,18 @@ export function createLocalDb(): DbClient {
         files.filter((f) => f.client_id !== id),
       );
 
+      try {
+        const projects = await readJson<
+          { id: string; website_client_id: string | null }[]
+        >("projects.json", []);
+        const remaining = projects.filter((p) => p.website_client_id !== id);
+        if (remaining.length !== projects.length) {
+          await writeJson("projects.json", remaining);
+        }
+      } catch {
+        // projects file may not exist in pure local mode
+      }
+
       const uploadsDir = path.join(DATA_DIR, "uploads", id);
       await fs.rm(uploadsDir, { recursive: true, force: true }).catch(() => {});
     },

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 
@@ -19,7 +18,6 @@ export function DeleteRecordButton({
   confirmMessage,
   className = "",
 }: DeleteRecordButtonProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
@@ -27,14 +25,17 @@ export function DeleteRecordButton({
 
     setLoading(true);
     try {
-      const res = await fetch(apiUrl, { method: "DELETE" });
+      const res = await fetch(apiUrl, {
+        method: "DELETE",
+        cache: "no-store",
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         alert(data.error ?? "Nie udało się usunąć rekordu.");
         return;
       }
-      router.push(redirectTo);
-      router.refresh();
+      // Hard navigation so list pages don't show stale cached RSC/PWA data
+      window.location.assign(redirectTo);
     } finally {
       setLoading(false);
     }

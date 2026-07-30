@@ -11,6 +11,8 @@ import {
 } from "@/lib/intranet-labels";
 import type { Client } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminDashboard() {
   const db = getDb();
   const clients = await db.getClients();

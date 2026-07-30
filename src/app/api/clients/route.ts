@@ -29,6 +29,8 @@ const createSchema = z.object({
   create_crm: z.boolean().optional(),
   offer_text: z.string().min(1),
   offer_content: offerContentSchema.optional(),
+  /** Pasted Google Drive folder URL or ID (no auto-create). */
+  drive_folder_url: z.string().optional(),
 });
 
 export async function GET() {
@@ -56,25 +58,19 @@ export async function POST(request: Request) {
     const token = uuidv4();
     const db = getDb();
 
-    const { createClientFolder, isDriveConfigured } = await import(
-      "@/lib/google-drive"
-    );
-    const { createClientDoc } = await import("@/lib/google-docs");
+    const { parseDriveFolderId } = await import("@/lib/drive-folder");
+    const driveFolderId = parsed.drive_folder_url
+      ? parseDriveFolderId(parsed.drive_folder_url)
+      : null;
 
-    let driveFolderId: string | null = null;
-    let driveSectionFolders: Record<string, string> = {};
-    let driveDocId: string | null = null;
-
-    if (isDriveConfigured()) {
-      const driveResult = await createClientFolder(parsed.company_name);
-      if (driveResult) {
-        driveFolderId = driveResult.folderId;
-        driveSectionFolders = driveResult.sectionFolders;
-        driveDocId = await createClientDoc(
-          parsed.company_name,
-          driveResult.folderId,
-        );
-      }
+    if (parsed.drive_folder_url?.trim() && !driveFolderId) {
+      return NextResponse.json(
+        {
+          error:
+            "Niepoprawny link do folderu Google Drive. Wklej URL folderu lub jego ID.",
+        },
+        { status: 400 },
+      );
     }
 
     const inspirations: Inspiration[] = [];
@@ -86,8 +82,8 @@ export async function POST(request: Request) {
       deadline,
       token,
       drive_folder_id: driveFolderId,
-      drive_section_folders: driveSectionFolders,
-      drive_doc_id: driveDocId,
+      drive_section_folders: {},
+      drive_doc_id: null,
       inspirations,
       offer_content: parsed.offer_text ? null : (parsed.offer_content ?? null),
       offer_text: parsed.offer_text.trim(),

@@ -90,7 +90,7 @@ export default function ZlecenieDetailPage({ params }: Props) {
           apiUrl={`/api/projects/${id}`}
           redirectTo="/admin/zlecenia"
           label="Usuń zlecenie"
-          confirmMessage={`Usunąć zlecenie „${project.title}”? Powiązane notatki i linki zostaną usunięte.`}
+          confirmMessage={`Usunąć zlecenie „${project.title}”? Powiązana oferta WWW oraz notatki/linki też zostaną usunięte.`}
         />
       </div>
 

@@ -68,12 +68,25 @@ export async function DELETE(_request: Request, { params }: Props) {
 
   try {
     const { id } = await params;
-    const project = await getIntranetDb().getProject(id);
+    const intranet = getIntranetDb();
+    const project = await intranet.getProject(id);
     if (!project) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    await getIntranetDb().deleteProject(id);
+    const websiteClientId = project.website_client_id;
+    await intranet.deleteProject(id);
+
+    // Remove linked WWW offer so it doesn't stay on the dashboard
+    if (websiteClientId) {
+      try {
+        const { getDb } = await import("@/lib/db/client");
+        await getDb().deleteClient(websiteClientId);
+      } catch {
+        // offer may already be gone
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

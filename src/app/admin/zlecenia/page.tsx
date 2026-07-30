@@ -9,6 +9,8 @@ import {
 } from "@/lib/intranet-labels";
 import type { Project } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function ZleceniaPage() {
   let projects: Project[] = [];
   let error = "";

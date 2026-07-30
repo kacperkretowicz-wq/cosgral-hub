@@ -11,6 +11,8 @@ import {
   SERVICE_TYPE_LABELS,
 } from "@/lib/intranet-labels";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ id: string }>;
 }
@@ -46,7 +48,7 @@ export default async function KlientDetailPage({ params }: Props) {
           apiUrl={`/api/crm-clients/${id}`}
           redirectTo="/admin/klienci"
           label="Usuń klienta"
-          confirmMessage={`Usunąć klienta CRM „${client.company_name}”? Powiązane notatki i linki zostaną usunięte.`}
+          confirmMessage={`Usunąć klienta CRM „${client.company_name}”? Powiązane zlecenia, oferty WWW, notatki i linki też zostaną usunięte.`}
         />
       </div>
 
