@@ -4,7 +4,11 @@ import { promises as fs } from "fs";
 import path from "path";
 import { isSupabaseConfigured } from "./db";
 import { assertPersistentDb } from "./persistence";
-import type { Lead, LeadStatus, Task, TaskStatus } from "./types";
+import {
+  isMissingRelationError,
+  SCHEMA_SETUP_HINT,
+} from "./schema-errors";
+import type { Lead, LeadStatus, Task } from "./types";
 
 function getSupabase() {
   return createClient(
@@ -178,7 +182,10 @@ function createSupabaseOpsDb() {
       if (filters?.from) q = q.gte("due_date", filters.from);
       if (filters?.to) q = q.lte("due_date", filters.to);
       const { data, error } = await q;
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isMissingRelationError(error)) return [];
+        throw new Error(error.message);
+      }
       return (data ?? []) as Task[];
     },
 
@@ -191,7 +198,10 @@ function createSupabaseOpsDb() {
         .insert({ ...input, updated_at: new Date().toISOString() })
         .select("*, projects(id, title)")
         .single();
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isMissingRelationError(error)) throw new Error(SCHEMA_SETUP_HINT);
+        throw new Error(error.message);
+      }
       return data as Task;
     },
 
@@ -204,14 +214,20 @@ function createSupabaseOpsDb() {
         .eq("id", id)
         .select("*, projects(id, title)")
         .single();
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isMissingRelationError(error)) throw new Error(SCHEMA_SETUP_HINT);
+        throw new Error(error.message);
+      }
       return data as Task;
     },
 
     async deleteTask(id: string): Promise<void> {
       assertPersistentDb("usunięcie zadania");
       const { error } = await getSupabase().from("tasks").delete().eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isMissingRelationError(error)) throw new Error(SCHEMA_SETUP_HINT);
+        throw new Error(error.message);
+      }
     },
 
     async getLeads(filters?: { status?: LeadStatus }): Promise<Lead[]> {
@@ -221,7 +237,10 @@ function createSupabaseOpsDb() {
         .order("created_at", { ascending: false });
       if (filters?.status) q = q.eq("status", filters.status);
       const { data, error } = await q;
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isMissingRelationError(error)) return [];
+        throw new Error(error.message);
+      }
       return data ?? [];
     },
 
@@ -244,7 +263,10 @@ function createSupabaseOpsDb() {
         .insert({ ...input, updated_at: new Date().toISOString() })
         .select()
         .single();
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isMissingRelationError(error)) throw new Error(SCHEMA_SETUP_HINT);
+        throw new Error(error.message);
+      }
       return data;
     },
 
@@ -256,14 +278,20 @@ function createSupabaseOpsDb() {
         .eq("id", id)
         .select()
         .single();
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isMissingRelationError(error)) throw new Error(SCHEMA_SETUP_HINT);
+        throw new Error(error.message);
+      }
       return data;
     },
 
     async deleteLead(id: string): Promise<void> {
       assertPersistentDb("usunięcie leada");
       const { error } = await getSupabase().from("leads").delete().eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isMissingRelationError(error)) throw new Error(SCHEMA_SETUP_HINT);
+        throw new Error(error.message);
+      }
     },
   };
 }

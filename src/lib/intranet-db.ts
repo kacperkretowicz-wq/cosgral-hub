@@ -2,7 +2,25 @@ import { createClient } from "@supabase/supabase-js";
 import { isSupabaseConfigured } from "./db";
 import { createLocalIntranetDb } from "./intranet-local";
 import { assertPersistentDb } from "./persistence";
+import { isMissingColumnError } from "./schema-errors";
 import type { CrmClient, Note, Project, ResourceLink } from "./types";
+
+const MONEY_KEYS = ["value_pln", "cost_pln", "billing_status"] as const;
+
+function withMoneyDefaults(project: Project): Project {
+  return {
+    ...project,
+    value_pln: project.value_pln ?? null,
+    cost_pln: project.cost_pln ?? null,
+    billing_status: project.billing_status ?? "wycena",
+  };
+}
+
+function withoutMoneyFields<T extends Record<string, unknown>>(input: T) {
+  const next = { ...input };
+  for (const key of MONEY_KEYS) delete next[key];
+  return next;
+}
 
 function getSupabaseClient() {
   return createClient(
@@ -100,7 +118,7 @@ function createSupabaseIntranetDb() {
         q = q.eq("crm_client_id", filters.crm_client_id);
       const { data, error } = await q;
       if (error) throw new Error(error.message);
-      return (data ?? []) as Project[];
+      return ((data ?? []) as Project[]).map(withMoneyDefaults);
     },
 
     async getProject(id: string): Promise<Project | null> {
@@ -113,20 +131,31 @@ function createSupabaseIntranetDb() {
         if (isNotFoundError(error)) return null;
         throw new Error(error.message);
       }
-      return data as Project;
+      return withMoneyDefaults(data as Project);
     },
 
     async createProject(
       input: Omit<Project, "id" | "created_at" | "updated_at" | "crm_clients">,
     ): Promise<Project> {
       assertPersistentDb("utworzenie zlecenia");
-      const { data, error } = await getSupabaseClient()
+      const payload = { ...input, updated_at: new Date().toISOString() };
+      const first = await getSupabaseClient()
         .from("projects")
-        .insert({ ...input, updated_at: new Date().toISOString() })
+        .insert(payload)
         .select("*, crm_clients(*)")
         .single();
-      if (error) throw new Error(error.message);
-      return data as Project;
+      if (!first.error) return withMoneyDefaults(first.data as Project);
+
+      if (isMissingColumnError(first.error)) {
+        const retry = await getSupabaseClient()
+          .from("projects")
+          .insert(withoutMoneyFields(payload as Record<string, unknown>))
+          .select("*, crm_clients(*)")
+          .single();
+        if (retry.error) throw new Error(retry.error.message);
+        return withMoneyDefaults(retry.data as Project);
+      }
+      throw new Error(first.error.message);
     },
 
     async updateProject(
@@ -135,14 +164,32 @@ function createSupabaseIntranetDb() {
     ): Promise<Project> {
       assertPersistentDb("aktualizacja zlecenia");
       const { crm_clients: _, ...rest } = input as Project;
-      const { data, error } = await getSupabaseClient()
+      const payload = { ...rest, updated_at: new Date().toISOString() };
+      const first = await getSupabaseClient()
         .from("projects")
-        .update({ ...rest, updated_at: new Date().toISOString() })
+        .update(payload)
         .eq("id", id)
         .select("*, crm_clients(*)")
         .single();
-      if (error) throw new Error(error.message);
-      return data as Project;
+      if (!first.error) return withMoneyDefaults(first.data as Project);
+
+      if (isMissingColumnError(first.error)) {
+        const moneyOnly = MONEY_KEYS.some((k) => k in rest);
+        if (moneyOnly) {
+          throw new Error(
+            "Kolumny finansów zlecenia nie istnieją — uruchom migrację 008 na /admin/setup.",
+          );
+        }
+        const retry = await getSupabaseClient()
+          .from("projects")
+          .update(withoutMoneyFields(payload as Record<string, unknown>))
+          .eq("id", id)
+          .select("*, crm_clients(*)")
+          .single();
+        if (retry.error) throw new Error(retry.error.message);
+        return withMoneyDefaults(retry.data as Project);
+      }
+      throw new Error(first.error.message);
     },
 
     async getNotes(filters: {

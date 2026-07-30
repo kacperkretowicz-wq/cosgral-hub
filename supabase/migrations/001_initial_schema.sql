@@ -1,9 +1,14 @@
--- Cosgral Portal schema
+-- Cosgral Portal schema (idempotent)
 
-CREATE TYPE page_type AS ENUM ('onepage', 'multipage');
-CREATE TYPE client_status AS ENUM ('draft', 'sent', 'submitted');
+DO $$ BEGIN
+  CREATE TYPE page_type AS ENUM ('onepage', 'multipage');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TABLE clients (
+DO $$ BEGIN
+  CREATE TYPE client_status AS ENUM ('draft', 'sent', 'submitted');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS clients (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_name TEXT NOT NULL,
   industry TEXT,
@@ -17,7 +22,7 @@ CREATE TABLE clients (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE submissions (
+CREATE TABLE IF NOT EXISTS submissions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   section_key TEXT NOT NULL,
@@ -27,7 +32,7 @@ CREATE TABLE submissions (
   UNIQUE(client_id, section_key, field_key)
 );
 
-CREATE TABLE files (
+CREATE TABLE IF NOT EXISTS files (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   section_key TEXT NOT NULL,
@@ -37,28 +42,29 @@ CREATE TABLE files (
   uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_clients_token ON clients(token);
-CREATE INDEX idx_submissions_client ON submissions(client_id);
-CREATE INDEX idx_files_client ON files(client_id);
+CREATE INDEX IF NOT EXISTS idx_clients_token ON clients(token);
+CREATE INDEX IF NOT EXISTS idx_submissions_client ON submissions(client_id);
+CREATE INDEX IF NOT EXISTS idx_files_client ON files(client_id);
 
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE files ENABLE ROW LEVEL SECURITY;
 
--- Public read by token (via service role in API)
--- Admin full access via authenticated users
+DROP POLICY IF EXISTS "Authenticated users can manage clients" ON clients;
 CREATE POLICY "Authenticated users can manage clients"
   ON clients FOR ALL
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can manage submissions" ON submissions;
 CREATE POLICY "Authenticated users can manage submissions"
   ON submissions FOR ALL
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can manage files" ON files;
 CREATE POLICY "Authenticated users can manage files"
   ON files FOR ALL
   TO authenticated

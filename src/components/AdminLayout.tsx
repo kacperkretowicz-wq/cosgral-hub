@@ -61,6 +61,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             ))}
           </nav>
 
+          <Link
+            href="/admin/setup"
+            className={`mb-3 block rounded-sm px-3 py-2 text-xs transition ${
+              isActive("/admin/setup")
+                ? "bg-white/10 text-white"
+                : "text-white/35 hover:bg-white/5 hover:text-white/70"
+            }`}
+          >
+            Setup / migracje
+          </Link>
+
           <Button variant="ghost" onClick={handleLogout} className="w-full">
             Wyloguj
           </Button>

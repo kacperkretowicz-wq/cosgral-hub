@@ -91,6 +91,19 @@ export default function LeadyPage() {
     }
   };
 
+  const openOffer = async (lead: Lead) => {
+    if (lead.status !== "oferta" && lead.status !== "wygrana") {
+      await fetch(`/api/leads/${lead.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "oferta" }),
+      });
+    }
+    const params = new URLSearchParams({ company: lead.company_name });
+    if (lead.crm_client_id) params.set("crm", lead.crm_client_id);
+    window.location.assign(`/admin/generator?${params.toString()}`);
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -226,12 +239,14 @@ export default function LeadyPage() {
                     Profil CRM
                   </Link>
                 )}
-                <Link
-                  href={`/admin/generator?company=${encodeURIComponent(lead.company_name)}`}
-                  className="rounded bg-white/10 px-2 py-1 text-xs text-white/70 underline"
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="px-3 py-1 text-xs"
+                  onClick={() => openOffer(lead)}
                 >
-                  Oferta
-                </Link>
+                  → Oferta Cosgral
+                </Button>
               </div>
             </div>
           ))}

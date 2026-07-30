@@ -9,6 +9,7 @@ import {
   PROJECT_STATUS_LABELS,
   SERVICE_TYPE_LABELS,
 } from "@/lib/intranet-labels";
+import { probeSchemaHealth } from "@/lib/run-migrations";
 import type { Client, Lead, Project } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +54,19 @@ export default async function AdminDashboard() {
     leads = await getOpsDb().getLeads();
   } catch (e) {
     leadsError = e instanceof Error ? e.message : "Błąd ładowania leadów";
+  }
+
+  let schemaReady = true;
+  let schemaMissing: string[] = [];
+  if (isSupabaseConfigured()) {
+    try {
+      const health = await probeSchemaHealth();
+      schemaReady = health.ready;
+      schemaMissing = health.missing;
+    } catch {
+      schemaReady = false;
+      schemaMissing = ["health_check_failed"];
+    }
   }
 
   const activeProjects = allProjects.filter(isActiveProject);
@@ -106,6 +120,19 @@ export default async function AdminDashboard() {
             migracje SQL 001 + 002 oraz 007 + 008 (oferta Cosgral, OS agencji).{" "}
             <Link href="/admin/setup" className="underline">
               Przejdź do setup →
+            </Link>
+          </p>
+        </div>
+      )}
+
+      {isSupabaseConfigured() && !schemaReady && (
+        <div className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
+          <p className="font-medium">Schema Cosgral OS niekompletna</p>
+          <p className="mt-1 text-amber-100/80">
+            Brakuje: {schemaMissing.join(", ") || "elementów schematu"}. Wejdź w
+            setup, wklej hasło bazy Supabase raz i uruchom migracje 001–008.{" "}
+            <Link href="/admin/setup" className="underline">
+              Setup / migracje →
             </Link>
           </p>
         </div>

@@ -49,6 +49,11 @@ function GeneratorForm() {
   useEffect(() => {
     const preset = searchParams.get("company");
     if (preset) setCompanyName(preset);
+    const crm = searchParams.get("crm");
+    if (crm) {
+      setCrmClientId(crm);
+      setCreateCrm(false);
+    }
   }, [searchParams]);
 
   useEffect(() => {

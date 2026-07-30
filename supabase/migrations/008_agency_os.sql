@@ -55,5 +55,8 @@ CREATE INDEX IF NOT EXISTS idx_projects_billing ON projects(billing_status);
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Authenticated manage tasks" ON tasks;
 CREATE POLICY "Authenticated manage tasks" ON tasks FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Authenticated manage leads" ON leads;
 CREATE POLICY "Authenticated manage leads" ON leads FOR ALL TO authenticated USING (true) WITH CHECK (true);

@@ -1,6 +1,21 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { DbClient } from "./index";
 import type { Client, Submission, UploadedFile } from "../types";
+import { isMissingColumnError } from "../schema-errors";
+
+const OPTIONAL_CLIENT_COLS = [
+  "offer_document",
+  "offer_ready",
+  "offer_text",
+  "offer_content",
+  "drive_doc_id",
+] as const;
+
+function stripOptionalClientCols(data: Record<string, unknown>) {
+  const next = { ...data };
+  for (const key of OPTIONAL_CLIENT_COLS) delete next[key];
+  return next;
+}
 
 function getServiceClient() {
   return createSupabaseClient(
@@ -45,25 +60,47 @@ export function createSupabaseDb(): DbClient {
 
     async createClient(data) {
       const supabase = getServiceClient();
-      const { data: created, error } = await supabase
-        .from("clients")
-        .insert(data)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return created as Client;
+      const first = await supabase.from("clients").insert(data).select().single();
+      if (!first.error) return first.data as Client;
+
+      if (isMissingColumnError(first.error)) {
+        const retry = await supabase
+          .from("clients")
+          .insert(stripOptionalClientCols(data as Record<string, unknown>))
+          .select()
+          .single();
+        if (retry.error) throw new Error(retry.error.message);
+        return retry.data as Client;
+      }
+      throw new Error(first.error.message);
     },
 
     async updateClient(id, data) {
       const supabase = getServiceClient();
-      const { data: updated, error } = await supabase
+      const first = await supabase
         .from("clients")
         .update(data)
         .eq("id", id)
         .select()
         .single();
-      if (error) throw new Error(error.message);
-      return updated as Client;
+      if (!first.error) return first.data as Client;
+
+      if (isMissingColumnError(first.error)) {
+        const retry = await supabase
+          .from("clients")
+          .update(stripOptionalClientCols(data as Record<string, unknown>))
+          .eq("id", id)
+          .select()
+          .single();
+        if (retry.error) {
+          throw new Error(
+            "Brak kolumn oferty — uruchom migracje 007 na /admin/setup. " +
+              retry.error.message,
+          );
+        }
+        return retry.data as Client;
+      }
+      throw new Error(first.error.message);
     },
 
     async getSubmissions(clientId) {

@@ -71,7 +71,14 @@ ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE resource_links ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Authenticated manage crm_clients" ON crm_clients;
 CREATE POLICY "Authenticated manage crm_clients" ON crm_clients FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Authenticated manage projects" ON projects;
 CREATE POLICY "Authenticated manage projects" ON projects FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Authenticated manage notes" ON notes;
 CREATE POLICY "Authenticated manage notes" ON notes FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Authenticated manage resource_links" ON resource_links;
 CREATE POLICY "Authenticated manage resource_links" ON resource_links FOR ALL TO authenticated USING (true) WITH CHECK (true);
