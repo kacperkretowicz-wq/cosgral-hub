@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/Button";
 
 const NAV = [
   { href: "/admin", label: "Home", icon: "⌂" },
+  { href: "/admin/harmonogram", label: "Tydzień", icon: "▦" },
   { href: "/admin/zlecenia", label: "Zlecenia", icon: "◫" },
+  { href: "/admin/leady", label: "Leady", icon: "◉" },
   { href: "/admin/klienci", label: "Klienci", icon: "◎" },
-  { href: "/admin/generator", label: "Formularz", icon: "✦" },
+  { href: "/admin/generator", label: "Oferta", icon: "✦" },
 ];
 
 interface AdminLayoutProps {

@@ -89,7 +89,7 @@ export async function generateOfferDocument(input: {
       document,
       offer_text,
       reply:
-        "Złożono ofertę w stylu Juicy z szablonu Cosgral (bez AI — $0). Możesz edytować każdą sekcję ręcznie.",
+        "Złożono ofertę z szablonu Cosgral (bez AI — $0). Możesz edytować każdą sekcję ręcznie.",
     };
   }
 
@@ -98,7 +98,7 @@ export async function generateOfferDocument(input: {
       "Jesteś copywriterem agencji Cosgral. Piszesz po polsku, krótko, konkretnie. Nie wymyślasz faktów o firmie.",
       `Dostosuj 2 pola oferty do branży klienta. Zwróć JSON:
 {
-  "goal_intro": "2-4 zdania wstępu (jak w ofercie Juicy)",
+  "goal_intro": "2-4 zdania wstępu (jak w ofercie Cosgral)",
   "recommendation": "2-4 zdania rekomendacji kierunku wizualnego",
   "reply": "1 zdanie do użytkatora"
 }
@@ -147,7 +147,7 @@ ${document.visual_direction.recommendation}`,
       document,
       offer_text,
       reply:
-        "Szablon Juicy gotowy. Darmowe AI niedostępne w tej chwili — edytuj ręcznie.",
+        "Szablon Cosgral gotowy. Darmowe AI niedostępne w tej chwili — edytuj ręcznie.",
     };
   }
 }

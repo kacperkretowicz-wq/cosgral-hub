@@ -7,12 +7,20 @@ import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinksPanel } from "@/components/ResourceLinksPanel";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
 import {
+  BILLING_STATUS_LABELS,
   PROJECT_STATUS_COLORS,
   PROJECT_STATUS_LABELS,
   SERVICE_TYPE_LABELS,
   SERVICE_TYPES,
 } from "@/lib/intranet-labels";
-import type { CrmClient, Project, ProjectStatus, ServiceType } from "@/lib/types";
+import { TEAM } from "@/lib/team";
+import type {
+  BillingStatus,
+  CrmClient,
+  Project,
+  ProjectStatus,
+  ServiceType,
+} from "@/lib/types";
 
 interface ZlecenieEditorProps {
   initialProject: Project;
@@ -151,16 +159,21 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
 
           <div className="space-y-2">
             <label className="block text-sm text-white/70">Przypisane do</label>
-            <input
+            <select
               value={project.assigned_to ?? ""}
-              onBlur={(e) =>
+              onChange={(e) =>
                 updateField({ assigned_to: e.target.value || null })
               }
-              onChange={(e) =>
-                setProject((p) => ({ ...p, assigned_to: e.target.value || null }))
-              }
+              disabled={saving}
               className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
-            />
+            >
+              <option value="">— nieprzypisane —</option>
+              {TEAM.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-2">
@@ -191,6 +204,95 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
         </div>
 
         {saving && <p className="mt-2 text-xs text-white/40">Zapisywanie…</p>}
+      </GlassCard>
+
+      <GlassCard title="Finanse">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="block text-sm text-white/70">Wartość (PLN)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={project.value_pln ?? ""}
+              onChange={(e) =>
+                setProject((p) => ({
+                  ...p,
+                  value_pln:
+                    e.target.value === "" ? null : Number(e.target.value),
+                }))
+              }
+              onBlur={(e) =>
+                updateField({
+                  value_pln:
+                    e.target.value === "" ? null : Number(e.target.value),
+                })
+              }
+              disabled={saving}
+              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm text-white/70">Koszt (PLN)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={project.cost_pln ?? ""}
+              onChange={(e) =>
+                setProject((p) => ({
+                  ...p,
+                  cost_pln:
+                    e.target.value === "" ? null : Number(e.target.value),
+                }))
+              }
+              onBlur={(e) =>
+                updateField({
+                  cost_pln:
+                    e.target.value === "" ? null : Number(e.target.value),
+                })
+              }
+              disabled={saving}
+              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <label className="block text-sm text-white/70">
+              Status rozliczenia
+            </label>
+            <select
+              value={project.billing_status ?? "wycena"}
+              onChange={(e) =>
+                updateField({
+                  billing_status: e.target.value as BillingStatus,
+                })
+              }
+              disabled={saving}
+              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+            >
+              {(
+                Object.entries(BILLING_STATUS_LABELS) as [
+                  BillingStatus,
+                  string,
+                ][]
+              ).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {project.value_pln != null && project.cost_pln != null && (
+          <p className="mt-3 text-sm text-white/60">
+            Marża:{" "}
+            <span className="font-medium text-white">
+              {(project.value_pln - project.cost_pln).toLocaleString("pl-PL", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              })}{" "}
+              PLN
+            </span>
+          </p>
+        )}
       </GlassCard>
 
       <GlassCard title="Notatki">

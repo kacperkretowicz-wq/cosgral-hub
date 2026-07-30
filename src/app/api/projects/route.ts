@@ -82,6 +82,9 @@ export async function POST(request: Request) {
       assigned_to: parsed.assigned_to ?? null,
       deadline: parsed.deadline ?? null,
       description: parsed.description ?? "",
+      value_pln: null,
+      cost_pln: null,
+      billing_status: "wycena",
     });
     return NextResponse.json(data, {
       headers: { "Cache-Control": "no-store" },

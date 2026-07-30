@@ -27,4 +27,30 @@ export const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
   anulowane: "text-white/40",
 };
 
+export const BILLING_STATUS_LABELS: Record<
+  import("./types").BillingStatus,
+  string
+> = {
+  wycena: "Wycena",
+  faktura: "Faktura",
+  oplacone: "Opłacone",
+  anulowane: "Anulowane",
+};
+
+export const TASK_STATUS_LABELS: Record<import("./types").TaskStatus, string> =
+  {
+    todo: "Do zrobienia",
+    doing: "W toku",
+    done: "Gotowe",
+  };
+
+export const LEAD_STATUS_LABELS: Record<import("./types").LeadStatus, string> =
+  {
+    nowy: "Nowy",
+    kontakt: "Kontakt",
+    oferta: "Oferta",
+    wygrana: "Wygrana",
+    przegrana: "Przegrana",
+  };
+
 export const SERVICE_TYPES = Object.keys(SERVICE_TYPE_LABELS) as ServiceType[];

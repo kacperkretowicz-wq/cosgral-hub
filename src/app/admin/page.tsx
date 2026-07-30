@@ -9,24 +9,78 @@ import {
   PROJECT_STATUS_LABELS,
   SERVICE_TYPE_LABELS,
 } from "@/lib/intranet-labels";
-import type { Client } from "@/lib/types";
+import type { Client, Lead, Project } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+function formatPln(n: number) {
+  return n.toLocaleString("pl-PL", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+
+function isActiveProject(p: Project) {
+  return p.status !== "zakonczone" && p.status !== "anulowane";
+}
+
+function isThisMonth(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+  );
+}
 
 export default async function AdminDashboard() {
   const db = getDb();
   const clients = await db.getClients();
 
-  let recentProjects: Awaited<
-    ReturnType<ReturnType<typeof getIntranetDb>["getProjects"]>
-  > = [];
+  let allProjects: Project[] = [];
+  let recentProjects: Project[] = [];
   let projectsError = "";
   try {
-    const all = await getIntranetDb().getProjects();
-    recentProjects = all.slice(0, 5);
+    allProjects = await getIntranetDb().getProjects();
+    recentProjects = allProjects.slice(0, 5);
   } catch (e) {
     projectsError = e instanceof Error ? e.message : "Błąd ładowania zleceń";
   }
+
+  let leads: Lead[] = [];
+  let leadsError = "";
+  try {
+    const { getOpsDb } = await import("@/lib/ops-db");
+    leads = await getOpsDb().getLeads();
+  } catch (e) {
+    leadsError = e instanceof Error ? e.message : "Błąd ładowania leadów";
+  }
+
+  const activeProjects = allProjects.filter(isActiveProject);
+  const newLeads = leads.filter((l) => l.status === "nowy");
+
+  const paidThisMonth = allProjects.filter(
+    (p) =>
+      p.billing_status === "oplacone" &&
+      p.value_pln != null &&
+      isThisMonth(p.updated_at),
+  );
+  const mtdFromPaid = paidThisMonth.reduce(
+    (sum, p) => sum + (p.value_pln ?? 0),
+    0,
+  );
+  const mtdFallback = activeProjects.reduce(
+    (sum, p) => sum + (p.value_pln ?? 0),
+    0,
+  );
+  const mtdRevenue = paidThisMonth.length > 0 ? mtdFromPaid : mtdFallback;
+
+  const unpaidPipeline = allProjects
+    .filter(
+      (p) =>
+        (p.billing_status === "wycena" || p.billing_status === "faktura") &&
+        p.value_pln != null,
+    )
+    .reduce((sum, p) => sum + (p.value_pln ?? 0), 0);
 
   const statusLabel: Record<string, string> = {
     draft: "Szkic",
@@ -49,7 +103,7 @@ export default async function AdminDashboard() {
             Na Netlify/Vercel tryb lokalny nie działa (plik znika po restarcie).
             Ustaw klucze Supabase (w tym{" "}
             <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code>) i uruchom
-            migracje SQL 001 + 002.{" "}
+            migracje SQL 001 + 002 oraz 007 + 008 (oferta Cosgral, OS agencji).{" "}
             <Link href="/admin/setup" className="underline">
               Przejdź do setup →
             </Link>
@@ -67,7 +121,42 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <GlassCard>
+          <p className="text-xs uppercase tracking-wide text-white/40">
+            Aktywne zlecenia
+          </p>
+          <p className="mt-2 text-3xl font-bold">{activeProjects.length}</p>
+        </GlassCard>
+        <GlassCard>
+          <p className="text-xs uppercase tracking-wide text-white/40">
+            Nowe leady
+          </p>
+          <p className="mt-2 text-3xl font-bold">{newLeads.length}</p>
+          {leadsError ? (
+            <p className="mt-1 text-xs text-amber-300/80">Brak tabeli leads?</p>
+          ) : null}
+        </GlassCard>
+        <GlassCard>
+          <p className="text-xs uppercase tracking-wide text-white/40">
+            Przychód MTD
+          </p>
+          <p className="mt-2 text-3xl font-bold">{formatPln(mtdRevenue)} zł</p>
+          <p className="mt-1 text-xs text-white/40">
+            {paidThisMonth.length > 0
+              ? "opłacone w tym miesiącu"
+              : "suma wartości aktywnych"}
+          </p>
+        </GlassCard>
+        <GlassCard>
+          <p className="text-xs uppercase tracking-wide text-white/40">
+            Pipeline nieopłacony
+          </p>
+          <p className="mt-2 text-3xl font-bold">{formatPln(unpaidPipeline)} zł</p>
+        </GlassCard>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link href="/admin/generator">
           <GlassCard>
             <p className="text-2xl">✦</p>
@@ -79,7 +168,9 @@ export default async function AdminDashboard() {
           <GlassCard>
             <p className="text-2xl">◫</p>
             <p className="mt-2 font-bold">Zlecenia</p>
-            <p className="text-sm text-white/50">{recentProjects.length}+ aktywnych</p>
+            <p className="text-sm text-white/50">
+              {activeProjects.length} aktywnych
+            </p>
           </GlassCard>
         </Link>
         <Link href="/admin/klienci">
@@ -89,18 +180,35 @@ export default async function AdminDashboard() {
             <p className="text-sm text-white/50">Baza kontaktów</p>
           </GlassCard>
         </Link>
+        <Link href="/admin/harmonogram">
+          <GlassCard>
+            <p className="text-2xl">◷</p>
+            <p className="mt-2 font-bold">Harmonogram</p>
+            <p className="text-sm text-white/50">Zadania zespołu</p>
+          </GlassCard>
+        </Link>
+        <Link href="/admin/leady">
+          <GlassCard>
+            <p className="text-2xl">◉</p>
+            <p className="mt-2 font-bold">Leady</p>
+            <p className="text-sm text-white/50">
+              {newLeads.length} nowych · {leads.length} łącznie
+            </p>
+          </GlassCard>
+        </Link>
       </div>
 
       {projectsError && (
         <div className="rounded-sm border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           Nie udało się wczytać zleceń: {projectsError}
           {projectsError.toLowerCase().includes("projects") ||
-          projectsError.toLowerCase().includes("schema") ? (
+          projectsError.toLowerCase().includes("schema") ||
+          projectsError.toLowerCase().includes("billing") ? (
             <>
               {" "}
-              — uruchom migrację{" "}
-              <code className="text-xs">002_intranet_schema.sql</code> w
-              Supabase.
+              — uruchom migracje{" "}
+              <code className="text-xs">002_intranet_schema.sql</code> i{" "}
+              <code className="text-xs">008_agency_os.sql</code> w Supabase.
             </>
           ) : null}
         </div>

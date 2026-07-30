@@ -25,6 +25,11 @@ const updateSchema = z.object({
   assigned_to: z.string().nullable().optional(),
   deadline: z.string().nullable().optional(),
   description: z.string().optional(),
+  value_pln: z.number().nullable().optional(),
+  cost_pln: z.number().nullable().optional(),
+  billing_status: z
+    .enum(["wycena", "faktura", "oplacone", "anulowane"])
+    .optional(),
 });
 
 interface Props {

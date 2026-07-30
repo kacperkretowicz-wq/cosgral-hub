@@ -87,6 +87,17 @@ export type ProjectStatus =
   | "zakonczone"
   | "anulowane";
 
+export type BillingStatus = "wycena" | "faktura" | "oplacone" | "anulowane";
+
+export type TaskStatus = "todo" | "doing" | "done";
+
+export type LeadStatus =
+  | "nowy"
+  | "kontakt"
+  | "oferta"
+  | "wygrana"
+  | "przegrana";
+
 export interface CrmClient {
   id: string;
   company_name: string;
@@ -109,9 +120,39 @@ export interface Project {
   assigned_to: string | null;
   deadline: string | null;
   description: string;
+  value_pln: number | null;
+  cost_pln: number | null;
+  billing_status: BillingStatus;
   created_at: string;
   updated_at: string;
   crm_clients?: CrmClient | null;
+}
+
+export interface Task {
+  id: string;
+  project_id: string | null;
+  title: string;
+  assignee: string;
+  status: TaskStatus;
+  due_date: string | null;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  projects?: Pick<Project, "id" | "title"> | null;
+}
+
+export interface Lead {
+  id: string;
+  company_name: string;
+  contact_name: string | null;
+  email: string | null;
+  phone: string | null;
+  source: string;
+  status: LeadStatus;
+  message: string;
+  crm_client_id: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Note {

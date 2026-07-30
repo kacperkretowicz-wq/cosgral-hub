@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -17,8 +18,11 @@ function formatApiError(error: unknown): string {
   return "Błąd generowania";
 }
 
-export default function GeneratorPage() {
-  const [companyName, setCompanyName] = useState("");
+function GeneratorForm() {
+  const searchParams = useSearchParams();
+  const [companyName, setCompanyName] = useState(
+    searchParams.get("company") ?? "",
+  );
   const [industry, setIndustry] = useState("");
   const [pageType, setPageType] = useState<"onepage" | "multipage">("onepage");
   const [deadline, setDeadline] = useState("");
@@ -41,6 +45,11 @@ export default function GeneratorPage() {
     project_id?: string;
     crm_client_id?: string;
   } | null>(null);
+
+  useEffect(() => {
+    const preset = searchParams.get("company");
+    if (preset) setCompanyName(preset);
+  }, [searchParams]);
 
   useEffect(() => {
     fetch("/api/crm-clients", { cache: "no-store" })
@@ -102,7 +111,7 @@ export default function GeneratorPage() {
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!liveDocument) {
-      setError("Najpierw złóż ofertę Juicy (przycisk poniżej danych).");
+      setError("Najpierw złóż ofertę Cosgral (przycisk poniżej danych).");
       return;
     }
 
@@ -141,8 +150,8 @@ export default function GeneratorPage() {
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">Generator WWW</h1>
         <p className="mt-1 text-sm text-white/50">
-          Oferta w stylu Juicy — układ z szablonu Cosgral ($0). AI opcjonalne
-          (Groq / OpenRouter free).
+          Oferta Cosgral — układ z szablonu ($0). AI opcjonalne (Groq /
+          OpenRouter free). Działa dla dowolnego klienta.
         </p>
       </div>
 
@@ -152,7 +161,7 @@ export default function GeneratorPage() {
             label="Nazwa firmy"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="np. Juicy Events"
+            placeholder="np. nazwa firmy klienta"
             required
           />
           <Input
@@ -245,7 +254,7 @@ export default function GeneratorPage() {
               disabled={loadingBuild || !companyName.trim()}
               onClick={handleBuild}
             >
-              {loadingBuild ? "Składanie…" : "Złóż ofertę Juicy"}
+              {loadingBuild ? "Składanie…" : "Złóż ofertę Cosgral"}
             </Button>
             <Button type="submit" disabled={loadingSave || !liveDocument}>
               {loadingSave ? "Publikowanie…" : "Opublikuj link dla klienta"}
@@ -293,7 +302,7 @@ export default function GeneratorPage() {
 
           <div className="overflow-hidden rounded-lg border border-white/10">
             <div className="border-b border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.2em] text-white/40">
-              Podgląd oferty (styl Juicy)
+              Podgląd oferty Cosgral
             </div>
             <div className="bg-[#f7f5f1]">
               <OfferDocumentView document={liveDocument} variant="print" />
@@ -312,5 +321,13 @@ export default function GeneratorPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function GeneratorPage() {
+  return (
+    <Suspense fallback={<p className="text-white/50">Ładowanie…</p>}>
+      <GeneratorForm />
+    </Suspense>
   );
 }

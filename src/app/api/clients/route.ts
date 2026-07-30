@@ -164,6 +164,9 @@ export async function POST(request: Request) {
       assigned_to: null,
       deadline,
       description: `${parsed.page_type === "onepage" ? "Onepage" : "Multipage"}${parsed.industry ? ` · ${parsed.industry}` : ""}`,
+      value_pln: null,
+      cost_pln: null,
+      billing_status: "wycena",
     });
 
     const baseUrl = getAppBaseUrl(request);
