@@ -105,7 +105,14 @@ export async function getAdminEmail(): Promise<string | null> {
   }
 
   const cookieStore = await cookies();
-  const session = cookieStore.get(SESSION_COOKIE)?.value?.toLowerCase() ?? null;
+  const raw = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!raw) return null;
+  let session = raw.toLowerCase();
+  try {
+    session = decodeURIComponent(raw).toLowerCase();
+  } catch {
+    // keep raw
+  }
   return isAdminEmail(session) ? session : null;
 }
 

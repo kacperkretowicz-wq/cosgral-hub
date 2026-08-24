@@ -23,8 +23,15 @@ function isSupabaseConfigured(): boolean {
 }
 
 function hasLocalAdminSession(request: NextRequest): boolean {
-  const session = request.cookies.get(SESSION_COOKIE)?.value?.toLowerCase();
-  return Boolean(session && ADMIN_EMAILS.includes(session));
+  const raw = request.cookies.get(SESSION_COOKIE)?.value;
+  if (!raw) return false;
+  let session = raw.toLowerCase();
+  try {
+    session = decodeURIComponent(raw).toLowerCase();
+  } catch {
+    // keep raw
+  }
+  return ADMIN_EMAILS.includes(session);
 }
 
 export async function middleware(request: NextRequest) {
