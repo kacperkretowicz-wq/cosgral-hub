@@ -22,22 +22,26 @@ function isSupabaseConfigured(): boolean {
   );
 }
 
+function hasLocalAdminSession(request: NextRequest): boolean {
+  const session = request.cookies.get(SESSION_COOKIE)?.value?.toLowerCase();
+  return Boolean(session && ADMIN_EMAILS.includes(session));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (
+  const isAdminPath =
     pathname.startsWith("/admin") &&
     !pathname.startsWith("/admin/login") &&
-    !pathname.startsWith("/admin/setup")
-  ) {
+    !pathname.startsWith("/admin/setup");
+
+  if (isAdminPath) {
     if (isSupabaseConfigured()) {
+      // updateSession also accepts local session cookie as fallback
       return updateSession(request);
     }
 
-    const session = request.cookies.get(SESSION_COOKIE)?.value?.toLowerCase();
-    const isAuthed = Boolean(session && ADMIN_EMAILS.includes(session));
-
-    if (!isAuthed) {
+    if (!hasLocalAdminSession(request)) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin/login";
       return NextResponse.redirect(url);
@@ -49,8 +53,7 @@ export async function middleware(request: NextRequest) {
       return updateSession(request);
     }
 
-    const session = request.cookies.get(SESSION_COOKIE)?.value?.toLowerCase();
-    if (session && ADMIN_EMAILS.includes(session)) {
+    if (hasLocalAdminSession(request)) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin";
       return NextResponse.redirect(url);

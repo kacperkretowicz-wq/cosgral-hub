@@ -3,6 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { TEAM } from "@/lib/team";
 
 const ADMIN_EMAILS = TEAM.map((m) => m.email.toLowerCase());
+const SESSION_COOKIE = "cosgral_admin_session";
+
+function hasLocalAdminSession(request: NextRequest): boolean {
+  const session = request.cookies.get(SESSION_COOKIE)?.value?.toLowerCase();
+  return Boolean(session && ADMIN_EMAILS.includes(session));
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -34,12 +40,21 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let isAdmin = false;
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const email = user?.email?.toLowerCase() ?? "";
+    isAdmin = Boolean(user && ADMIN_EMAILS.includes(email));
+  } catch {
+    isAdmin = false;
+  }
 
-  const email = user?.email?.toLowerCase() ?? "";
-  const isAdmin = Boolean(user && ADMIN_EMAILS.includes(email));
+  // Fallback: local team session cookie (when Supabase Auth is broken)
+  if (!isAdmin && hasLocalAdminSession(request)) {
+    isAdmin = true;
+  }
 
   if (
     request.nextUrl.pathname.startsWith("/admin") &&

@@ -57,7 +57,9 @@ export default function AdminLoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="jakub.gral00@gmail.com"
               required
+              autoComplete="username"
             />
             <Input
               label="Hasło"
@@ -65,6 +67,7 @@ export default function AdminLoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
 
             <label className="flex items-center gap-2 text-sm text-white/60">
@@ -83,6 +86,10 @@ export default function AdminLoginPage() {
               {loading ? "Logowanie..." : "Zaloguj się"}
             </Button>
           </form>
+
+          <p className="text-center text-xs text-white/40">
+            Jakub: Cosgral2026!Jakub · Kacper: Cosgral2026!Kacper
+          </p>
 
           <p className="text-center text-xs text-white/30">
             <a href="/admin/setup" className="underline hover:text-white/50">
