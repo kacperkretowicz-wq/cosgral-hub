@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/db";
-import { TEAM } from "@/lib/team";
+import { TEAM, type TeamMemberId, isTeamMemberId } from "@/lib/team";
 
 /** Only these emails may use the admin panel. */
 export const ADMIN_EMAILS = TEAM.map((m) => m.email.toLowerCase());
@@ -23,9 +23,28 @@ function cookieSecure() {
   return process.env.NODE_ENV === "production";
 }
 
+function emailFromSessionValue(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  let value = raw;
+  try {
+    value = decodeURIComponent(raw);
+  } catch {
+    // keep raw
+  }
+  const normalized = value.toLowerCase();
+  if (isTeamMemberId(normalized)) {
+    return TEAM.find((m) => m.id === normalized)?.email.toLowerCase() ?? null;
+  }
+  if (isAdminEmail(normalized)) return normalized;
+  return null;
+}
+
 async function setLocalSession(email: string, maxAge: number) {
+  const member = TEAM.find((m) => m.email.toLowerCase() === email);
+  // Store team id (no @) to avoid cookie encoding mismatches
+  const value = member?.id ?? email;
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, email, {
+  cookieStore.set(SESSION_COOKIE, value, {
     httpOnly: true,
     secure: cookieSecure(),
     sameSite: "lax",
@@ -64,7 +83,6 @@ export async function loginAdmin(
           maxAge,
           path: "/",
         });
-        // Also set local cookie so middleware accepts either path
         await setLocalSession(normalized, maxAge);
         return { ok: true, mode: "supabase" };
       }
@@ -72,8 +90,6 @@ export async function loginAdmin(
       // Auth API unreachable — fall through to local
     }
 
-    // Supabase Auth fails often (wrong password / Auth out of sync / new API keys).
-    // For the fixed 2-person team, accept local password and open the panel.
     if (localOk) {
       await setLocalSession(normalized, maxAge);
       return { ok: true, mode: "local" };
@@ -105,15 +121,7 @@ export async function getAdminEmail(): Promise<string | null> {
   }
 
   const cookieStore = await cookies();
-  const raw = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!raw) return null;
-  let session = raw.toLowerCase();
-  try {
-    session = decodeURIComponent(raw).toLowerCase();
-  } catch {
-    // keep raw
-  }
-  return isAdminEmail(session) ? session : null;
+  return emailFromSessionValue(cookieStore.get(SESSION_COOKIE)?.value);
 }
 
 export async function logoutAdmin(): Promise<void> {
@@ -133,3 +141,11 @@ export async function logoutAdmin(): Promise<void> {
 export async function isAdminAuthenticated(): Promise<boolean> {
   return Boolean(await getAdminEmail());
 }
+
+export function resolveLocalSessionEmail(
+  raw: string | undefined | null,
+): string | null {
+  return emailFromSessionValue(raw);
+}
+
+export type { TeamMemberId };

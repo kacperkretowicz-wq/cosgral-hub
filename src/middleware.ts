@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import { TEAM } from "@/lib/team";
+import { TEAM, isTeamMemberId } from "@/lib/team";
 
 const SESSION_COOKIE = "cosgral_admin_session";
 const ADMIN_EMAILS = TEAM.map((m) => m.email.toLowerCase());
@@ -25,13 +25,15 @@ function isSupabaseConfigured(): boolean {
 function hasLocalAdminSession(request: NextRequest): boolean {
   const raw = request.cookies.get(SESSION_COOKIE)?.value;
   if (!raw) return false;
-  let session = raw.toLowerCase();
+  let value = raw;
   try {
-    session = decodeURIComponent(raw).toLowerCase();
+    value = decodeURIComponent(raw);
   } catch {
     // keep raw
   }
-  return ADMIN_EMAILS.includes(session);
+  const normalized = value.toLowerCase();
+  if (isTeamMemberId(normalized)) return true;
+  return ADMIN_EMAILS.includes(normalized);
 }
 
 export async function middleware(request: NextRequest) {
@@ -44,7 +46,6 @@ export async function middleware(request: NextRequest) {
 
   if (isAdminPath) {
     if (isSupabaseConfigured()) {
-      // updateSession also accepts local session cookie as fallback
       return updateSession(request);
     }
 
