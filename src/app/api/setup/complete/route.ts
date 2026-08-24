@@ -53,7 +53,20 @@ export async function POST() {
     );
 
     if (exists) {
-      createdUsers.push(`${email} — już istnieje`);
+      const password = BOOTSTRAP_PASSWORDS[email];
+      if (password) {
+        const { error } = await supabase.auth.admin.updateUserById(exists.id, {
+          password,
+          email_confirm: true,
+        });
+        if (error) {
+          createdUsers.push(`${email} — reset błąd: ${error.message}`);
+        } else {
+          createdUsers.push(`${email} — hasło zresetowane`);
+        }
+      } else {
+        createdUsers.push(`${email} — już istnieje`);
+      }
       continue;
     }
 

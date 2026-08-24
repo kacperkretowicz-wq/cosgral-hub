@@ -32,6 +32,7 @@ export default function SetupPage() {
   const [copied, setCopied] = useState(false);
   const [dbPassword, setDbPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [migrating, setMigrating] = useState(false);
   const [result, setResult] = useState<{
     success?: boolean;
@@ -70,6 +71,26 @@ export default function SetupPage() {
     const res = await fetch("/api/setup/complete", { method: "POST" });
     const data = await res.json();
     setLoading(false);
+    setResult(data);
+  };
+
+  const handleResetPasswords = async () => {
+    if (
+      !confirm(
+        "Zresetować hasła Jakub + Kacper do startowych? (Cosgral2026!…)",
+      )
+    ) {
+      return;
+    }
+    setResetting(true);
+    setResult(null);
+    const res = await fetch("/api/setup/reset-admins", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: "RESET_ADMINS" }),
+    });
+    const data = await res.json();
+    setResetting(false);
     setResult(data);
   };
 
@@ -277,11 +298,30 @@ export default function SetupPage() {
         {keysReady && (
           <GlassCard title="Konta admin">
             <p className="mb-4 text-sm text-white/60">
-              Utwórz / sprawdź konta Jakub + Kacper.
+              Utwórz / zresetuj hasła Jakub + Kacper (startowe z setupu).
             </p>
-            <Button onClick={handleComplete} disabled={loading} className="w-full">
-              {loading ? "Tworzę konta..." : "Utwórz konta admin"}
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={handleComplete}
+                disabled={loading || resetting}
+                className="w-full"
+              >
+                {loading ? "Tworzę konta..." : "Utwórz konta admin"}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleResetPasswords}
+                disabled={loading || resetting}
+                className="w-full"
+              >
+                {resetting
+                  ? "Resetuję hasła…"
+                  : "Zresetuj hasła (gdy nie mogę się zalogować)"}
+              </Button>
+            </div>
+            <p className="mt-3 text-xs text-white/40">
+              Po resecie: jakub.gral00@gmail.com / Cosgral2026!Jakub
+            </p>
           </GlassCard>
         )}
 
