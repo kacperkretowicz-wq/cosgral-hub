@@ -34,8 +34,14 @@ function isThisMonth(iso: string) {
 }
 
 export default async function AdminDashboard() {
-  const db = getDb();
-  const clients = await db.getClients();
+  let clients: Client[] = [];
+  let clientsError = "";
+  try {
+    clients = await getDb().getClients();
+  } catch (e) {
+    clientsError =
+      e instanceof Error ? e.message : "Błąd połączenia z bazą (Supabase)";
+  }
 
   let allProjects: Project[] = [];
   let recentProjects: Project[] = [];
