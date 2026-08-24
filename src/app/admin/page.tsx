@@ -130,7 +130,20 @@ export default async function AdminDashboard() {
         </div>
       )}
 
-      {isSupabaseConfigured() && !schemaReady && (
+      {(clientsError || projectsError) && (
+        <div className="rounded-sm border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+          <p className="font-medium">Brak połączenia z Supabase</p>
+          <p className="mt-1 text-red-100/80">
+            {clientsError || projectsError}. Sprawdź, czy projekt Supabase nie
+            jest wstrzymany/usunięty, oraz czy w Netlify URL + klucze są aktualne.{" "}
+            <Link href="/admin/setup" className="underline">
+              Setup →
+            </Link>
+          </p>
+        </div>
+      )}
+
+      {isSupabaseConfigured() && !schemaReady && !clientsError && (
         <div className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
           <p className="font-medium">Schema Cosgral OS niekompletna</p>
           <p className="mt-1 text-amber-100/80">
