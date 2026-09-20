@@ -1,9 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { v4 as uuidv4 } from "uuid";
-import { promises as fs } from "fs";
-import path from "path";
 import { isSupabaseConfigured } from "./db";
 import { assertPersistentDb } from "./persistence";
+import { readJsonStore, writeJsonStore } from "./json-store";
 import {
   isMissingRelationError,
   SCHEMA_SETUP_HINT,
@@ -17,26 +16,13 @@ function getSupabase() {
   );
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
-
 async function readJson<T>(file: string, fallback: T): Promise<T> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  try {
-    const raw = await fs.readFile(path.join(DATA_DIR, file), "utf-8");
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
+  return readJsonStore(file, fallback);
 }
 
 async function writeJson<T>(file: string, data: T): Promise<void> {
   assertPersistentDb("zapis danych ops");
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(
-    path.join(DATA_DIR, file),
-    JSON.stringify(data, null, 2),
-    "utf-8",
-  );
+  await writeJsonStore(file, data);
 }
 
 export type OpsDb = ReturnType<typeof createLocalOpsDb>;

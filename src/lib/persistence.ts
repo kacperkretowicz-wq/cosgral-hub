@@ -1,4 +1,5 @@
 import { isSupabaseConfigured } from "@/lib/db";
+import { isBlobsDbEnabled } from "@/lib/json-store";
 
 /** True on Netlify / Vercel / other serverless hosts where local JSON is ephemeral. */
 export function isEphemeralHost(): boolean {
@@ -11,20 +12,22 @@ export function isEphemeralHost(): boolean {
 }
 
 /**
- * ERP data must live in Supabase on production hosts.
- * Local JSON is only for local development.
+ * ERP data must live in Supabase or Netlify Blobs on production hosts.
+ * Plain local JSON files are only for local development.
  */
 export function assertPersistentDb(action = "zapis danych"): void {
   if (isSupabaseConfigured()) return;
+  if (isBlobsDbEnabled()) return;
   if (!isEphemeralHost()) return;
 
   throw new Error(
-    `Nie można wykonać: ${action}. Supabase nie jest poprawnie skonfigurowane na serwerze ` +
-      `(sprawdź NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY i SUPABASE_SERVICE_ROLE_KEY). ` +
-      `Bez tego zlecenia i klienci nie zapisują się trwale (tryb lokalny na Netlify/Vercel).`,
+    `Nie można wykonać: ${action}. Ustaw COSGRAL_DB_MODE=blobs albo skonfiguruj Supabase ` +
+      `(NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY).`,
   );
 }
 
-export function getDbMode(): "supabase" | "local" {
-  return isSupabaseConfigured() ? "supabase" : "local";
+export function getDbMode(): "supabase" | "blobs" | "local" {
+  if (isSupabaseConfigured()) return "supabase";
+  if (isBlobsDbEnabled()) return "blobs";
+  return "local";
 }

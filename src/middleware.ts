@@ -6,6 +6,9 @@ const SESSION_COOKIE = "cosgral_admin_session";
 const ADMIN_EMAILS = TEAM.map((m) => m.email.toLowerCase());
 
 function isSupabaseConfigured(): boolean {
+  const mode = (process.env.COSGRAL_DB_MODE || "").toLowerCase();
+  if (mode === "blobs" || mode === "local") return false;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";

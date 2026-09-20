@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { getDb, isSupabaseConfigured } from "@/lib/db/client";
 import { getIntranetDb } from "@/lib/intranet-db";
+import { getDbMode } from "@/lib/persistence";
 import {
   PROJECT_STATUS_COLORS,
   PROJECT_STATUS_LABELS,
@@ -115,18 +116,24 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      {!isSupabaseConfigured() && (
+      {!isSupabaseConfigured() && getDbMode() === "local" && (
         <div className="rounded-sm border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
           <p className="font-medium">Baza nie jest podpięta — dane się nie zapisują.</p>
           <p className="mt-1 text-red-100/80">
             Na Netlify/Vercel tryb lokalny nie działa (plik znika po restarcie).
-            Ustaw klucze Supabase (w tym{" "}
-            <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code>) i uruchom
-            migracje SQL 001 + 002 oraz 007 + 008 (oferta Cosgral, OS agencji).{" "}
+            Ustaw <code className="text-xs">COSGRAL_DB_MODE=blobs</code> albo
+            klucze Supabase.{" "}
             <Link href="/admin/setup" className="underline">
               Przejdź do setup →
             </Link>
           </p>
+        </div>
+      )}
+
+      {getDbMode() === "blobs" && (
+        <div className="rounded-sm border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/70">
+          CRM działa na Netlify Blobs (razem z czatem). Stary projekt Supabase
+          jest niedostępny — dane startują od zera, zapis jest trwały.
         </div>
       )}
 

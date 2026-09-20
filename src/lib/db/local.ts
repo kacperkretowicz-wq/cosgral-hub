@@ -4,31 +4,17 @@ import { v4 as uuidv4 } from "uuid";
 import type { DbClient } from "./index";
 import type { Client, Submission, UploadedFile } from "../types";
 import { assertPersistentDb } from "../persistence";
+import { readJsonStore, writeJsonStore } from "../json-store";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 
-async function ensureDataDir() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-}
-
 async function readJson<T>(file: string, fallback: T): Promise<T> {
-  await ensureDataDir();
-  try {
-    const raw = await fs.readFile(path.join(DATA_DIR, file), "utf-8");
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
+  return readJsonStore(file, fallback);
 }
 
 async function writeJson<T>(file: string, data: T): Promise<void> {
   assertPersistentDb("zapis oferty / klienta");
-  await ensureDataDir();
-  await fs.writeFile(
-    path.join(DATA_DIR, file),
-    JSON.stringify(data, null, 2),
-    "utf-8",
-  );
+  await writeJsonStore(file, data);
 }
 
 export function createLocalDb(): DbClient {

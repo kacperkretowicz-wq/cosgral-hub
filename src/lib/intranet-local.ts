@@ -1,29 +1,15 @@
-import { promises as fs } from "fs";
-import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import type { CrmClient, Note, Project, ResourceLink } from "./types";
 import { assertPersistentDb } from "./persistence";
-
-const DATA_DIR = path.join(process.cwd(), "data");
+import { readJsonStore, writeJsonStore } from "./json-store";
 
 async function readJson<T>(file: string, fallback: T): Promise<T> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  try {
-    const raw = await fs.readFile(path.join(DATA_DIR, file), "utf-8");
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
+  return readJsonStore(file, fallback);
 }
 
 async function writeJson<T>(file: string, data: T): Promise<void> {
   assertPersistentDb("zapis danych intranetu");
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(
-    path.join(DATA_DIR, file),
-    JSON.stringify(data, null, 2),
-    "utf-8",
-  );
+  await writeJsonStore(file, data);
 }
 
 export function createLocalIntranetDb() {

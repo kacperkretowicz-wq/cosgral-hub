@@ -1,6 +1,10 @@
 import type { Client, Submission, UploadedFile } from "@/lib/types";
 
 export function isSupabaseConfigured(): boolean {
+  // Prefer Blobs CRM when explicitly selected (dead Supabase project recovery).
+  const mode = (process.env.COSGRAL_DB_MODE || "").toLowerCase();
+  if (mode === "blobs" || mode === "local") return false;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
