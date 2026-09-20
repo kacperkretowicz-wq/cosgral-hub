@@ -76,11 +76,10 @@ export async function PATCH(request: Request) {
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    const { id: _id, ...rest } = parsed as typeof parsed & { id?: string };
     const data = await updateCalendarEvent(id, {
-      ...rest,
+      ...parsed,
       reminded:
-        rest.remind_at !== undefined && rest.remind_at !== existing.remind_at
+        parsed.remind_at !== undefined && parsed.remind_at !== existing.remind_at
           ? false
           : existing.reminded,
     });

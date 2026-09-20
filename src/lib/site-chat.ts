@@ -31,7 +31,7 @@ const LOCAL_DIR = path.join(process.cwd(), "data", "site-chat");
 
 type ThreadIndex = SiteChatThread[];
 
-function useLocalFs(): boolean {
+function shouldUseLocalFs(): boolean {
   if (process.env.COSGRAL_DB_MODE === "local") return true;
   if (process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME) return false;
   if (process.env.COSGRAL_DB_MODE === "blobs") return false;
@@ -100,7 +100,7 @@ function blobsStore(): KvStore {
 }
 
 function kv(): KvStore {
-  return useLocalFs() ? localStore() : blobsStore();
+  return shouldUseLocalFs() ? localStore() : blobsStore();
 }
 
 function msgsKey(threadId: string) {
