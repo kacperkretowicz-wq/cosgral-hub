@@ -14,7 +14,7 @@ function isEphemeralHost(): boolean {
   );
 }
 
-function useBlobs(): boolean {
+function shouldUseBlobs(): boolean {
   if (process.env.COSGRAL_DB_MODE === "local") return false;
   if (process.env.COSGRAL_DB_MODE === "blobs") return true;
   return isEphemeralHost();
@@ -26,7 +26,7 @@ function blobs() {
 
 /** Persistent JSON store: Netlify Blobs in production, local files in dev. */
 export async function readJsonStore<T>(file: string, fallback: T): Promise<T> {
-  if (useBlobs()) {
+  if (shouldUseBlobs()) {
     try {
       const data = (await blobs().get(file, { type: "json" })) as T | null;
       return (data ?? fallback) as T;
@@ -45,7 +45,7 @@ export async function readJsonStore<T>(file: string, fallback: T): Promise<T> {
 }
 
 export async function writeJsonStore<T>(file: string, data: T): Promise<void> {
-  if (useBlobs()) {
+  if (shouldUseBlobs()) {
     await blobs().setJSON(file, data);
     return;
   }
@@ -59,5 +59,5 @@ export async function writeJsonStore<T>(file: string, data: T): Promise<void> {
 }
 
 export function isBlobsDbEnabled(): boolean {
-  return useBlobs();
+  return shouldUseBlobs();
 }
