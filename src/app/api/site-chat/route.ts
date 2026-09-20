@@ -40,8 +40,8 @@ export async function POST(request: Request) {
 
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
     const link = appUrl
-      ? `${appUrl}/admin/czat?thread=${thread.id}`
-      : `/admin/czat?thread=${thread.id}`;
+      ? `${appUrl}/agent-czat?thread=${thread.id}`
+      : `/agent-czat?thread=${thread.id}`;
     await notifyTelegram(
       `💬 Nowa wiadomość z strony\n${parsed.body.slice(0, 400)}\n\nOdpowiedz: ${link}`,
     );

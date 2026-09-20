@@ -3,14 +3,38 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/api-auth";
 import {
   addMessage,
+  agentCookieName,
   getMessages,
   getThread,
+  isAgentPinValid,
   listThreads,
+  parseCookie,
 } from "@/lib/site-chat";
 
+async function requireChatAgent(request: Request) {
+  const pinFromHeader = request.headers.get("x-chat-agent-pin");
+  const pinFromCookie = parseCookie(
+    request.headers.get("cookie"),
+    agentCookieName(),
+  );
+  if (isAgentPinValid(pinFromHeader) || isAgentPinValid(pinFromCookie)) {
+    return { ok: true as const };
+  }
+
+  try {
+    const auth = await requireAdmin();
+    if ("error" in auth) return { error: auth.error };
+    return { ok: true as const };
+  } catch {
+    return {
+      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+}
+
 export async function GET(request: Request) {
-  const auth = await requireAdmin();
-  if ("error" in auth) return auth.error;
+  const gate = await requireChatAgent(request);
+  if ("error" in gate) return gate.error;
 
   const { searchParams } = new URL(request.url);
   const threadId = searchParams.get("thread");
@@ -43,8 +67,8 @@ const replySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const auth = await requireAdmin();
-  if ("error" in auth) return auth.error;
+  const gate = await requireChatAgent(request);
+  if ("error" in gate) return gate.error;
 
   try {
     const parsed = replySchema.parse(await request.json());

@@ -12,6 +12,7 @@
     "setup": "node scripts/setup-supabase.mjs"
   },
   "dependencies": {
+    "@netlify/blobs": "^11.1.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.8",
     "ai": "^4.3.16",
