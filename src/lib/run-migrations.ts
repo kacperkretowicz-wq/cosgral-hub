@@ -11,6 +11,7 @@ const MIGRATION_FILES = [
   "007_offer_document.sql",
   "008_agency_os.sql",
   "009_paid_at.sql",
+  "010_site_chat.sql",
 ];
 
 function projectRef(): string {

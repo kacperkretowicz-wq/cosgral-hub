@@ -10,6 +10,7 @@ const NAV = [
   { href: "/admin/harmonogram", label: "Tydzień", icon: "▦" },
   { href: "/admin/zlecenia", label: "Zlecenia", icon: "◫" },
   { href: "/admin/leady", label: "Leady", icon: "◉" },
+  { href: "/admin/czat", label: "Czat", icon: "💬" },
   { href: "/admin/klienci", label: "Klienci", icon: "◎" },
   { href: "/admin/finanse", label: "Kasa", icon: "◈" },
   { href: "/admin/generator", label: "Oferta", icon: "✦" },
