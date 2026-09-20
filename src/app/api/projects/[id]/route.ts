@@ -5,8 +5,8 @@ import { getIntranetDb } from "@/lib/intranet-db";
 
 const updateSchema = z.object({
   title: z.string().min(1).optional(),
-  crm_client_id: z.string().uuid().nullable().optional(),
-  website_client_id: z.string().uuid().nullable().optional(),
+  crm_client_id: z.string().min(1).nullable().optional(),
+  website_client_id: z.string().nullable().optional(),
   service_type: z
     .enum([
       "strona_www",
@@ -28,7 +28,7 @@ const updateSchema = z.object({
   value_pln: z.number().nullable().optional(),
   cost_pln: z.number().nullable().optional(),
   billing_status: z
-    .enum(["wycena", "faktura", "oplacone", "anulowane"])
+    .enum(["w_toku", "rozliczone", "wycena", "faktura", "oplacone", "anulowane"])
     .optional(),
   paid_at: z.string().nullable().optional(),
 });
@@ -59,7 +59,10 @@ export async function PATCH(request: Request, { params }: Props) {
     const parsed = updateSchema.parse(body);
 
     const patch: typeof parsed & { paid_at?: string | null } = { ...parsed };
-    if (parsed.billing_status === "oplacone" && parsed.paid_at === undefined) {
+    const settled =
+      parsed.billing_status === "rozliczone" ||
+      parsed.billing_status === "oplacone";
+    if (settled && parsed.paid_at === undefined) {
       const existing = await getIntranetDb().getProject(id);
       if (existing && !existing.paid_at) {
         const today = new Date();
@@ -69,11 +72,7 @@ export async function PATCH(request: Request, { params }: Props) {
         patch.paid_at = `${y}-${m}-${d}`;
       }
     }
-    if (
-      parsed.billing_status &&
-      parsed.billing_status !== "oplacone" &&
-      parsed.paid_at === undefined
-    ) {
+    if (parsed.billing_status && !settled && parsed.paid_at === undefined) {
       patch.paid_at = null;
     }
 

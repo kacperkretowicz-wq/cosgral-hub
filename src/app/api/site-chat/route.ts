@@ -6,9 +6,9 @@ import {
   findThreadByVisitor,
   getMessages,
   getOrCreateThread,
-  notifyTelegram,
   purgeOldSiteChat,
 } from "@/lib/site-chat";
+import { notifyTeam } from "@/lib/notify";
 
 const postSchema = z.object({
   visitor_key: z.string().min(8).max(80),
@@ -38,13 +38,11 @@ export async function POST(request: Request) {
       body: parsed.body,
     });
 
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
-    const link = appUrl
-      ? `${appUrl}/agent-czat?thread=${thread.id}`
-      : `/agent-czat?thread=${thread.id}`;
-    await notifyTelegram(
-      `💬 Nowa wiadomość z strony\n${parsed.body.slice(0, 400)}\n\nOdpowiedz: ${link}`,
-    );
+    await notifyTeam({
+      title: "💬 Masz nową wiadomość od klienta",
+      body: parsed.body.slice(0, 400),
+      href: `/admin/czat?thread=${thread.id}`,
+    });
 
     return NextResponse.json(
       { thread_id: thread.id, message },

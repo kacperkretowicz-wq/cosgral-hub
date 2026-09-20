@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/api-auth";
 import { getOpsDb } from "@/lib/ops-db";
-import { isTeamMemberId } from "@/lib/team";
+import { notifyTeam } from "@/lib/notify";
+import { isTeamMemberId, teamLabel } from "@/lib/team";
 
 const createSchema = z.object({
   title: z.string().min(1),
-  project_id: z.string().uuid().nullable().optional(),
+  project_id: z.string().min(1).nullable().optional(),
   assignee: z.string().min(1),
   status: z.enum(["todo", "doing", "done"]).optional(),
   due_date: z.string().nullable().optional(),
@@ -54,6 +55,15 @@ export async function POST(request: Request) {
       due_date: parsed.due_date ?? null,
       notes: parsed.notes ?? "",
     });
+
+    await notifyTeam({
+      title: "✅ Utworzono nowy task",
+      body: `${data.title}\nDla: ${teamLabel(data.assignee)}${
+        data.due_date ? `\nTermin: ${data.due_date}` : ""
+      }`,
+      href: "/admin/tasks",
+    });
+
     return NextResponse.json(data);
   } catch (err) {
     if (err instanceof z.ZodError) {

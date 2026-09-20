@@ -1,12 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cosgral-black: #000000;
-  --color-cosgral-dark: #0a0a0a;
-  --color-cosgral-gray: #808080;
-  --color-cosgral-white: #ffffff;
+  --color-bg: #030303;
+  --color-bg-card: #0a0a0a;
+  --color-ink: #f5f5f5;
+  --color-muted: #888888;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-accent: #ffffff;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+}
+
+:root {
+  --bg: #030303;
+  --bg-card: #0a0a0a;
+  --ink: #f5f5f5;
+  --muted: #888;
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #fff;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
@@ -15,62 +27,50 @@
   }
 
   body {
-    @apply bg-black text-white antialiased;
+    background: var(--bg);
+    color: var(--ink);
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: rgba(255, 255, 255, 0.2);
   }
 }
 
 @layer utilities {
   .glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
   }
 
   .glass-strong {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
   }
 
   .grid-bg {
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 48px 48px;
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 255, 255, 0.06), transparent 55%);
   }
 
-  .glow-center {
-    background: radial-gradient(
-      ellipse 60% 50% at 50% 0%,
-      rgba(255, 255, 255, 0.06) 0%,
-      transparent 70%
-    );
+  .label-mono {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
   }
 
-  .font-serif {
-    font-family: var(--font-serif);
-  }
-}
-
-@media print {
-  body {
-    background: white !important;
-    color: black !important;
+  .ease-agency {
+    transition-timing-function: var(--ease);
   }
 
-  .offer-print-root {
-    background: white !important;
-  }
-
-  .print\:hidden {
-    display: none !important;
-  }
-
-  .offer-document {
-    max-width: none !important;
-    box-shadow: none !important;
+  .touch-row {
+    min-height: 3rem;
   }
 }

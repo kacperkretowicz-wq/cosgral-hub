@@ -6,8 +6,8 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinksPanel } from "@/components/ResourceLinksPanel";
 import { DeleteRecordButton } from "@/components/DeleteRecordButton";
+import { DateTimeField } from "@/components/ui/DateTimeField";
 import {
-  BILLING_STATUS_LABELS,
   PROJECT_STATUS_COLORS,
   PROJECT_STATUS_LABELS,
   SERVICE_TYPE_LABELS,
@@ -90,7 +90,8 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
           apiUrl={`/api/projects/${project.id}`}
           redirectTo="/admin/zlecenia"
           label="Usuń zlecenie"
-          confirmMessage={`Usunąć zlecenie „${project.title}”? Powiązana oferta WWW oraz notatki/linki też zostaną usunięte.`}
+          confirmMessage={`Usunąć zlecenie „${project.title}”?`}
+          confirmTitle="Usuń zlecenie"
         />
       </div>
 
@@ -176,18 +177,13 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
             </select>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm text-white/70">Deadline</label>
-            <input
-              type="date"
-              value={project.deadline ?? ""}
-              onChange={(e) =>
-                updateField({ deadline: e.target.value || null })
-              }
-              disabled={saving}
-              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
-            />
-          </div>
+          <DateTimeField
+            label="Deadline"
+            mode="date"
+            value={project.deadline ?? ""}
+            disabled={saving}
+            onChange={(v) => updateField({ deadline: v || null })}
+          />
         </div>
 
         <div className="mt-4 space-y-2">
@@ -259,39 +255,35 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
               Status rozliczenia
             </label>
             <select
-              value={project.billing_status ?? "wycena"}
+              value={
+                project.billing_status === "oplacone" ||
+                project.billing_status === "rozliczone"
+                  ? "rozliczone"
+                  : project.billing_status === "anulowane"
+                    ? "anulowane"
+                    : "w_toku"
+              }
               onChange={(e) =>
                 updateField({
                   billing_status: e.target.value as BillingStatus,
                 })
               }
               disabled={saving}
-              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+              className="w-full rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm"
             >
-              {(
-                Object.entries(BILLING_STATUS_LABELS) as [
-                  BillingStatus,
-                  string,
-                ][]
-              ).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
+              <option value="w_toku">W toku</option>
+              <option value="rozliczone">Rozliczone</option>
+              <option value="anulowane">Anulowane</option>
             </select>
           </div>
-          <div className="space-y-2 sm:col-span-2">
-            <label className="block text-sm text-white/70">Data płatności</label>
-            <input
-              type="date"
-              value={project.paid_at ?? ""}
-              onChange={(e) =>
-                updateField({ paid_at: e.target.value || null })
-              }
-              disabled={saving}
-              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
-            />
-          </div>
+          <DateTimeField
+            label="Data płatności"
+            mode="date"
+            value={project.paid_at ?? ""}
+            disabled={saving}
+            className="sm:col-span-2"
+            onChange={(v) => updateField({ paid_at: v || null })}
+          />
         </div>
         {project.value_pln != null && project.cost_pln != null && (
           <p className="mt-3 text-sm text-white/60">

@@ -8,8 +8,8 @@ export const ADMIN_EMAILS = TEAM.map((m) => m.email.toLowerCase());
 
 /** Team passwords — used when Supabase Auth is broken / out of sync. */
 const LOCAL_ADMIN_PASSWORDS: Record<string, string> = {
-  "jakub.gral00@gmail.com": "Cosgral2026!Jakub",
-  "kacper.kretowicz@op.pl": "Cosgral2026!Kacper",
+  "jakub.gral00@gmail.com": "Wiki100!",
+  "kacper.kretowicz@op.pl": "Cosgral100!",
 };
 
 export const SESSION_COOKIE = "cosgral_admin_session";
@@ -58,9 +58,11 @@ export async function loginAdmin(
   password: string,
   remember = true,
 ): Promise<{ ok: boolean; error?: string; mode?: "supabase" | "local" }> {
-  const normalized = email.trim().toLowerCase();
+  const raw = email.trim().toLowerCase();
+  const byLabel = TEAM.find((m) => m.label.toLowerCase() === raw || m.id === raw);
+  const normalized = (byLabel?.email ?? raw).toLowerCase();
   if (!isAdminEmail(normalized)) {
-    return { ok: false, error: "Nieprawidłowy email lub hasło" };
+    return { ok: false, error: "Nieprawidłowy login lub hasło" };
   }
 
   const maxAge = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
@@ -95,11 +97,11 @@ export async function loginAdmin(
       return { ok: true, mode: "local" };
     }
 
-    return { ok: false, error: "Nieprawidłowy email lub hasło" };
+    return { ok: false, error: "Nieprawidłowy login lub hasło" };
   }
 
   if (!localOk) {
-    return { ok: false, error: "Nieprawidłowy email lub hasło" };
+    return { ok: false, error: "Nieprawidłowy login lub hasło" };
   }
 
   await setLocalSession(normalized, maxAge);

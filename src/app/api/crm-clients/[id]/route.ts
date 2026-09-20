@@ -10,6 +10,7 @@ const updateSchema = z.object({
   phone: z.string().nullable().optional(),
   industry: z.string().nullable().optional(),
   notes: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 interface Props {

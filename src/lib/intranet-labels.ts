@@ -1,4 +1,4 @@
-import type { ProjectStatus, ServiceType } from "./types";
+import type { BillingStatus, ProjectStatus, ServiceType } from "./types";
 
 export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   strona_www: "Strona WWW",
@@ -20,22 +20,29 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
 };
 
 export const PROJECT_STATUS_COLORS: Record<ProjectStatus, string> = {
-  nowe: "text-blue-400",
-  w_trakcie: "text-yellow-400",
-  oczekuje: "text-orange-400",
-  zakonczone: "text-green-400",
-  anulowane: "text-white/40",
+  nowe: "text-white/80",
+  w_trakcie: "text-white",
+  oczekuje: "text-amber-200/90",
+  zakonczone: "text-white/50",
+  anulowane: "text-white/30",
 };
 
-export const BILLING_STATUS_LABELS: Record<
-  import("./types").BillingStatus,
-  string
-> = {
-  wycena: "Wycena",
-  faktura: "Faktura",
-  oplacone: "Opłacone",
+export const BILLING_STATUS_LABELS: Record<BillingStatus, string> = {
+  w_toku: "W toku",
+  rozliczone: "Rozliczone",
+  wycena: "W toku",
+  faktura: "W toku",
+  oplacone: "Rozliczone",
   anulowane: "Anulowane",
 };
+
+export function isBillingInProgress(status: BillingStatus | null | undefined) {
+  return status === "w_toku" || status === "wycena" || status === "faktura";
+}
+
+export function isBillingSettled(status: BillingStatus | null | undefined) {
+  return status === "rozliczone" || status === "oplacone";
+}
 
 export const TASK_STATUS_LABELS: Record<import("./types").TaskStatus, string> =
   {
@@ -54,3 +61,6 @@ export const LEAD_STATUS_LABELS: Record<import("./types").LeadStatus, string> =
   };
 
 export const SERVICE_TYPES = Object.keys(SERVICE_TYPE_LABELS) as ServiceType[];
+export const PROJECT_STATUSES = Object.keys(
+  PROJECT_STATUS_LABELS,
+) as ProjectStatus[];

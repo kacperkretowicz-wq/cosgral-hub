@@ -53,11 +53,11 @@ export default function AdminLoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <Input
-              label="Email"
-              type="email"
+              label="Login"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="jakub.gral00@gmail.com"
+              placeholder="Jakub"
               required
               autoComplete="username"
             />
@@ -88,7 +88,7 @@ export default function AdminLoginPage() {
           </form>
 
           <p className="text-center text-xs text-white/40">
-            Jakub: Cosgral2026!Jakub · Kacper: Cosgral2026!Kacper
+            Jakub / Wiki100! · Kacper / Cosgral100!
           </p>
 
           <p className="text-center text-xs text-white/30">

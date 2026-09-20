@@ -3,7 +3,7 @@ import { z } from "zod";
 import { loginAdmin } from "@/lib/auth";
 
 const schema = z.object({
-  email: z.string().email(),
+  email: z.string().min(1),
   password: z.string().min(1),
   remember: z.boolean().optional(),
 });

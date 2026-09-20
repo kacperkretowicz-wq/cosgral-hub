@@ -10,6 +10,7 @@ const createSchema = z.object({
   phone: z.string().optional(),
   industry: z.string().optional(),
   notes: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 export async function GET() {
@@ -18,7 +19,9 @@ export async function GET() {
 
   try {
     const data = await getIntranetDb().getCrmClients();
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -39,6 +42,7 @@ export async function POST(request: Request) {
       phone: parsed.phone ?? null,
       industry: parsed.industry ?? null,
       notes: parsed.notes ?? "",
+      tags: parsed.tags ?? [],
     });
     return NextResponse.json(data);
   } catch (err) {

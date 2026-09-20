@@ -87,7 +87,13 @@ export type ProjectStatus =
   | "zakonczone"
   | "anulowane";
 
-export type BillingStatus = "wycena" | "faktura" | "oplacone" | "anulowane";
+export type BillingStatus =
+  | "w_toku"
+  | "rozliczone"
+  | "wycena"
+  | "faktura"
+  | "oplacone"
+  | "anulowane";
 
 export type TaskStatus = "todo" | "doing" | "done";
 
@@ -106,6 +112,7 @@ export interface CrmClient {
   phone: string | null;
   industry: string | null;
   notes: string;
+  tags?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -172,5 +179,27 @@ export interface ResourceLink {
   title: string;
   url: string;
   category: string;
+  created_at: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string | null;
+  all_day: boolean;
+  attendees: string[];
+  notes: string;
+  remind_at: string | null;
+  reminded?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamMessage {
+  id: string;
+  channel: string;
+  author_id: string;
+  body: string;
   created_at: string;
 }

@@ -6,7 +6,7 @@ import { isTeamMemberId } from "@/lib/team";
 
 const updateSchema = z.object({
   title: z.string().min(1).optional(),
-  project_id: z.string().uuid().nullable().optional(),
+  project_id: z.string().min(1).nullable().optional(),
   assignee: z.string().optional(),
   status: z.enum(["todo", "doing", "done"]).optional(),
   due_date: z.string().nullable().optional(),

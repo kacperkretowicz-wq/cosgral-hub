@@ -1,11 +1,55 @@
-import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+"use client";
+
+import type {
+  ChangeEvent,
+  InputHTMLAttributes,
+  TextareaHTMLAttributes,
+} from "react";
+import { DateTimeField } from "@/components/ui/DateTimeField";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
 
-export function Input({ label, className = "", id, ...props }: InputProps) {
+export function Input({
+  label,
+  className = "",
+  id,
+  type,
+  value,
+  defaultValue,
+  onChange,
+  disabled,
+  ...props
+}: InputProps) {
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
+
+  if (type === "date" || type === "datetime-local") {
+    const strValue =
+      typeof value === "string"
+        ? value
+        : typeof defaultValue === "string"
+          ? defaultValue
+          : "";
+    return (
+      <DateTimeField
+        mode={type === "datetime-local" ? "datetime" : "date"}
+        label={label}
+        value={strValue}
+        disabled={disabled}
+        className={className}
+        onChange={(next) => {
+          if (!onChange) return;
+          const fake = {
+            target: { value: next },
+            currentTarget: { value: next },
+          } as ChangeEvent<HTMLInputElement>;
+          onChange(fake);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-2">
       {label && (
@@ -15,7 +59,12 @@ export function Input({ label, className = "", id, ...props }: InputProps) {
       )}
       <input
         id={inputId}
-        className={`w-full rounded-sm border border-white/20 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 outline-none transition focus:border-white/50 focus:bg-white/8 ${className}`}
+        type={type}
+        value={value}
+        defaultValue={defaultValue}
+        onChange={onChange}
+        disabled={disabled}
+        className={`w-full rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-white placeholder:text-white/30 outline-none transition focus:border-white/40 ${className}`}
         {...props}
       />
     </div>
@@ -37,7 +86,7 @@ export function Textarea({ label, className = "", id, ...props }: TextareaProps)
       )}
       <textarea
         id={inputId}
-        className={`min-h-[120px] w-full resize-y rounded-sm border border-white/20 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 outline-none transition focus:border-white/50 focus:bg-white/8 ${className}`}
+        className={`min-h-[120px] w-full resize-y rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 outline-none transition focus:border-white/40 ${className}`}
         {...props}
       />
     </div>

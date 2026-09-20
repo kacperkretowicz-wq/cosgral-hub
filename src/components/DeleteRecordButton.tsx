@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface DeleteRecordButtonProps {
   apiUrl: string;
   redirectTo: string;
   label?: string;
   confirmMessage: string;
+  confirmTitle?: string;
   className?: string;
 }
 
@@ -16,13 +18,13 @@ export function DeleteRecordButton({
   redirectTo,
   label = "Usuń",
   confirmMessage,
+  confirmTitle = "Potwierdź usunięcie",
   className = "",
 }: DeleteRecordButtonProps) {
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm(confirmMessage)) return;
-
     setLoading(true);
     try {
       const res = await fetch(apiUrl, {
@@ -32,9 +34,9 @@ export function DeleteRecordButton({
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         alert(data.error ?? "Nie udało się usunąć rekordu.");
+        setOpen(false);
         return;
       }
-      // Hard navigation so list pages don't show stale cached RSC/PWA data
       window.location.assign(redirectTo);
     } finally {
       setLoading(false);
@@ -42,13 +44,25 @@ export function DeleteRecordButton({
   };
 
   return (
-    <Button
-      variant="ghost"
-      onClick={handleDelete}
-      disabled={loading}
-      className={`text-red-400/80 hover:text-red-300 hover:bg-red-500/10 ${className}`}
-    >
-      {loading ? "Usuwanie..." : label}
-    </Button>
+    <>
+      <Button
+        variant="ghost"
+        onClick={() => setOpen(true)}
+        disabled={loading}
+        className={`text-red-400/80 hover:bg-red-500/10 hover:text-red-300 ${className}`}
+      >
+        {loading ? "Usuwanie..." : label}
+      </Button>
+      <ConfirmDialog
+        open={open}
+        title={confirmTitle}
+        body={confirmMessage}
+        confirmLabel="Usuń"
+        danger
+        busy={loading}
+        onCancel={() => setOpen(false)}
+        onConfirm={handleDelete}
+      />
+    </>
   );
 }

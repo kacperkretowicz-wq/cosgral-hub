@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { IBM_Plex_Mono, Inter } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
 
@@ -8,9 +8,15 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const ibmPlexMono = IBM_Plex_Mono({
+  weight: ["400", "500"],
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-ibm-plex-mono",
+});
+
 export const metadata: Metadata = {
   title: "Cosgral Hub",
-  description: "Intranet agencji Cosgral — zlecenia, klienci, oferty",
+  description: "Intranet agencji Cosgral — klienci, zlecenia, zespół",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -37,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl">
-      <body className={`${inter.variable} antialiased`}>
+      <body className={`${inter.variable} ${ibmPlexMono.variable} antialiased`}>
         {children}
         <PwaRegister />
       </body>

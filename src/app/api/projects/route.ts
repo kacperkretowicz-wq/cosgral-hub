@@ -6,10 +6,10 @@ import { assertPersistentDb, getDbMode } from "@/lib/persistence";
 
 const createSchema = z.object({
   title: z.string().min(1),
-  crm_client_id: z.string().uuid({
+  crm_client_id: z.string().min(1, {
     message: "Wybierz klienta CRM — zlecenie musi być do kogoś przypisane.",
   }),
-  website_client_id: z.string().uuid().nullable().optional(),
+  website_client_id: z.string().nullable().optional(),
   service_type: z.enum([
     "strona_www",
     "system_crm",
@@ -26,6 +26,11 @@ const createSchema = z.object({
   assigned_to: z.string().nullable().optional(),
   deadline: z.string().nullable().optional(),
   description: z.string().optional(),
+  value_pln: z.number().nullable().optional(),
+  cost_pln: z.number().nullable().optional(),
+  billing_status: z
+    .enum(["w_toku", "rozliczone", "wycena", "faktura", "oplacone", "anulowane"])
+    .optional(),
 });
 
 export async function GET(request: Request) {
@@ -82,9 +87,9 @@ export async function POST(request: Request) {
       assigned_to: parsed.assigned_to ?? null,
       deadline: parsed.deadline ?? null,
       description: parsed.description ?? "",
-      value_pln: null,
-      cost_pln: null,
-      billing_status: "wycena",
+      value_pln: parsed.value_pln ?? null,
+      cost_pln: parsed.cost_pln ?? null,
+      billing_status: parsed.billing_status ?? "w_toku",
       paid_at: null,
     });
     return NextResponse.json(data, {
