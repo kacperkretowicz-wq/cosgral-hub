@@ -15,8 +15,13 @@ Health: `GET /api/setup/migrate`
 | `007` | Oferta Cosgral (`offer_document`) |
 | `008` | finanse, tasks, leads |
 | `009` | `paid_at` (dokładne MTD) |
+| `010` | live chat ze strony (`site_chat_*`, retencja 24h) |
 
-## 009 — wklej jeśli health pokazuje brak paid_at
+## 010 — live chat (jeśli health pokazuje brak tabel)
+
+```sql
+-- pełny plik: supabase/migrations/010_site_chat.sql
+```
 
 ```sql
 ALTER TABLE projects
