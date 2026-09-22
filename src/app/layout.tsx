@@ -1,39 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Inter } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-inter",
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  weight: ["400", "500"],
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-ibm-plex-mono",
-});
 
 export const metadata: Metadata = {
   title: "Cosgral Hub",
   description: "Intranet agencji Cosgral — klienci, zlecenia, zespół",
   manifest: "/manifest.json",
+  applicationName: "Cosgral Hub",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Cosgral Hub",
   },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/logo.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#030303",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -43,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl">
-      <body className={`${inter.variable} ${ibmPlexMono.variable} antialiased`}>
+      <body className="antialiased">
         {children}
         <PwaRegister />
       </body>

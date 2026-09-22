@@ -6,8 +6,10 @@ import {
   notifyEmailTo,
   notifyTeam,
 } from "@/lib/notify";
+import { listPushSubscriptions } from "@/lib/push-store";
+import { isWebPushConfigured } from "@/lib/web-push";
 
-/** POST: wyślij testowe powiadomienie (WhatsApp / email / Telegram). */
+/** POST: wyślij testowe powiadomienie (WhatsApp / push / email / Telegram). */
 export async function POST() {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
@@ -18,12 +20,14 @@ export async function POST() {
     process.env.TELEGRAM_BOT_TOKEN?.trim() &&
       process.env.TELEGRAM_CHAT_ID?.trim(),
   );
+  const push = isWebPushConfigured();
+  const devices = push ? (await listPushSubscriptions()).length : 0;
 
-  if (!wa && !email && !tg) {
+  if (!wa && !email && !tg && !(push && devices > 0)) {
     return NextResponse.json(
       {
         error:
-          "Brak kanału. Ustaw WhatsApp (Green API) albo SMTP (SMTP_HOST/USER/PASS) albo RESEND_API_KEY.",
+          "Brak kanału. Włącz push na iPhonie albo ustaw WhatsApp / SMTP / Telegram.",
       },
       { status: 400 },
     );
@@ -32,7 +36,7 @@ export async function POST() {
   await notifyTeam({
     title: "🔔 Test Cosgral Hub",
     body: `Test powiadomienia.${email ? `\nEmail → ${notifyEmailTo()}` : ""}`,
-    href: "/admin",
+    href: "/admin/powiadomienia",
   });
 
   return NextResponse.json({
@@ -41,12 +45,18 @@ export async function POST() {
     email,
     email_to: notifyEmailTo(),
     telegram: tg,
+    web_push: push,
+    push_devices: devices,
+    push_sent: devices,
   });
 }
 
 export async function GET() {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
+
+  const push = isWebPushConfigured();
+  const devices = push ? (await listPushSubscriptions()).length : 0;
 
   return NextResponse.json({
     whatsapp: isWhatsAppConfigured(),
@@ -56,6 +66,8 @@ export async function GET() {
       process.env.TELEGRAM_BOT_TOKEN?.trim() &&
         process.env.TELEGRAM_CHAT_ID?.trim(),
     ),
+    web_push: push,
+    push_devices: devices,
     notify_base:
       process.env.COSGRAL_NOTIFY_BASE_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||

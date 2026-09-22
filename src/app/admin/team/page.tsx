@@ -71,7 +71,7 @@ export default function TeamChatPage() {
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+      <div className="surface min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
         {!messages.length ? (
           <p className="py-12 text-center text-sm text-white/40">
             Napisz pierwszą wiadomość do zespołu.
@@ -86,7 +86,7 @@ export default function TeamChatPage() {
                   minute: "2-digit",
                 })}
               </p>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-2.5 text-sm leading-relaxed text-white/90">
+              <div className="rounded-2xl border border-white/12 bg-white/[0.07] px-4 py-2.5 text-sm leading-relaxed text-white/90 shadow-[0_1px_0_rgba(255,255,255,0.08)_inset]">
                 {m.body}
               </div>
             </div>

@@ -65,14 +65,26 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <Link
             href="/admin/zlecenia"
             className="text-sm text-white/50 hover:text-white"
           >
             ← Zlecenia
           </Link>
-          <h1 className="mt-2 text-2xl font-bold md:text-3xl">{project.title}</h1>
+          <h1 className="mt-2">
+            <input
+              value={project.title}
+              onChange={(e) =>
+                setProject((p) => ({ ...p, title: e.target.value }))
+              }
+              onBlur={(e) => {
+                const next = e.target.value.trim();
+                if (next) void updateField({ title: next });
+              }}
+              className="w-full max-w-full bg-transparent text-2xl font-light tracking-tight text-white outline-none md:text-3xl"
+            />
+          </h1>
           {project.crm_clients ? (
             <Link
               href={`/admin/klienci/${project.crm_clients.id}`}
@@ -111,7 +123,7 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
                 updateField({ crm_client_id: e.target.value || null })
               }
               disabled={saving}
-              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+              className="glass-field w-full px-4 py-2.5 text-sm"
             >
               <option value="">— wybierz klienta —</option>
               {crmClients.map((c) => (
@@ -130,7 +142,7 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
                 updateField({ service_type: e.target.value as ServiceType })
               }
               disabled={saving}
-              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+              className="glass-field w-full px-4 py-2.5 text-sm"
             >
               {SERVICE_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -148,7 +160,7 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
                 updateField({ status: e.target.value as ProjectStatus })
               }
               disabled={saving}
-              className={`w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm ${PROJECT_STATUS_COLORS[project.status]}`}
+              className={`glass-field w-full px-4 py-2.5 text-sm ${PROJECT_STATUS_COLORS[project.status]}`}
             >
               {Object.entries(PROJECT_STATUS_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -166,7 +178,7 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
                 updateField({ assigned_to: e.target.value || null })
               }
               disabled={saving}
-              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+              className="glass-field w-full px-4 py-2.5 text-sm"
             >
               <option value="">— nieprzypisane —</option>
               {TEAM.map((m) => (
@@ -195,7 +207,7 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
               setProject((p) => ({ ...p, description: e.target.value }))
             }
             rows={3}
-            className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+            className="glass-field w-full rounded-2xl px-4 py-3 text-sm"
           />
         </div>
 
@@ -224,7 +236,7 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
                 })
               }
               disabled={saving}
-              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+              className="glass-field w-full px-4 py-2.5 text-sm"
             />
           </div>
           <div className="space-y-2">
@@ -247,7 +259,7 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
                 })
               }
               disabled={saving}
-              className="w-full rounded-sm border border-white/20 bg-white/5 px-3 py-2 text-sm"
+              className="glass-field w-full px-4 py-2.5 text-sm"
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
@@ -269,7 +281,7 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
                 })
               }
               disabled={saving}
-              className="w-full rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm"
+              className="glass-field w-full px-4 py-2.5 text-sm"
             >
               <option value="w_toku">W toku</option>
               <option value="rozliczone">Rozliczone</option>

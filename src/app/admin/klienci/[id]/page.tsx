@@ -107,7 +107,7 @@ export default async function KlientDetailPage({ params }: Props) {
           {!projects.length ? (
             <p className="text-sm text-white/40">Brak zleceń dla tego klienta.</p>
           ) : (
-            <ul className="divide-y divide-white/10 border-y border-white/10">
+            <ul className="surface-list divide-y divide-white/8">
               {projects.map((p) => (
                 <li key={p.id}>
                   <Link

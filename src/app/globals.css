@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url("https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap");
 
 @theme {
   --color-bg: #030303;
@@ -7,63 +8,228 @@
   --color-muted: #888888;
   --color-border: rgba(255, 255, 255, 0.1);
   --color-accent: #ffffff;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  --font-sans: "Satoshi", system-ui, sans-serif;
+  --font-mono: "Satoshi", ui-monospace, monospace;
+  --font-display: "Satoshi", system-ui, sans-serif;
 }
 
 :root {
   --bg: #030303;
+  --bg-elevated: #0a0a0a;
   --bg-card: #0a0a0a;
   --ink: #f5f5f5;
-  --muted: #888;
+  --muted: #888888;
   --border: rgba(255, 255, 255, 0.1);
-  --accent: #fff;
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --accent: #ffffff;
+  --accent-deep: #f5f5f5;
+  --accent-soft: rgba(255, 255, 255, 0.08);
+  --ghost: #121212;
+  --obsidian: #030303;
+  --glow: rgba(255, 255, 255, 0.22);
+  --glass: rgba(255, 255, 255, 0.055);
+  --glass-strong: rgba(18, 18, 18, 0.38);
+  --glass-highlight: rgba(255, 255, 255, 0.22);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer base {
   html {
     @apply scroll-smooth;
+    background: var(--bg);
   }
 
   body {
-    background: var(--bg);
+    background: transparent;
     color: var(--ink);
     font-family: var(--font-sans);
+    font-weight: 400;
     -webkit-font-smoothing: antialiased;
   }
 
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    pointer-events: none;
+    opacity: 0.07;
+    mix-blend-mode: overlay;
+    background-image: url("/cosgral/charcoal-grain.jpg");
+    background-size: 280px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+
   ::selection {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.22);
   }
 }
 
 @layer utilities {
+  .display-title {
+    font-family: var(--font-display);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    text-transform: none;
+    line-height: 1.05;
+  }
+
   .glass {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid var(--border);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.04) 100%
+    );
+    backdrop-filter: blur(36px) saturate(1.55);
+    -webkit-backdrop-filter: blur(36px) saturate(1.55);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow:
+      0 1px 0 var(--glass-highlight) inset,
+      0 12px 40px rgba(0, 0, 0, 0.22);
   }
 
   .glass-strong {
-    background: rgba(255, 255, 255, 0.07);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    background: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(12, 12, 12, 0.42) 48%,
+      rgba(8, 8, 8, 0.5) 100%
+    );
+    backdrop-filter: blur(42px) saturate(1.65);
+    -webkit-backdrop-filter: blur(42px) saturate(1.65);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.2) inset,
+      0 18px 50px rgba(0, 0, 0, 0.28);
+  }
+
+  .glass-pill {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.06) 100%
+    );
+    backdrop-filter: blur(48px) saturate(1.8);
+    -webkit-backdrop-filter: blur(48px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.28) inset,
+      0 0 0 0.5px rgba(255, 255, 255, 0.08) inset,
+      0 18px 48px rgba(0, 0, 0, 0.35);
+  }
+
+  .surface {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.09) 0%,
+      rgba(255, 255, 255, 0.035) 100%
+    );
+    backdrop-filter: blur(32px) saturate(1.5);
+    -webkit-backdrop-filter: blur(32px) saturate(1.5);
     border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 1.15rem;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.16) inset,
+      0 10px 32px rgba(0, 0, 0, 0.18);
+  }
+
+  .surface-list {
+    overflow: hidden;
+    border-radius: 1.15rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.03) 100%
+    );
+    backdrop-filter: blur(32px) saturate(1.5);
+    -webkit-backdrop-filter: blur(32px) saturate(1.5);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.14) inset;
+  }
+
+  .glass-field {
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: inherit;
+    outline: none;
+    color-scheme: dark;
+  }
+  .glass-field:focus {
+    border-color: rgba(255, 255, 255, 0.38);
+  }
+  .glass-field option {
+    background: #0a0a0a;
+    color: #f5f5f5;
+  }
+
+  .ambient-bg {
+    background: transparent;
   }
 
   .grid-bg {
-    background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 255, 255, 0.06), transparent 55%);
+    background-image: none;
+  }
+
+  .glow-center {
+    background-image: none;
+  }
+
+  .cosgral-grain {
+    opacity: 0.07;
+    mix-blend-mode: overlay;
+    background-image: url("/cosgral/charcoal-grain.jpg");
+    background-size: 280px;
+  }
+
+  .cosgral-cursor-blur {
+    width: 80vmax;
+    height: 80vmax;
+    margin: -40vmax 0 0 -40vmax;
+    pointer-events: none;
+    background: radial-gradient(
+      circle closest-side,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.085) 10%,
+      rgba(255, 255, 255, 0.055) 22%,
+      rgba(255, 255, 255, 0.04) 30%,
+      rgba(255, 255, 255, 0.028) 40%,
+      rgba(255, 255, 255, 0.012) 50%,
+      rgba(255, 255, 255, 0.004) 58%,
+      transparent 66%
+    );
+    opacity: 0.55;
+    transform: translate3d(50vw, 50vh, 0);
+    will-change: transform;
+  }
+
+  .cosgral-wordmark {
+    font-family: var(--font-display);
+    font-weight: 300;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    line-height: 0.82;
+    color: rgba(255, 255, 255, 0.92);
   }
 
   .label-mono {
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.18em;
+    font-family: var(--font-sans);
+    font-size: 0.65rem;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--muted);
+    font-weight: 500;
   }
 
   .ease-agency {
@@ -72,5 +238,24 @@
 
   .touch-row {
     min-height: 3rem;
+  }
+
+  .safe-pb {
+    padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-pt {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+}
+
+@keyframes sheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

@@ -325,7 +325,7 @@ export function SiteChatWorkspace({
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-[300px_1fr]">
-        <section className="flex max-h-[70vh] flex-col rounded-2xl border border-white/10 bg-white/[0.03]">
+        <section className="surface flex max-h-[70vh] flex-col">
           <div className="flex items-center justify-between border-b border-white/10 px-3 py-2.5">
             <span className="label-mono">
               {view === "inbox" ? "Rozmowy" : "Kosz"}
@@ -371,7 +371,7 @@ export function SiteChatWorkspace({
           </div>
         </section>
 
-        <section className="flex max-h-[70vh] flex-col rounded-2xl border border-white/10 bg-white/[0.03]">
+        <section className="surface flex max-h-[70vh] flex-col">
           <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
             <p className="min-w-0 truncate text-sm text-white/60">
               {active

@@ -1,5 +1,5 @@
 /**
- * Team notifications → WhatsApp group (Green API) + email + optional Telegram.
+ * Team notifications → WhatsApp group (Green API) + iPhone Web Push + email + optional Telegram.
  *
  * Email → kontakt@cosgral.pl (domyślnie):
  *   NOTIFY_EMAIL_TO=kontakt@cosgral.pl
@@ -14,6 +14,9 @@
  * WhatsApp (grupa):
  *   WHATSAPP_GREEN_ID_INSTANCE / WHATSAPP_GREEN_API_TOKEN / WHATSAPP_CHAT_ID
  *   WHATSAPP_GREEN_API_URL
+ *
+ * iPhone / PWA Web Push:
+ *   NEXT_PUBLIC_VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT
  *
  * Telegram (opcjonalnie):
  *   TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID
@@ -208,13 +211,15 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Send to WhatsApp + email + Telegram (whichever configured). */
+/** Send to WhatsApp + iPhone push + email + Telegram (whichever configured). */
 export async function notifyTeam(payload: NotifyPayload): Promise<void> {
   const text = formatMessage(payload);
+  const { sendWebPush } = await import("./web-push");
   await Promise.allSettled([
     sendWhatsApp(text),
     sendTelegram(text),
     sendEmail(payload),
+    sendWebPush(payload),
   ]);
 }
 

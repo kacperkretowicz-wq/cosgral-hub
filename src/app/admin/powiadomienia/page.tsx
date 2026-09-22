@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { PageHeader, StatusPill } from "@/components/ui/CrmUi";
+import { PushEnableCard } from "@/components/PushEnableCard";
 
 export default function PowiadomieniaPage() {
   const [status, setStatus] = useState<{
@@ -10,6 +11,8 @@ export default function PowiadomieniaPage() {
     email: boolean;
     email_to?: string;
     telegram: boolean;
+    web_push?: boolean;
+    push_devices?: number;
     notify_base: string | null;
   } | null>(null);
   const [msg, setMsg] = useState("");
@@ -34,9 +37,23 @@ export default function PowiadomieniaPage() {
     }
     const parts = [];
     if (data.whatsapp) parts.push("WhatsApp");
+    if (data.web_push) {
+      parts.push(
+        `iPhone/push${typeof data.push_sent === "number" ? ` (${data.push_sent})` : ""}`,
+      );
+    }
     if (data.email) parts.push(`email (${data.email_to || "kontakt@cosgral.pl"})`);
     if (data.telegram) parts.push("Telegram");
     setMsg(`Wysłano test → ${parts.join(" + ") || "brak kanału"}`);
+    setStatus((s) =>
+      s
+        ? {
+            ...s,
+            web_push: Boolean(data.web_push),
+            push_devices: data.push_devices ?? s.push_devices,
+          }
+        : s,
+    );
   };
 
   return (
@@ -44,12 +61,20 @@ export default function PowiadomieniaPage() {
       <PageHeader
         eyebrow="Hub"
         title="Powiadomienia"
-        description="WhatsApp (grupa) + email kontakt@cosgral.pl — z linkiem do strony w Hubie."
+        description="WhatsApp + push na iPhone (ikona z ekranu) + email — ten sam alert, kilka kanałów."
       />
+
+      <PushEnableCard />
 
       <div className="flex flex-wrap gap-2">
         <StatusPill tone={status?.whatsapp ? "ok" : "warn"}>
           WhatsApp {status?.whatsapp ? "OK" : "brak"}
+        </StatusPill>
+        <StatusPill tone={status?.web_push ? "ok" : "warn"}>
+          Push{" "}
+          {status?.web_push
+            ? `OK${status.push_devices ? ` · ${status.push_devices} urz.` : ""}`
+            : "brak VAPID"}
         </StatusPill>
         <StatusPill tone={status?.email ? "ok" : "warn"}>
           Email {status?.email ? `OK → ${status.email_to}` : "brak SMTP"}
@@ -60,19 +85,15 @@ export default function PowiadomieniaPage() {
       </div>
 
       <div className="space-y-3 text-sm leading-relaxed text-white/60">
-        <p className="label-mono text-white/45">Email (Seohost)</p>
-        <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-4 font-mono text-[0.7rem] text-white/75">
-          {`NOTIFY_EMAIL_TO=kontakt@cosgral.pl
-NOTIFY_EMAIL_FROM=Cosgral Hub <kontakt@cosgral.pl>
-SMTP_HOST=smtp.seohost.pl
-SMTP_PORT=587
-SMTP_USER=kontakt@cosgral.pl
-SMTP_PASS=haslo-skrzynki`}
-        </pre>
-        <p>
-          Host SMTP weź z panelu Seohost (często{" "}
-          <code className="text-white/80">smtp.seohost.pl</code> albo{" "}
-          <code className="text-white/80">mail.cosgral.pl</code>).
+        <p className="label-mono text-white/45">Jak dodać Hub na iPhone</p>
+        <ol className="list-decimal space-y-1.5 pl-5">
+          <li>Safari → otwórz publiczny URL Huba (HTTPS).</li>
+          <li>Udostępnij → Do ekranu początkowego → Dodaj.</li>
+          <li>Otwórz ikonę Cosgral → Powiadomienia → Włącz push.</li>
+        </ol>
+        <p className="text-xs text-white/40">
+          iOS 16.4+. Push działa tylko z aplikacji dodanej do ekranu, nie z karty
+          Safari.
         </p>
       </div>
 
@@ -83,7 +104,7 @@ SMTP_PASS=haslo-skrzynki`}
       </p>
 
       <Button type="button" onClick={() => void sendTest()} disabled={busy}>
-        {busy ? "Wysyłanie…" : "Wyślij test"}
+        {busy ? "Wysyłanie…" : "Wyślij test (WhatsApp + push + email)"}
       </Button>
       {msg ? <p className="text-sm text-white/55">{msg}</p> : null}
     </div>

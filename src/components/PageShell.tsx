@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { CosgralBrand } from "@/components/CosgralLogo";
+import { CosgralAmbient } from "@/components/CosgralAmbient";
 
 interface PageShellProps {
   children: ReactNode;
@@ -16,8 +17,8 @@ export function PageShell({
   logoSize = "md",
 }: PageShellProps) {
   return (
-    <div className="relative min-h-screen bg-black">
-      <div className="pointer-events-none fixed inset-0 grid-bg glow-center" />
+    <div className="relative min-h-screen">
+      <CosgralAmbient />
       <div className="relative z-10">
         {showLogo && (
           <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-8">

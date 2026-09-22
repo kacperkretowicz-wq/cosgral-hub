@@ -49,7 +49,7 @@ export function CosgralBrand({
           <p className="text-xs tracking-[0.25em] text-white/50 uppercase">
             Cosgral
           </p>
-          <p className="text-sm font-bold leading-tight">
+          <p className="text-sm font-bold leading-tight text-white">
             {subtitle ?? "Agency"}
           </p>
         </div>

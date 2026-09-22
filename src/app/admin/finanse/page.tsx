@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { EmptyState, PageHeader, StatusPill } from "@/components/ui/CrmUi";
+import { BarChart, DonutChart } from "@/components/ui/GlassChart";
 import {
   isBillingInProgress,
   isBillingSettled,
@@ -74,6 +75,28 @@ export default function FinansePage() {
     () => withValue.filter((p) => isBillingSettled(p.billing_status)),
     [withValue],
   );
+  const billingChart = useMemo(
+    () =>
+      [
+        { label: "W toku", value: wToku },
+        {
+          label: "Rozliczone",
+          value: settled.reduce((s, p) => s + (p.value_pln ?? 0), 0),
+        },
+      ].filter((i) => i.value > 0),
+    [wToku, settled],
+  );
+  const topValues = useMemo(
+    () =>
+      [...withValue]
+        .sort((a, b) => (b.value_pln ?? 0) - (a.value_pln ?? 0))
+        .slice(0, 6)
+        .map((p) => ({
+          label: p.title,
+          value: p.value_pln ?? 0,
+        })),
+    [withValue],
+  );
 
   return (
     <div>
@@ -89,8 +112,8 @@ export default function FinansePage() {
         </div>
       ) : null}
 
-      <div className="mb-10 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+      <div className="mb-6 grid gap-3 sm:grid-cols-2">
+        <div className="surface p-5 sm:p-6">
           <p className="label-mono mb-2">W toku</p>
           <p className="text-3xl font-semibold tracking-tight text-white">
             {formatPln(wToku)} zł
@@ -99,7 +122,7 @@ export default function FinansePage() {
             {inProgress.length} zleceń nierozliczonych
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <div className="surface p-5 sm:p-6">
           <p className="label-mono mb-2">Od początku</p>
           <p className="text-3xl font-semibold tracking-tight text-white">
             {formatPln(lifetime)} zł
@@ -110,11 +133,28 @@ export default function FinansePage() {
         </div>
       </div>
 
+      {(billingChart.length > 0 || topValues.length > 0) && (
+        <div className="mb-10 grid gap-3 lg:grid-cols-2">
+          {billingChart.length ? (
+            <section className="surface p-5">
+              <p className="label-mono mb-4">Podział kwot</p>
+              <DonutChart items={billingChart} />
+            </section>
+          ) : null}
+          {topValues.length ? (
+            <section className="surface p-5">
+              <p className="label-mono mb-4">Największe zlecenia</p>
+              <BarChart items={topValues} />
+            </section>
+          ) : null}
+        </div>
+      )}
+
       <p className="label-mono mb-3">W toku — lista</p>
       {!inProgress.length ? (
         <EmptyState title="Nic w toku" description="Wszystkie zlecenia z ceną są rozliczone albo brak kwot." />
       ) : (
-        <ul className="mb-10 divide-y divide-white/10 border-y border-white/10">
+        <ul className="mb-10 surface-list divide-y divide-white/8">
           {inProgress.map((p) => (
             <li
               key={p.id}
@@ -149,7 +189,7 @@ export default function FinansePage() {
       {!settled.length ? (
         <p className="text-sm text-white/40">Brak rozliczonych.</p>
       ) : (
-        <ul className="divide-y divide-white/10 border-y border-white/10">
+        <ul className="surface-list divide-y divide-white/8">
           {settled.map((p) => (
             <li
               key={p.id}

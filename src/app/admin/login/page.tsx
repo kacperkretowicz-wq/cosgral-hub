@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell } from "@/components/PageShell";
 import { CosgralLogo } from "@/components/CosgralLogo";
+import { DigitalField } from "@/components/DigitalField";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -38,18 +39,31 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <PageShell logoHref="/admin/login" logoSize="lg">
-      <div className="mx-auto max-w-md pt-8">
-        <div className="glass rounded-lg p-8 space-y-6">
-          <div className="space-y-4 text-center">
-            <div className="flex justify-center">
-              <CosgralLogo size="xl" priority />
-            </div>
-            <h1 className="text-2xl font-bold">Cosgral Hub</h1>
-            <p className="text-sm text-white/50">
-              Zaloguj się do panelu zespołu
+    <PageShell showLogo={false}>
+      <div className="mx-auto grid max-w-5xl gap-6 pt-4 md:grid-cols-2 md:pt-10">
+        <DigitalField
+          variant="www"
+          className="hidden min-h-[420px] md:block"
+          veil={15}
+          priority
+        />
+
+        <div className="surface flex flex-col justify-center space-y-6 p-7 md:p-9">
+          <div className="space-y-4">
+            <CosgralLogo size="lg" priority />
+            <p className="label-mono">Cosgral Hub</p>
+            <h1 className="cosgral-wordmark text-3xl md:text-4xl">COSGRAL</h1>
+            <p className="text-[0.7rem] uppercase leading-relaxed tracking-[0.22em] text-white/45">
+              Projektujemy i wdrażamy produkty cyfrowe dla firm
             </p>
           </div>
+
+          <DigitalField
+            variant="grafika"
+            className="h-28 md:hidden"
+            veil={25}
+            priority
+          />
 
           <form onSubmit={handleLogin} className="space-y-4">
             <Input
@@ -70,12 +84,12 @@ export default function AdminLoginPage() {
               autoComplete="current-password"
             />
 
-            <label className="flex items-center gap-2 text-sm text-white/60">
+            <label className="flex items-center gap-2 text-sm text-white/50">
               <input
                 type="checkbox"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
-                className="accent-white"
+                className="accent-[var(--accent)]"
               />
               Zapamiętaj mnie (30 dni)
             </label>
@@ -87,12 +101,12 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-xs text-white/40">
+          <p className="text-center text-xs text-white/35">
             Jakub / Wiki100! · Kacper / Cosgral100!
           </p>
 
           <p className="text-center text-xs text-white/30">
-            <a href="/admin/setup" className="underline hover:text-white/50">
+            <a href="/admin/setup" className="underline hover:text-white/60">
               Pierwsze uruchomienie? Skonfiguruj Supabase →
             </a>
           </p>

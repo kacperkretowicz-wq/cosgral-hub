@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { EmptyState, PageHeader, StatusPill } from "@/components/ui/CrmUi";
+import { BarChart, DonutChart } from "@/components/ui/GlassChart";
 import {
   BILLING_STATUS_LABELS,
   PROJECT_STATUS_LABELS,
@@ -43,6 +44,19 @@ export function ZleceniaListClient({ projects }: { projects: Project[] }) {
     });
   }, [projects, status, service, assignee, billing, clientQ]);
 
+  const statusChart = Object.entries(PROJECT_STATUS_LABELS)
+    .map(([k, label]) => ({
+      label,
+      value: projects.filter((p) => p.status === k).length,
+    }))
+    .filter((i) => i.value > 0);
+  const serviceChart = Object.entries(SERVICE_TYPE_LABELS)
+    .map(([k, label]) => ({
+      label,
+      value: projects.filter((p) => p.service_type === k).length,
+    }))
+    .filter((i) => i.value > 0);
+
   return (
     <div>
       <PageHeader
@@ -67,14 +81,14 @@ export function ZleceniaListClient({ projects }: { projects: Project[] }) {
       />
 
       <div
-        className={`mb-6 grid gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:grid-cols-2 lg:grid-cols-5 ${
+        className={`mb-6 grid gap-2 surface p-4 sm:grid-cols-2 lg:grid-cols-5 ${
           filtersOpen ? "grid" : "hidden md:grid"
         }`}
       >
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as ProjectStatus | "")}
-          className="rounded-full border border-white/15 bg-black/40 px-4 py-2.5 text-sm"
+          className="glass-field px-4 py-2.5 text-sm"
         >
           <option value="">Status</option>
           {Object.entries(PROJECT_STATUS_LABELS).map(([k, v]) => (
@@ -86,7 +100,7 @@ export function ZleceniaListClient({ projects }: { projects: Project[] }) {
         <select
           value={service}
           onChange={(e) => setService(e.target.value as ServiceType | "")}
-          className="rounded-full border border-white/15 bg-black/40 px-4 py-2.5 text-sm"
+          className="glass-field px-4 py-2.5 text-sm"
         >
           <option value="">Usługa</option>
           {SERVICE_TYPES.map((t) => (
@@ -98,7 +112,7 @@ export function ZleceniaListClient({ projects }: { projects: Project[] }) {
         <select
           value={assignee}
           onChange={(e) => setAssignee(e.target.value)}
-          className="rounded-full border border-white/15 bg-black/40 px-4 py-2.5 text-sm"
+          className="glass-field px-4 py-2.5 text-sm"
         >
           <option value="">Assignee</option>
           {TEAM.map((m) => (
@@ -112,7 +126,7 @@ export function ZleceniaListClient({ projects }: { projects: Project[] }) {
           onChange={(e) =>
             setBilling(e.target.value as "w_toku" | "rozliczone" | "")
           }
-          className="rounded-full border border-white/15 bg-black/40 px-4 py-2.5 text-sm"
+          className="glass-field px-4 py-2.5 text-sm"
         >
           <option value="">Billing</option>
           <option value="w_toku">W toku</option>
@@ -122,9 +136,22 @@ export function ZleceniaListClient({ projects }: { projects: Project[] }) {
           value={clientQ}
           onChange={(e) => setClientQ(e.target.value)}
           placeholder="Klient…"
-          className="rounded-full border border-white/15 bg-black/40 px-4 py-2.5 text-sm outline-none focus:border-white/35"
+          className="glass-field px-4 py-2.5 text-sm outline-none"
         />
       </div>
+
+      {projects.length > 0 ? (
+        <div className="mb-6 grid gap-3 md:grid-cols-2">
+          <section className="surface p-5">
+            <p className="label-mono mb-4">Status</p>
+            <DonutChart items={statusChart} size={128} />
+          </section>
+          <section className="surface p-5">
+            <p className="label-mono mb-4">Usługi</p>
+            <BarChart items={serviceChart} />
+          </section>
+        </div>
+      ) : null}
 
       {!filtered.length ? (
         <EmptyState
@@ -137,12 +164,12 @@ export function ZleceniaListClient({ projects }: { projects: Project[] }) {
           }
         />
       ) : (
-        <ul className="divide-y divide-white/10 border-y border-white/10">
+        <ul className="surface-list divide-y divide-white/10">
           {filtered.map((project) => (
             <li key={project.id}>
               <Link
                 href={`/admin/zlecenia/${project.id}`}
-                className="flex min-h-[72px] items-center justify-between gap-4 py-4 transition hover:bg-white/[0.03]"
+                className="flex min-h-[72px] items-center justify-between gap-3 px-3 py-4 transition hover:bg-white/[0.04] sm:gap-4 md:px-5"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium">{project.title}</p>
@@ -164,15 +191,15 @@ export function ZleceniaListClient({ projects }: { projects: Project[] }) {
                     </StatusPill>
                   </div>
                 </div>
-                <div className="shrink-0 text-right text-sm text-white/55">
-                  {project.value_pln != null
-                    ? `${project.value_pln.toLocaleString("pl-PL")} zł`
-                    : "—"}
-                  {project.deadline ? (
-                    <p className="mt-1 text-xs text-white/30">
-                      {new Date(project.deadline).toLocaleDateString("pl-PL")}
-                    </p>
-                  ) : null}
+                <div className="shrink-0 text-right">
+                  <p className="text-[0.65rem] uppercase tracking-[0.14em] text-white/70">
+                    Edytuj
+                  </p>
+                  <p className="mt-1 text-sm text-white/45">
+                    {project.value_pln != null
+                      ? `${project.value_pln.toLocaleString("pl-PL")} zł`
+                      : "—"}
+                  </p>
                 </div>
               </Link>
             </li>

@@ -59,45 +59,45 @@ export function CrmClientEditor({ client }: Props) {
         onChange={(e) => setCompanyName(e.target.value)}
         required
         placeholder="Firma"
-        className="w-full rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/35"
+        className="glass-field w-full px-4 py-2.5 text-sm"
       />
       <input
         value={contactName}
         onChange={(e) => setContactName(e.target.value)}
         placeholder="Osoba kontaktowa"
-        className="w-full rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/35"
+        className="glass-field w-full px-4 py-2.5 text-sm"
       />
       <input
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         type="email"
         placeholder="Email"
-        className="w-full rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/35"
+        className="glass-field w-full px-4 py-2.5 text-sm"
       />
       <input
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         placeholder="Telefon"
-        className="w-full rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/35"
+        className="glass-field w-full px-4 py-2.5 text-sm"
       />
       <input
         value={industry}
         onChange={(e) => setIndustry(e.target.value)}
         placeholder="Branża"
-        className="w-full rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/35"
+        className="glass-field w-full px-4 py-2.5 text-sm"
       />
       <input
         value={tags}
         onChange={(e) => setTags(e.target.value)}
         placeholder="Tagi (po przecinku)"
-        className="w-full rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-sm outline-none focus:border-white/35"
+        className="glass-field w-full px-4 py-2.5 text-sm"
       />
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         rows={3}
         placeholder="Notatki ogólne"
-        className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm outline-none focus:border-white/35"
+        className="glass-field w-full rounded-2xl px-4 py-3 text-sm"
       />
       {message && (
         <p

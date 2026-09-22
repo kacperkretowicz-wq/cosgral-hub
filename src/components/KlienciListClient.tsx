@@ -76,7 +76,7 @@ export function KlienciListClient({ clients }: { clients: CrmClient[] }) {
       />
 
       <div
-        className={`mb-6 space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 ${
+        className={`mb-6 space-y-3 surface p-4 ${
           filtersOpen ? "block" : "hidden md:block"
         }`}
       >
@@ -84,13 +84,13 @@ export function KlienciListClient({ clients }: { clients: CrmClient[] }) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Szukaj: firma, kontakt, email, telefon…"
-          className="w-full rounded-full border border-white/15 bg-black/40 px-4 py-2.5 text-sm outline-none focus:border-white/35"
+          className="glass-field w-full px-4 py-2.5 text-sm"
         />
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <select
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
-            className="rounded-full border border-white/15 bg-black/40 px-4 py-2.5 text-sm"
+            className="glass-field px-4 py-2.5 text-sm"
           >
             <option value="">Branża — wszystkie</option>
             {industries.map((i) => (
@@ -102,7 +102,7 @@ export function KlienciListClient({ clients }: { clients: CrmClient[] }) {
           <select
             value={tag}
             onChange={(e) => setTag(e.target.value)}
-            className="rounded-full border border-white/15 bg-black/40 px-4 py-2.5 text-sm"
+            className="glass-field px-4 py-2.5 text-sm"
           >
             <option value="">Tag — wszystkie</option>
             {allTags.map((t) => (
@@ -143,12 +143,12 @@ export function KlienciListClient({ clients }: { clients: CrmClient[] }) {
           }
         />
       ) : (
-        <ul className="divide-y divide-white/10 border-y border-white/10">
+        <ul className="surface-list divide-y divide-white/10">
           {filtered.map((client) => (
             <li key={client.id}>
               <Link
                 href={`/admin/klienci/${client.id}`}
-                className="flex min-h-[72px] items-center justify-between gap-4 py-4 transition hover:bg-white/[0.03]"
+                className="flex min-h-[72px] items-center justify-between gap-3 px-3 py-4 transition hover:bg-white/[0.04] sm:gap-4 md:px-5"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium text-white">
@@ -166,9 +166,15 @@ export function KlienciListClient({ clients }: { clients: CrmClient[] }) {
                     </div>
                   ) : null}
                 </div>
-                <div className="shrink-0 text-right text-xs text-white/35">
-                  {client.email ? <p>{client.email}</p> : null}
-                  {client.phone ? <p>{client.phone}</p> : null}
+                <div className="shrink-0 text-right">
+                  <p className="text-[0.65rem] uppercase tracking-[0.14em] text-white/70">
+                    Edytuj
+                  </p>
+                  {client.email ? (
+                    <p className="mt-1 max-w-[9rem] truncate text-xs text-white/45 sm:max-w-none">
+                      {client.email}
+                    </p>
+                  ) : null}
                 </div>
               </Link>
             </li>

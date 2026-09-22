@@ -1,5 +1,5 @@
-const CACHE = "cosgral-hub-v2";
-const PRECACHE = ["/", "/logo.png", "/manifest.json"];
+const CACHE = "cosgral-hub-v3";
+const PRECACHE = ["/", "/logo.png", "/manifest.json", "/icons/icon-192.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -25,7 +25,6 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
-  // Never serve stale admin / API HTML from cache after deletes
   if (url.pathname.startsWith("/admin") || url.pathname.startsWith("/api")) {
     event.respondWith(fetch(event.request));
     return;
@@ -35,5 +34,61 @@ self.addEventListener("fetch", (event) => {
     fetch(event.request).catch(() =>
       caches.match(event.request).then((r) => r || caches.match("/")),
     ),
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let data = {
+    title: "Cosgral Hub",
+    body: "Nowe powiadomienie",
+    url: "/admin",
+    tag: "cosgral-hub",
+  };
+
+  try {
+    if (event.data) {
+      const parsed = event.data.json();
+      data = { ...data, ...parsed };
+    }
+  } catch {
+    try {
+      const text = event.data?.text();
+      if (text) data.body = text;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Cosgral Hub", {
+      body: data.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      tag: data.tag || "cosgral-hub",
+      renotify: true,
+      data: { url: data.url || "/admin" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || "/admin";
+  const absolute = new URL(target, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if ("focus" in client) {
+            client.navigate(absolute);
+            return client.focus();
+          }
+        }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(absolute);
+        }
+      }),
   );
 });

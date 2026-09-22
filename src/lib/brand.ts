@@ -1,5 +1,5 @@
-export const LOGO_SRC = "/logo.png";
-export const LOGO_ALT = "Cosgral Agency";
+export const LOGO_SRC = "/cosgral/logo-cube.png";
+export const LOGO_ALT = "COSGRAL";
 
 export const LOGO_SIZES = {
   sm: 32,

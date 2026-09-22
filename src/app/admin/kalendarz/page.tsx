@@ -145,7 +145,7 @@ export default function KalendarzPage() {
 
       <form
         onSubmit={addEvent}
-        className="mb-8 space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+        className="mb-8 space-y-3 surface p-4"
       >
         <input
           value={title}
@@ -266,7 +266,7 @@ export default function KalendarzPage() {
         {!upcoming.length ? (
           <EmptyState title="Brak nadchodzących wydarzeń" />
         ) : (
-          <ul className="divide-y divide-white/10 border-y border-white/10">
+          <ul className="surface-list divide-y divide-white/8">
             {upcoming.map((ev) => (
               <li key={ev.id} className="flex items-start justify-between gap-3 py-4">
                 <div>
@@ -296,7 +296,7 @@ export default function KalendarzPage() {
         {!events.length ? (
           <EmptyState title="Kalendarz pusty" />
         ) : (
-          <ul className="divide-y divide-white/10 border-y border-white/10">
+          <ul className="surface-list divide-y divide-white/8">
             {events.map((ev) => (
               <li
                 key={ev.id}

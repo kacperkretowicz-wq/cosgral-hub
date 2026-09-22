@@ -14,14 +14,14 @@ export function GlassCard({
   description,
 }: GlassCardProps) {
   return (
-    <section className={`glass rounded-lg p-6 md:p-8 ${className}`}>
+    <section className={`glass rounded-[1.5rem] p-6 md:p-8 ${className}`}>
       {title && (
-        <h2 className="mb-2 text-xl font-bold tracking-tight md:text-2xl">
+        <h2 className="mb-2 text-xl font-semibold tracking-tight md:text-2xl">
           {title}
         </h2>
       )}
       {description && (
-        <p className="mb-6 text-sm leading-relaxed text-white/60">
+        <p className="mb-6 text-sm leading-relaxed text-white/55">
           {description}
         </p>
       )}
