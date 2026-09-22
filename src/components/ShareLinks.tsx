@@ -8,10 +8,6 @@ interface ShareLinksProps {
 }
 
 export function ShareLinks({ companyName, offerUrl }: ShareLinksProps) {
-  const message = encodeURIComponent(
-    `Cześć! Przygotowaliśmy ofertę dla ${companyName}:\n\n${offerUrl}\n\nNa dole strony jest przycisk do przesłania materiałów.\n\nPozdrawiamy,\nCosgral Agency`,
-  );
-
   const mailSubject = encodeURIComponent(
     `Cosgral — oferta (${companyName})`,
   );
@@ -21,13 +17,6 @@ export function ShareLinks({ companyName, offerUrl }: ShareLinksProps) {
 
   return (
     <div className="flex flex-wrap gap-3">
-      <a
-        href={`https://wa.me/?text=${message}`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Button variant="secondary">WhatsApp</Button>
-      </a>
       <a href={`mailto:?subject=${mailSubject}&body=${mailBody}`}>
         <Button variant="secondary">Email</Button>
       </a>

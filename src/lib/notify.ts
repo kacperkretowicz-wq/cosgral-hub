@@ -1,5 +1,5 @@
 /**
- * Team notifications → WhatsApp group (Green API) + iPhone Web Push + email + optional Telegram.
+ * Team notifications → iPhone Web Push + email + optional Telegram.
  *
  * Email → kontakt@cosgral.pl (domyślnie):
  *   NOTIFY_EMAIL_TO=kontakt@cosgral.pl
@@ -10,10 +10,6 @@
  *   SMTP_PASS=...
  *
  * Alternatywa: RESEND_API_KEY=re_...  (+ zweryfikowana domena)
- *
- * WhatsApp (grupa):
- *   WHATSAPP_GREEN_ID_INSTANCE / WHATSAPP_GREEN_API_TOKEN / WHATSAPP_CHAT_ID
- *   WHATSAPP_GREEN_API_URL
  *
  * iPhone / PWA Web Push:
  *   NEXT_PUBLIC_VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT
@@ -62,34 +58,6 @@ function emailRecipients(): string[] {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-}
-
-async function sendWhatsApp(text: string): Promise<boolean> {
-  const idInstance = process.env.WHATSAPP_GREEN_ID_INSTANCE?.trim();
-  const apiToken = process.env.WHATSAPP_GREEN_API_TOKEN?.trim();
-  const chatId = process.env.WHATSAPP_CHAT_ID?.trim();
-  if (!idInstance || !apiToken || !chatId) return false;
-
-  const apiUrl = (
-    process.env.WHATSAPP_GREEN_API_URL || "https://api.green-api.com"
-  ).replace(/\/$/, "");
-
-  try {
-    const res = await fetch(
-      `${apiUrl}/waInstance${idInstance}/sendMessage/${apiToken}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chatId,
-          message: text.slice(0, 4000),
-        }),
-      },
-    );
-    return res.ok;
-  } catch {
-    return false;
-  }
 }
 
 async function sendTelegram(text: string): Promise<boolean> {
@@ -211,12 +179,11 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Send to WhatsApp + iPhone push + email + Telegram (whichever configured). */
+/** Send to iPhone push + email + Telegram (whichever configured). */
 export async function notifyTeam(payload: NotifyPayload): Promise<void> {
   const text = formatMessage(payload);
   const { sendWebPush } = await import("./web-push");
   await Promise.allSettled([
-    sendWhatsApp(text),
     sendTelegram(text),
     sendEmail(payload),
     sendWebPush(payload),
@@ -226,14 +193,6 @@ export async function notifyTeam(payload: NotifyPayload): Promise<void> {
 /** @deprecated use notifyTeam — kept for older imports */
 export async function notifyTelegram(text: string): Promise<void> {
   await notifyTeam({ title: text });
-}
-
-export function isWhatsAppConfigured(): boolean {
-  return Boolean(
-    process.env.WHATSAPP_GREEN_ID_INSTANCE?.trim() &&
-      process.env.WHATSAPP_GREEN_API_TOKEN?.trim() &&
-      process.env.WHATSAPP_CHAT_ID?.trim(),
-  );
 }
 
 export function isEmailConfigured(): boolean {

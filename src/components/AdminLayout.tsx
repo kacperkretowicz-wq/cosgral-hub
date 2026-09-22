@@ -246,17 +246,22 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             Cosgral
           </span>
         </Link>
-        <Button
-          variant="ghost"
-          onClick={handleLogout}
-          className="glass-pill rounded-full px-3.5 py-2 text-[0.65rem]"
-        >
-          Wyloguj
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="relative xl:hidden">
+            <HubAiChat compact />
+          </div>
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            className="glass-pill rounded-full px-3.5 py-2 text-[0.65rem]"
+          >
+            Wyloguj
+          </Button>
+        </div>
       </header>
 
-      {/* Cosgral AI cube — always top-right */}
-      <div className="pointer-events-none fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[45] sm:right-5 xl:right-6 xl:top-5">
+      {/* Cosgral AI — desktop top-right */}
+      <div className="pointer-events-none fixed right-6 top-5 z-[45] hidden xl:block">
         <div className="pointer-events-auto">
           <HubAiChat />
         </div>

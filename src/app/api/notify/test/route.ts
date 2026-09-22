@@ -2,19 +2,17 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import {
   isEmailConfigured,
-  isWhatsAppConfigured,
   notifyEmailTo,
   notifyTeam,
 } from "@/lib/notify";
 import { listPushSubscriptions } from "@/lib/push-store";
 import { isWebPushConfigured } from "@/lib/web-push";
 
-/** POST: wyślij testowe powiadomienie (WhatsApp / push / email / Telegram). */
+/** POST: wyślij testowe powiadomienie (push / email / Telegram). */
 export async function POST() {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
 
-  const wa = isWhatsAppConfigured();
   const email = isEmailConfigured();
   const tg = Boolean(
     process.env.TELEGRAM_BOT_TOKEN?.trim() &&
@@ -23,11 +21,11 @@ export async function POST() {
   const push = isWebPushConfigured();
   const devices = push ? (await listPushSubscriptions()).length : 0;
 
-  if (!wa && !email && !tg && !(push && devices > 0)) {
+  if (!email && !tg && !(push && devices > 0)) {
     return NextResponse.json(
       {
         error:
-          "Brak kanału. Włącz push na iPhonie albo ustaw WhatsApp / SMTP / Telegram.",
+          "Brak kanału. Włącz push na iPhonie albo ustaw SMTP / Telegram.",
       },
       { status: 400 },
     );
@@ -41,7 +39,6 @@ export async function POST() {
 
   return NextResponse.json({
     ok: true,
-    whatsapp: wa,
     email,
     email_to: notifyEmailTo(),
     telegram: tg,
@@ -59,7 +56,6 @@ export async function GET() {
   const devices = push ? (await listPushSubscriptions()).length : 0;
 
   return NextResponse.json({
-    whatsapp: isWhatsAppConfigured(),
     email: isEmailConfigured(),
     email_to: notifyEmailTo(),
     telegram: Boolean(

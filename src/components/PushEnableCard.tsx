@@ -228,8 +228,8 @@ export function PushEnableCard() {
 
       {(state === "ready" || state === "enabled") && (
         <p className="text-sm leading-relaxed text-white/55">
-          Te same alerty co na WhatsApp (czat strony, taski, kalendarz, team)
-          pójdą też jako powiadomienie systemowe na telefon.
+          Alerty z Huba (czat strony, taski, kalendarz, Cosgral AI, team) trafią
+          na ten iPhone jako powiadomienie systemowe.
         </p>
       )}
 

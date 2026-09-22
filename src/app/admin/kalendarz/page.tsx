@@ -164,7 +164,7 @@ export default function KalendarzPage() {
           />
           <DateTimeField
             mode="datetime"
-            label="Przypomnij (WhatsApp / mail)"
+            label="Przypomnij (push / mail)"
             value={remindAt}
             onChange={setRemindAt}
           />

@@ -7,7 +7,6 @@ import { PushEnableCard } from "@/components/PushEnableCard";
 
 export default function PowiadomieniaPage() {
   const [status, setStatus] = useState<{
-    whatsapp: boolean;
     email: boolean;
     email_to?: string;
     telegram: boolean;
@@ -36,7 +35,6 @@ export default function PowiadomieniaPage() {
       return;
     }
     const parts = [];
-    if (data.whatsapp) parts.push("WhatsApp");
     if (data.web_push) {
       parts.push(
         `iPhone/push${typeof data.push_sent === "number" ? ` (${data.push_sent})` : ""}`,
@@ -61,15 +59,12 @@ export default function PowiadomieniaPage() {
       <PageHeader
         eyebrow="Hub"
         title="Powiadomienia"
-        description="WhatsApp + push na iPhone (ikona z ekranu) + email — ten sam alert, kilka kanałów."
+        description="Push na iPhone (ikona z ekranu) + email — alerty z Huba i Cosgral AI."
       />
 
       <PushEnableCard />
 
       <div className="flex flex-wrap gap-2">
-        <StatusPill tone={status?.whatsapp ? "ok" : "warn"}>
-          WhatsApp {status?.whatsapp ? "OK" : "brak"}
-        </StatusPill>
         <StatusPill tone={status?.web_push ? "ok" : "warn"}>
           Push{" "}
           {status?.web_push
@@ -104,7 +99,7 @@ export default function PowiadomieniaPage() {
       </p>
 
       <Button type="button" onClick={() => void sendTest()} disabled={busy}>
-        {busy ? "Wysyłanie…" : "Wyślij test (WhatsApp + push + email)"}
+        {busy ? "Wysyłanie…" : "Wyślij test (push + email)"}
       </Button>
       {msg ? <p className="text-sm text-white/55">{msg}</p> : null}
     </div>

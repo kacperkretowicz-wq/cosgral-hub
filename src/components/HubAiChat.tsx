@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/Button";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-export function HubAiChat() {
+type HubAiChatProps = {
+  /** W pasku mobilnym — mniejszy przycisk, panel pod headerem */
+  compact?: boolean;
+};
+
+export function HubAiChat({ compact = false }: HubAiChatProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -108,9 +113,15 @@ export function HubAiChat() {
         data-open={open ? "1" : "0"}
         aria-expanded={open}
         aria-label="Cosgral AI"
-        className="group relative z-[45] flex h-14 w-14 items-center justify-center overflow-visible rounded-2xl border border-white/15 bg-black/40 shadow-[0_12px_36px_rgba(0,0,0,0.45)] backdrop-blur-md transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:border-white/30 sm:h-16 sm:w-16"
+        className={`group relative z-[45] flex shrink-0 items-center justify-center overflow-visible rounded-2xl border border-white/15 bg-black/40 shadow-[0_12px_36px_rgba(0,0,0,0.45)] backdrop-blur-md transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:border-white/30 ${
+          compact
+            ? "h-11 w-11"
+            : "h-14 w-14 sm:h-16 sm:w-16"
+        }`}
       >
-        <span className="absolute inset-[-18%] sm:inset-[-14%]">
+        <span
+          className={`absolute ${compact ? "inset-[-16%]" : "inset-[-18%] sm:inset-[-14%]"}`}
+        >
           <CosgralChatCube dimmed={open} />
         </span>
         <span className="pointer-events-none absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[#5b8def] shadow-[0_0_10px_rgba(91,141,239,0.85)]" />
@@ -124,7 +135,13 @@ export function HubAiChat() {
             aria-label="Zamknij czat"
             onClick={closeChat}
           />
-          <div className="absolute right-3 top-[5.25rem] w-[min(100%-1.5rem,22rem)] origin-top-right animate-[sheetIn_0.35s_var(--ease)_both] sm:right-5 sm:top-24 xl:right-8">
+          <div
+            className={`absolute w-[min(100%-1.5rem,22rem)] origin-top-right animate-[sheetIn_0.35s_var(--ease)_both] ${
+              compact
+                ? "right-0 top-[calc(100%+0.5rem)]"
+                : "right-3 top-[5.25rem] sm:right-5 sm:top-24 xl:right-8"
+            }`}
+          >
             <div className="hub-tile hub-tile-white flex max-h-[min(70vh,34rem)] flex-col overflow-hidden !rounded-[1.5rem]">
               <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3">
                 <div className="relative h-10 w-10 shrink-0 overflow-visible">

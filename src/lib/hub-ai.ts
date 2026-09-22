@@ -1,6 +1,8 @@
 import { createCalendarEvent } from "@/lib/calendar-store";
 import { getIntranetDb } from "@/lib/intranet-db";
+import { notifyTeam } from "@/lib/notify";
 import { getOpsDb } from "@/lib/ops-db";
+import { teamLabel } from "@/lib/team";
 import {
   geminiGenerateContentUrl,
   isGeminiConfigured,
@@ -306,6 +308,11 @@ export async function executeHubActions(actions: HubAiAction[]) {
             notes: action.notes ?? "",
             remind_at: action.remind_at ?? null,
           });
+          await notifyTeam({
+            title: "📅 Cosgral AI — nowe wydarzenie",
+            body: `${ev.title}\n${new Date(ev.starts_at).toLocaleString("pl-PL")}`,
+            href: "/admin/kalendarz",
+          });
           results.push({
             type: action.type,
             ok: true,
@@ -325,6 +332,13 @@ export async function executeHubActions(actions: HubAiAction[]) {
             due_date: action.due_date ?? null,
             notes: action.notes ?? "",
           });
+          await notifyTeam({
+            title: "✅ Cosgral AI — nowy task",
+            body: `${task.title}\nDla: ${teamLabel(task.assignee)}${
+              task.due_date ? `\nTermin: ${task.due_date}` : ""
+            }`,
+            href: "/admin/tasks",
+          });
           results.push({
             type: action.type,
             ok: true,
@@ -341,6 +355,11 @@ export async function executeHubActions(actions: HubAiAction[]) {
             industry: action.industry ?? null,
             notes: action.notes ?? "",
             tags: [],
+          });
+          await notifyTeam({
+            title: "👤 Cosgral AI — nowy klient",
+            body: client.company_name,
+            href: `/admin/klienci/${client.id}`,
           });
           results.push({
             type: action.type,
@@ -363,6 +382,11 @@ export async function executeHubActions(actions: HubAiAction[]) {
             cost_pln: null,
             billing_status: "wycena",
             paid_at: null,
+          });
+          await notifyTeam({
+            title: "📋 Cosgral AI — nowe zlecenie",
+            body: project.title,
+            href: `/admin/zlecenia/${project.id}`,
           });
           results.push({
             type: action.type,
