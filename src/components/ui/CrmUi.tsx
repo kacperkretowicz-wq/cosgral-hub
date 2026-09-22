@@ -37,7 +37,7 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="surface relative overflow-hidden">
+    <div className="surface relative overflow-visible">
       <div className="relative z-10 flex flex-col items-center justify-center px-6 py-14 text-center sm:py-16">
         <p className="label-mono mb-3">Pusto</p>
         <h3 className="display-title text-lg text-white">{title}</h3>

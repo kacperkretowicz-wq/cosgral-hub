@@ -205,7 +205,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="relative min-h-screen pb-28 text-white">
+    <div className="relative min-h-screen pb-[max(7rem,calc(5.5rem+env(safe-area-inset-bottom)))] text-white">
       <CosgralAmbient />
 
       {/* Desktop sidebar — xl+ */}

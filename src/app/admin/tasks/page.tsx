@@ -139,7 +139,7 @@ function TaskRow({
             className="glass-field w-full px-4 py-2.5 text-sm"
             required
           />
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <select
               value={assignee}
               onChange={(e) => setAssignee(e.target.value)}
@@ -151,7 +151,12 @@ function TaskRow({
                 </option>
               ))}
             </select>
-            <DateTimeField mode="date" value={dueDate} onChange={setDueDate} />
+            <DateTimeField
+              mode="date"
+              label="Termin"
+              value={dueDate}
+              onChange={setDueDate}
+            />
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as TaskStatus)}
@@ -190,7 +195,7 @@ function TaskRow({
             </Button>
             <DeleteRecordButton
               apiUrl={`/api/tasks/${task.id}`}
-              redirectTo="/admin/tasks"
+              onDeleted={onChanged}
               label="Usuń"
               confirmTitle="Usuń task"
               confirmMessage={`Usunąć „${task.title}”?`}
@@ -314,7 +319,7 @@ export default function TasksPage() {
             className="glass-field w-full px-4 py-3 text-sm"
             required
           />
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <select
               value={assignee}
               onChange={(e) => setAssignee(e.target.value)}
@@ -326,7 +331,12 @@ export default function TasksPage() {
                 </option>
               ))}
             </select>
-            <DateTimeField mode="date" value={dueDate} onChange={setDueDate} />
+            <DateTimeField
+              mode="date"
+              label="Termin"
+              value={dueDate}
+              onChange={setDueDate}
+            />
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}

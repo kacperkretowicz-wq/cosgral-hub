@@ -136,9 +136,9 @@ export function HubAiChat({ compact = false }: HubAiChatProps) {
             onClick={closeChat}
           />
           <div
-            className={`absolute w-[min(100%-1.5rem,22rem)] origin-top-right animate-[sheetIn_0.35s_var(--ease)_both] ${
+            className={`fixed z-[81] w-[min(100%-1.5rem,22rem)] origin-top-right animate-[sheetIn_0.35s_var(--ease)_both] ${
               compact
-                ? "right-0 top-[calc(100%+0.5rem)]"
+                ? "right-3 top-[max(3.5rem,calc(env(safe-area-inset-top)+3.25rem))]"
                 : "right-3 top-[5.25rem] sm:right-5 sm:top-24 xl:right-8"
             }`}
           >

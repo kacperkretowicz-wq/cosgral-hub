@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "@/components/ui/Button";
+import { Portal } from "@/components/ui/Portal";
 
 const WEEK = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
 
@@ -94,7 +102,14 @@ export function DateTimeField({
   allowClear = true,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [panelStyle, setPanelStyle] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const selected = parseValue(value, mode);
   const [cursor, setCursor] = useState(() => selected ?? new Date());
   const [hour, setHour] = useState(() => selected?.getHours() ?? 9);
@@ -111,21 +126,57 @@ export function DateTimeField({
     setMinute((Math.round(d.getMinutes() / 5) * 5) % 60);
   }, [open, value, mode]);
 
+  const updatePanelPosition = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const width = Math.min(320, window.innerWidth - 16);
+    const left = Math.min(
+      Math.max(8, rect.left),
+      window.innerWidth - width - 8,
+    );
+    const estimatedHeight = mode === "datetime" ? 440 : 380;
+    const gap = 8;
+    const spaceBelow = window.innerHeight - rect.bottom - gap;
+    const spaceAbove = rect.top - gap;
+    let top = rect.bottom + gap;
+    if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
+      top = Math.max(8, rect.top - estimatedHeight - gap);
+    }
+    const maxTop = window.innerHeight - estimatedHeight - 8;
+    top = Math.min(Math.max(8, top), maxTop);
+    setPanelStyle({ top, left, width });
+  }, [mode]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPanelStyle(null);
+      return;
+    }
+    updatePanelPosition();
+  }, [open, updatePanelPosition]);
+
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t) || popoverRef.current?.contains(t)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
+    window.addEventListener("resize", updatePanelPosition);
+    window.addEventListener("scroll", updatePanelPosition, true);
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
     return () => {
+      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("scroll", updatePanelPosition, true);
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, updatePanelPosition]);
 
   const weeks = useMemo(
     () => monthMatrix(cursor.getFullYear(), cursor.getMonth()),
@@ -181,6 +232,7 @@ export function DateTimeField({
       ) : null}
 
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
@@ -194,8 +246,17 @@ export function DateTimeField({
         </span>
       </button>
 
-      {open ? (
-        <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-2xl border border-white/12 bg-[#0a0a0a] p-3 shadow-2xl sm:left-auto sm:right-auto sm:w-[300px]">
+      {open && panelStyle ? (
+        <Portal>
+        <div
+          ref={popoverRef}
+          className="fixed z-[90] max-h-[min(85vh,calc(100dvh-1rem))] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#0a0a0a] p-3 shadow-2xl"
+          style={{
+            top: panelStyle.top,
+            left: panelStyle.left,
+            width: panelStyle.width,
+          }}
+        >
           <div className="mb-3 flex items-center justify-between gap-2">
             <button
               type="button"
@@ -329,6 +390,7 @@ export function DateTimeField({
             ) : null}
           </div>
         </div>
+        </Portal>
       ) : null}
     </div>
   );
