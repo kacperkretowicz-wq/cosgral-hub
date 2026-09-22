@@ -30,7 +30,7 @@ export function ConfirmDialog({
   if (!open) return null;
   return (
     <Portal>
-      <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/70 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center">
+      <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center">
         <div
           className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a0a0a] p-5 shadow-2xl"
           role="dialog"

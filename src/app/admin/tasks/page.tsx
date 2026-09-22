@@ -195,7 +195,10 @@ function TaskRow({
             </Button>
             <DeleteRecordButton
               apiUrl={`/api/tasks/${task.id}`}
-              onDeleted={onChanged}
+              onDeleted={async () => {
+                setOpen(false);
+                await onChanged();
+              }}
               label="Usuń"
               confirmTitle="Usuń task"
               confirmMessage={`Usunąć „${task.title}”?`}
@@ -373,7 +376,7 @@ export default function TasksPage() {
               task={task}
               projects={projects}
               showDone={showDone}
-              onChanged={() => void load()}
+              onChanged={load}
             />
           ))}
         </ul>

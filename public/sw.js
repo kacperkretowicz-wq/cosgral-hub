@@ -1,5 +1,12 @@
-const CACHE = "cosgral-hub-v3";
+const CACHE = "cosgral-hub-v5";
+
 const PRECACHE = ["/", "/logo.png", "/manifest.json", "/icons/icon-192.png"];
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -25,7 +32,11 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith("/admin") || url.pathname.startsWith("/api")) {
+  if (
+    url.pathname.startsWith("/admin") ||
+    url.pathname.startsWith("/api") ||
+    url.pathname.startsWith("/_next/")
+  ) {
     event.respondWith(fetch(event.request));
     return;
   }

@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Portal } from "@/components/ui/Portal";
 
@@ -101,15 +94,8 @@ export function DateTimeField({
   className = "",
   allowClear = true,
 }: Props) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [panelStyle, setPanelStyle] = useState<{
-    top: number;
-    left: number;
-    width: number;
-  } | null>(null);
   const selected = parseValue(value, mode);
   const [cursor, setCursor] = useState(() => selected ?? new Date());
   const [hour, setHour] = useState(() => selected?.getHours() ?? 9);
@@ -124,59 +110,20 @@ export function DateTimeField({
     setCursor(new Date(d.getFullYear(), d.getMonth(), 1));
     setHour(d.getHours());
     setMinute((Math.round(d.getMinutes() / 5) * 5) % 60);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open, value, mode]);
-
-  const updatePanelPosition = useCallback(() => {
-    const el = triggerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const width = Math.min(320, window.innerWidth - 16);
-    const left = Math.min(
-      Math.max(8, rect.left),
-      window.innerWidth - width - 8,
-    );
-    const estimatedHeight = mode === "datetime" ? 440 : 380;
-    const gap = 8;
-    const spaceBelow = window.innerHeight - rect.bottom - gap;
-    const spaceAbove = rect.top - gap;
-    let top = rect.bottom + gap;
-    if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
-      top = Math.max(8, rect.top - estimatedHeight - gap);
-    }
-    const maxTop = window.innerHeight - estimatedHeight - 8;
-    top = Math.min(Math.max(8, top), maxTop);
-    setPanelStyle({ top, left, width });
-  }, [mode]);
-
-  useLayoutEffect(() => {
-    if (!open) {
-      setPanelStyle(null);
-      return;
-    }
-    updatePanelPosition();
-  }, [open, updatePanelPosition]);
 
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (rootRef.current?.contains(t) || popoverRef.current?.contains(t)) return;
-      setOpen(false);
-    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    window.addEventListener("resize", updatePanelPosition);
-    window.addEventListener("scroll", updatePanelPosition, true);
-    document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("resize", updatePanelPosition);
-      window.removeEventListener("scroll", updatePanelPosition, true);
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open, updatePanelPosition]);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
 
   const weeks = useMemo(
     () => monthMatrix(cursor.getFullYear(), cursor.getMonth()),
@@ -225,37 +172,22 @@ export function DateTimeField({
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const minutes = Array.from({ length: 12 }, (_, i) => i * 5);
 
-  return (
-    <div ref={rootRef} className={`relative space-y-2 ${className}`}>
-      {label ? (
-        <label className="block text-sm text-white/70">{label}</label>
-      ) : null}
-
-      <button
-        ref={triggerRef}
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-left text-sm text-white outline-none transition hover:border-white/30 focus:border-white/40 disabled:opacity-40"
-      >
-        <span className={value ? "text-white" : "text-white/40"}>
-          {formatDisplay(value, mode)}
-        </span>
-        <span className="label-mono text-[0.58rem] text-white/35">
-          {mode === "date" ? "Data" : "Data · godz."}
-        </span>
-      </button>
-
-      {open && panelStyle ? (
-        <Portal>
+  const sheet = open ? (
+    <Portal>
+      <div className="fixed inset-0 z-[100] flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
+        <button
+          type="button"
+          className="absolute inset-0 bg-black/75 backdrop-blur-[2px]"
+          aria-label="Zamknij kalendarz"
+          onClick={() => setOpen(false)}
+        />
         <div
-          ref={popoverRef}
-          className="fixed z-[90] max-h-[min(85vh,calc(100dvh-1rem))] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#0a0a0a] p-3 shadow-2xl"
-          style={{
-            top: panelStyle.top,
-            left: panelStyle.left,
-            width: panelStyle.width,
-          }}
+          ref={sheetRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={label || "Wybierz datę"}
+          className="relative z-[101] max-h-[min(92dvh,720px)] w-full overflow-y-auto overscroll-contain rounded-t-[1.75rem] border border-white/12 bg-[#0a0a0a] p-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-w-[340px] sm:rounded-2xl"
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="mb-3 flex items-center justify-between gap-2">
             <button
@@ -297,8 +229,7 @@ export function DateTimeField({
             {weeks.flat().map((day) => {
               const inMonth = day.getMonth() === cursor.getMonth();
               const key = toDateValue(day);
-              const isSelected =
-                selected && toDateValue(selected) === key;
+              const isSelected = selected && toDateValue(selected) === key;
               const isToday = toDateValue(new Date()) === key;
               return (
                 <button
@@ -390,8 +321,31 @@ export function DateTimeField({
             ) : null}
           </div>
         </div>
-        </Portal>
+      </div>
+    </Portal>
+  ) : null;
+
+  return (
+    <div className={`space-y-2 ${className}`}>
+      {label ? (
+        <label className="block text-sm text-white/70">{label}</label>
       ) : null}
+
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center justify-between gap-3 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-left text-sm text-white outline-none transition hover:border-white/30 focus:border-white/40 disabled:opacity-40"
+      >
+        <span className={value ? "text-white" : "text-white/40"}>
+          {formatDisplay(value, mode)}
+        </span>
+        <span className="label-mono text-[0.58rem] text-white/35">
+          {mode === "date" ? "Data" : "Data · godz."}
+        </span>
+      </button>
+
+      {sheet}
     </div>
   );
 }

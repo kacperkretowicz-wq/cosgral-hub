@@ -53,7 +53,7 @@ export function DeleteRecordButton({
       }
       setOpen(false);
       if (onDeleted) {
-        onDeleted();
+        await Promise.resolve(onDeleted());
       } else if (redirectTo) {
         window.location.assign(redirectTo);
       }
@@ -69,7 +69,9 @@ export function DeleteRecordButton({
       <Button
         variant="ghost"
         type="button"
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           setError("");
           setOpen(true);
         }}
