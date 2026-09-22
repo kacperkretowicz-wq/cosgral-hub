@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { PageHeader } from "@/components/ui/CrmUi";
 import { DbStatusBanner } from "@/components/DbStatusBanner";
-import { DigitalField } from "@/components/DigitalField";
 import { DonutChart, BarChart } from "@/components/ui/GlassChart";
 import { getIntranetDb } from "@/lib/intranet-db";
 import { getOpsDb } from "@/lib/ops-db";
@@ -22,6 +20,15 @@ function todayIso() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+const TILE_TONES = [
+  "hub-tile-white",
+  "hub-tile-blue",
+  "hub-tile-gray",
+  "hub-tile-silver",
+  "hub-tile-blue-deep",
+  "hub-tile-slate",
+] as const;
 
 export default async function AdminHome() {
   let projects: Project[] = [];
@@ -105,21 +112,50 @@ export default async function AdminHome() {
     { label: "Gotowe", value: tasks.filter((t) => t.status === "done").length },
   ].filter((i) => i.value > 0);
 
+  const shortcuts = [
+    {
+      href: "/admin/zlecenia",
+      label: "Zlecenia",
+      meta: `${openProjects.length} otwarte`,
+      tone: TILE_TONES[0],
+      className: "hub-span-3 hub-row-2 p-5 sm:p-6",
+    },
+    {
+      href: "/admin/tasks",
+      label: "Tasks",
+      meta: `${tasksToday.length} na dziś`,
+      tone: TILE_TONES[1],
+      className: "hub-span-3 p-5 sm:p-6",
+    },
+    {
+      href: "/admin/kalendarz",
+      label: "Kalendarz",
+      meta: upcomingEvents[0]?.title ?? "Pusto",
+      tone: TILE_TONES[2],
+      className: "hub-span-2 p-5",
+    },
+    {
+      href: "/admin/czat",
+      label: "Czat strony",
+      meta: unreadSite ? `${unreadSite} wątków` : "OK",
+      tone: TILE_TONES[3],
+      className: "hub-span-2 p-5",
+    },
+    {
+      href: "/admin/team",
+      label: "Team",
+      meta: recentTeam ? `${recentTeam} / 24h` : "Cicho",
+      tone: TILE_TONES[4],
+      className: "hub-span-2 p-5",
+    },
+  ];
+
   return (
     <div className="space-y-6 md:space-y-8">
-      <PageHeader
-        eyebrow="Cosgral Hub"
-        title="Home"
-        description="Skróty: zlecenia, taski, kalendarz, czaty."
-      />
-
-      <section className="space-y-4 py-1 md:py-4">
-        <h2 className="cosgral-wordmark text-[clamp(1.8rem,7vw,5.2rem)]">
+      <section className="space-y-5 py-1 md:py-2">
+        <h1 className="cosgral-wordmark text-[clamp(2rem,8vw,5.4rem)]">
           COSGRAL
-        </h2>
-        <p className="max-w-lg text-[0.62rem] uppercase leading-relaxed tracking-[0.22em] text-white/45 sm:text-[0.7rem] sm:tracking-[0.28em]">
-          Projektujemy i wdrażamy produkty cyfrowe dla firm
-        </p>
+        </h1>
         <div className="flex flex-wrap gap-2">
           <Link href="/admin/zlecenia">
             <Button>Otwórz zlecenia</Button>
@@ -133,76 +169,49 @@ export default async function AdminHome() {
         </div>
       </section>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { href: "/admin/zlecenia", label: "Zlecenia", meta: `${openProjects.length} otwarte` },
-          { href: "/admin/tasks", label: "Tasks", meta: `${tasksToday.length} na dziś` },
-          { href: "/admin/czat", label: "Czat strony", meta: unreadSite ? `${unreadSite} wątków` : "OK" },
-          { href: "/admin/team", label: "Team", meta: recentTeam ? `${recentTeam} / 24h` : "Cicho" },
-        ].map((card) => (
+      <div className="hub-bento">
+        {shortcuts.map((card) => (
           <Link
             key={card.href}
             href={card.href}
-            className="surface group p-4 transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:border-white/25 sm:p-5"
+            className={`hub-tile ${card.tone} ${card.className} flex flex-col justify-between`}
           >
-            <p className="label-mono mb-3">{card.label}</p>
-            <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+            <p className="label-mono mb-6 text-white/55">{card.label}</p>
+            <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl md:text-[1.65rem]">
               {card.meta}
             </p>
           </Link>
         ))}
-      </div>
 
-      {(statusChart.length > 0 || taskChart.length > 0 || serviceChart.length > 0) && (
-        <div className="grid gap-3 lg:grid-cols-3">
-          {statusChart.length ? (
-            <section className="surface p-5">
-              <p className="label-mono mb-4">Status zleceń</p>
-              <DonutChart items={statusChart} />
-            </section>
-          ) : null}
-          {taskChart.length ? (
-            <section className="surface p-5">
-              <p className="label-mono mb-4">Taski</p>
-              <DonutChart items={taskChart} />
-            </section>
-          ) : null}
-          {serviceChart.length ? (
-            <section className="surface p-5">
-              <p className="label-mono mb-4">Usługi</p>
-              <BarChart items={serviceChart} />
-            </section>
-          ) : null}
-        </div>
-      )}
+        {statusChart.length > 0 ? (
+          <section className="hub-tile hub-tile-white hub-span-3 p-5 md:p-6">
+            <p className="label-mono mb-4 text-white/55">Status zleceń</p>
+            <DonutChart items={statusChart} />
+          </section>
+        ) : null}
+        {taskChart.length > 0 ? (
+          <section className="hub-tile hub-tile-blue hub-span-3 p-5 md:p-6">
+            <p className="label-mono mb-4 text-white/55">Taski</p>
+            <DonutChart items={taskChart} />
+          </section>
+        ) : null}
+        {serviceChart.length > 0 ? (
+          <section className="hub-tile hub-tile-gray hub-span-6 p-5 md:p-6">
+            <p className="label-mono mb-4 text-white/55">Usługi</p>
+            <BarChart items={serviceChart} />
+          </section>
+        ) : null}
+      </div>
 
       <DbStatusBanner />
 
-      <div className="hidden gap-3 md:grid md:grid-cols-3">
-        {(
-          [
-            { variant: "www" as const, label: "Strony internetowe" },
-            { variant: "apps" as const, label: "Aplikacje" },
-            { variant: "crm" as const, label: "Systemy CRM" },
-          ]
-        ).map((item) => (
-          <div key={item.label} className="surface overflow-hidden p-0">
-            <DigitalField
-              variant={item.variant}
-              className="h-24 rounded-none"
-              veil={30}
-            />
-            <div className="p-3">
-              <p className="label-mono">{item.label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <section className="surface p-5 md:p-6">
+      <section className="hub-tile hub-tile-silver p-5 md:p-6">
         <div className="mb-4 flex items-center justify-between">
-          <p className="label-mono">Otwarte zlecenia</p>
-          <Link href="/admin/zlecenia" className="text-xs text-[var(--accent)] underline-offset-2 hover:underline">
+          <p className="label-mono text-white/55">Otwarte zlecenia</p>
+          <Link
+            href="/admin/zlecenia"
+            className="text-xs text-white/70 underline-offset-2 hover:text-white hover:underline"
+          >
             Wszystkie
           </Link>
         </div>
@@ -234,66 +243,74 @@ export default async function AdminHome() {
         )}
       </section>
 
-      <section className="surface p-5 md:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <p className="label-mono">Taski na dziś</p>
-          <Link href="/admin/tasks" className="text-xs text-[var(--accent)] underline-offset-2 hover:underline">
-            Tasks
-          </Link>
-        </div>
-        {!tasksToday.length ? (
-          <p className="text-sm text-white/45">Nic na dziś.</p>
-        ) : (
-          <ul className="divide-y divide-white/10">
-            {tasksToday.map((t) => (
-              <li key={t.id}>
-                <Link
-                  href="/admin/tasks"
-                  className="flex items-center justify-between gap-3 py-3.5 transition hover:bg-white/[0.04]"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-white">{t.title}</p>
-                    <p className="text-xs text-white/45">
-                      {teamLabel(t.assignee)}
-                      {t.due_date ? ` · ${t.due_date}` : ""}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-[0.65rem] uppercase tracking-[0.14em] text-white/45">
-                    Edytuj
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className="grid gap-3 md:grid-cols-2">
+        <section className="hub-tile hub-tile-blue-deep p-5 md:p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <p className="label-mono text-white/55">Taski na dziś</p>
+            <Link
+              href="/admin/tasks"
+              className="text-xs text-white/70 underline-offset-2 hover:text-white hover:underline"
+            >
+              Tasks
+            </Link>
+          </div>
+          {!tasksToday.length ? (
+            <p className="text-sm text-white/45">Nic na dziś.</p>
+          ) : (
+            <ul className="divide-y divide-white/10">
+              {tasksToday.map((t) => (
+                <li key={t.id}>
+                  <Link
+                    href="/admin/tasks"
+                    className="flex items-center justify-between gap-3 py-3.5 transition hover:bg-white/[0.04]"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-white">{t.title}</p>
+                      <p className="text-xs text-white/45">
+                        {teamLabel(t.assignee)}
+                        {t.due_date ? ` · ${t.due_date}` : ""}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-[0.65rem] uppercase tracking-[0.14em] text-white/45">
+                      Edytuj
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-      <section className="surface p-5 md:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <p className="label-mono">Najbliższe eventy</p>
-          <Link href="/admin/kalendarz" className="text-xs text-[var(--accent)] underline-offset-2 hover:underline">
-            Kalendarz
-          </Link>
-        </div>
-        {!upcomingEvents.length ? (
-          <p className="text-sm text-white/45">Kalendarz pusty.</p>
-        ) : (
-          <ul className="divide-y divide-white/10">
-            {upcomingEvents.map((e) => (
-              <li key={e.id} className="py-3.5">
-                <p className="font-medium text-white">{e.title}</p>
-                <p className="text-xs text-white/45">
-                  {new Date(e.starts_at).toLocaleString("pl-PL")}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <section className="hub-tile hub-tile-slate p-5 md:p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <p className="label-mono text-white/55">Najbliższe eventy</p>
+            <Link
+              href="/admin/kalendarz"
+              className="text-xs text-white/70 underline-offset-2 hover:text-white hover:underline"
+            >
+              Kalendarz
+            </Link>
+          </div>
+          {!upcomingEvents.length ? (
+            <p className="text-sm text-white/45">Kalendarz pusty.</p>
+          ) : (
+            <ul className="divide-y divide-white/10">
+              {upcomingEvents.map((e) => (
+                <li key={e.id} className="py-3.5">
+                  <p className="font-medium text-white">{e.title}</p>
+                  <p className="text-xs text-white/45">
+                    {new Date(e.starts_at).toLocaleString("pl-PL")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
 
       {leads.length > 0 ? (
-        <section id="leads" className="surface p-5 md:p-6">
-          <p className="label-mono mb-4">Inbox leadów</p>
+        <section className="hub-tile hub-tile-gray p-5 md:p-6">
+          <p className="label-mono mb-4 text-white/55">Inbox leadów</p>
           <ul className="divide-y divide-white/10">
             {leads.map((l) => (
               <li

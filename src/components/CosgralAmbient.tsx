@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
+/** Exact liquid-wave shader from cosgral.pl `home-ambient-bg.js`. */
 const VERT = `
   attribute vec2 aPos;
   void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
@@ -74,7 +75,7 @@ function compile(gl: WebGLRenderingContext, type: number, src: string) {
   return sh;
 }
 
-/** Liquid-wave background from cosgral.pl (home-ambient-bg.js). */
+/** Full-page liquid waves from cosgral.pl — fixed behind Hub UI. */
 export function CosgralAmbient() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const blurRef = useRef<HTMLDivElement>(null);
@@ -122,7 +123,7 @@ export function CosgralAmbient() {
     const mobile =
       window.matchMedia("(max-width: 900px)").matches ||
       window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-    const dprCap = mobile ? 0.6 : 0.66;
+    const dprCap = mobile ? 0.75 : 0.66;
     const skipN = mobile ? 2 : 1;
 
     const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
@@ -141,10 +142,8 @@ export function CosgralAmbient() {
     };
 
     const onMove = (e: PointerEvent) => {
-      const nx = (e.clientX / window.innerWidth) * 2 - 1;
-      const ny = 1 - (e.clientY / window.innerHeight) * 2;
-      mouse.tx = nx;
-      mouse.ty = ny;
+      mouse.tx = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.ty = 1 - (e.clientY / window.innerHeight) * 2;
       blurRef.current?.style.setProperty(
         "transform",
         `translate3d(${e.clientX}px, ${e.clientY}px, 0)`,

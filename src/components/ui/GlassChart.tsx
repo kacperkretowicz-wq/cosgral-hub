@@ -6,11 +6,12 @@ export type ChartItem = {
 };
 
 const FILLS = [
-  "rgba(255,255,255,0.92)",
-  "rgba(255,255,255,0.62)",
-  "rgba(255,255,255,0.38)",
-  "rgba(255,255,255,0.22)",
-  "rgba(255,255,255,0.12)",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
 ];
 
 function sum(items: ChartItem[]) {
@@ -98,7 +99,7 @@ export function BarChart({ items }: { items: ChartItem[] }) {
   }
   return (
     <ul className="space-y-2.5">
-      {items.map((item) => (
+      {items.map((item, i) => (
         <li key={item.label}>
           <div className="mb-1 flex items-baseline justify-between gap-3 text-[0.7rem]">
             <span className="truncate text-white/50">{item.label}</span>
@@ -106,8 +107,11 @@ export function BarChart({ items }: { items: ChartItem[] }) {
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
             <div
-              className="h-full rounded-full bg-white/80 transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              style={{ width: `${(item.value / max) * 100}%` }}
+              className="h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{
+                width: `${(item.value / max) * 100}%`,
+                background: FILLS[i % FILLS.length],
+              }}
             />
           </div>
         </li>

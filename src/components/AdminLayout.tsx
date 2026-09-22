@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CosgralBrand, CosgralLogo } from "@/components/CosgralLogo";
 import { CosgralAmbient } from "@/components/CosgralAmbient";
+import { HubAiChat } from "@/components/HubAiChat";
 import { Button } from "@/components/ui/Button";
 
 const DESKTOP_NAV = [
@@ -26,8 +27,6 @@ const MORE_ITEMS = [
   { href: "/admin/czat", label: "Czat strony", icon: "chat" as const },
   { href: "/admin/team", label: "Team", icon: "team" as const },
   { href: "/admin/powiadomienia", label: "Powiadomienia", icon: "bell" as const },
-  { href: "/admin/generator", label: "Generator", icon: "spark" as const },
-  { href: "/admin/leady", label: "Leady", icon: "inbox" as const },
 ];
 
 type TabIcon = "clients" | "orders" | "tasks" | "more";
@@ -237,7 +236,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <header className="safe-pt relative z-10 flex items-center justify-between px-3 pb-2 pt-3 sm:px-4 xl:hidden">
+      <header className="safe-pt relative z-10 flex items-center justify-between gap-2 px-3 pb-2 pt-3 sm:px-4 xl:hidden">
         <Link
           href="/admin"
           className="glass-pill flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5"
@@ -255,6 +254,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           Wyloguj
         </Button>
       </header>
+
+      {/* Cosgral AI cube — always top-right */}
+      <div className="pointer-events-none fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[45] sm:right-5 xl:right-6 xl:top-5">
+        <div className="pointer-events-auto">
+          <HubAiChat />
+        </div>
+      </div>
 
       <main className="relative z-10 xl:ml-[17.5rem] xl:pr-4">
         <div className="mx-auto max-w-6xl px-3 py-4 sm:px-4 md:px-8 md:py-10">{children}</div>

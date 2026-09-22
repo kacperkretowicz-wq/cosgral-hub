@@ -23,6 +23,7 @@
     "pg": "^8.22.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "three": "^0.170.0",
     "uuid": "^11.1.0",
     "web-push": "^3.6.7",
     "zod": "^3.25.42"
@@ -35,10 +36,12 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
+    "@types/three": "^0.170.0",
     "@types/uuid": "^10.0.0",
     "@types/web-push": "^3.6.4",
     "eslint": "^9.28.0",
     "eslint-config-next": "^15.3.3",
+    "netlify-cli": "^27.8.0",
     "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3"
   }
