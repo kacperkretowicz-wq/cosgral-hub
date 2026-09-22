@@ -84,12 +84,12 @@ export function CosgralAmbient() {
     if (!canvas) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const gl =
-      canvas.getContext("webgl", {
-        antialias: false,
-        alpha: false,
-        powerPreference: "low-power",
-      }) || canvas.getContext("experimental-webgl");
+    const gl = (canvas.getContext("webgl", {
+      antialias: false,
+      alpha: false,
+      powerPreference: "low-power",
+    }) ||
+      canvas.getContext("experimental-webgl")) as WebGLRenderingContext | null;
     if (!gl) return;
 
     const vs = compile(gl, gl.VERTEX_SHADER, VERT);
