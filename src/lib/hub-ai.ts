@@ -1,7 +1,10 @@
 import { createCalendarEvent } from "@/lib/calendar-store";
 import { getIntranetDb } from "@/lib/intranet-db";
 import { getOpsDb } from "@/lib/ops-db";
-import { isGeminiConfigured } from "@/lib/gemini-offer";
+import {
+  geminiGenerateContentUrl,
+  isGeminiConfigured,
+} from "@/lib/gemini-offer";
 import { isTeamMemberId } from "@/lib/team";
 
 export type HubAiAction =
@@ -89,7 +92,7 @@ async function callGeminiJson(system: string, user: string): Promise<string> {
   if (!apiKey) throw new Error("Brak GEMINI_API_KEY");
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    geminiGenerateContentUrl(apiKey),
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

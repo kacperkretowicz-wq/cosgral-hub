@@ -20,8 +20,10 @@ export async function POST() {
 
 export async function GET() {
   const { isSupabaseConfigured } = await import("@/lib/db");
+  const { getDbMode } = await import("@/lib/persistence");
   return NextResponse.json({
     configured: isSupabaseConfigured(),
+    dbMode: getDbMode(),
     url: SUPABASE_URL,
     projectRef: PROJECT_REF,
   });

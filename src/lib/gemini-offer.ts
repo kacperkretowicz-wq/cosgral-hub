@@ -8,6 +8,13 @@ export interface GeminiChatMessage {
   text: string;
 }
 
+/** Google retired 2.0-flash; 2.5-flash is the current Flash model on v1beta. */
+export const GEMINI_FLASH_MODEL = "gemini-2.5-flash";
+
+export function geminiGenerateContentUrl(apiKey: string): string {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_FLASH_MODEL}:generateContent?key=${apiKey}`;
+}
+
 export function isGeminiConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY);
 }
@@ -22,7 +29,7 @@ async function callGemini(
   }
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    geminiGenerateContentUrl(apiKey),
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
