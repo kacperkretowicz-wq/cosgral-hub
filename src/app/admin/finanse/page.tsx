@@ -42,11 +42,19 @@ export default function FinansePage() {
     void load();
   }, [load]);
 
-  const withValue = projects.filter((p) => p.value_pln != null);
+  const withValue = projects.filter(
+    (p) => p.value_pln != null && p.billing_status !== "anulowane",
+  );
   const inProgress = withValue.filter((p) =>
     isBillingInProgress(p.billing_status),
   );
-  const lifetime = withValue.reduce((s, p) => s + (p.value_pln ?? 0), 0);
+  const settled = useMemo(
+    () => withValue.filter((p) => isBillingSettled(p.billing_status)),
+    [withValue],
+  );
+  /** Rozliczone / opłacone — faktycznie zarobione */
+  const earnedTotal = settled.reduce((s, p) => s + (p.value_pln ?? 0), 0);
+  /** W toku — wycena, faktura, w_toku */
   const wToku = inProgress.reduce((s, p) => s + (p.value_pln ?? 0), 0);
 
   const markSettled = async (id: string) => {
@@ -71,10 +79,6 @@ export default function FinansePage() {
     await load();
   };
 
-  const settled = useMemo(
-    () => withValue.filter((p) => isBillingSettled(p.billing_status)),
-    [withValue],
-  );
   const billingChart = useMemo(
     () =>
       [
@@ -103,7 +107,7 @@ export default function FinansePage() {
       <PageHeader
         eyebrow="CRM"
         title="Finanse"
-        description="W toku vs od początku — rozliczenie spada z puli bieżącej."
+        description="W toku = nierozliczone zlecenia. Od początku = tylko rozliczone / opłacone (zarobione)."
       />
 
       {error ? (
@@ -123,12 +127,12 @@ export default function FinansePage() {
           </p>
         </div>
         <div className="surface p-5 sm:p-6">
-          <p className="label-mono mb-2">Od początku</p>
+          <p className="label-mono mb-2">Od początku (zarobione)</p>
           <p className="text-3xl font-semibold tracking-tight text-white">
-            {formatPln(lifetime)} zł
+            {formatPln(earnedTotal)} zł
           </p>
           <p className="mt-2 text-sm text-white/40">
-            Suma wszystkich value_pln
+            {settled.length} zleceń rozliczonych / opłaconych
           </p>
         </div>
       </div>
