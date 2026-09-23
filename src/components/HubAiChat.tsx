@@ -22,7 +22,7 @@ export function HubAiChat({ compact = false }: HubAiChatProps) {
     {
       role: "assistant",
       content:
-        "Cześć — Cosgral AI. Mogę zarządzać Hubem (kalendarz, taski, klienci, zlecenia) i pomagać tekstowo: copy Meta Ads, burze mózgów, analiza briefów. Napisz swobodnie.",
+        "Cześć — Cosgral AI. Widzę Hub na żywo: taski, kalendarz, klientów, zlecenia, leady. Mogę podsumować dzień, dodać wpisy i wysłać maila z kontakt@cosgral.pl. Pytaj o cokolwiek.",
     },
   ]);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -154,7 +154,7 @@ export function HubAiChat({ compact = false }: HubAiChatProps) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-white">Cosgral AI</p>
                   <p className="text-[0.65rem] uppercase tracking-[0.16em] text-white/40">
-                    Gemini · Hub + asysta
+                    Gemini · baza + mail + asysta
                   </p>
                 </div>
                 <Button
