@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/api-auth";
-import { executeHubActions, planHubActions } from "@/lib/hub-ai";
+import { runHubAiChat } from "@/lib/hub-ai";
 
 const schema = z.object({
   message: z.string().min(1).max(4000),
@@ -12,6 +12,7 @@ const schema = z.object({
         content: z.string(),
       }),
     )
+    .max(40)
     .optional(),
 });
 
@@ -22,19 +23,18 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = schema.parse(body);
-    const plan = await planHubActions(parsed.message, parsed.history ?? []);
-    const results = await executeHubActions(plan.actions);
-    const failed = results.filter((r) => !r.ok);
+    const result = await runHubAiChat(parsed.message, parsed.history ?? []);
+    const failed = result.results.filter((r) => !r.ok);
     const reply =
-      failed.length && plan.actions.length
-        ? `${plan.reply}\n\nUwaga: część akcji nie przeszła — ${failed.map((f) => f.detail).join("; ")}`
-        : plan.reply;
+      failed.length && result.actions.length
+        ? `${result.reply}\n\nUwaga: część akcji nie przeszła — ${failed.map((f) => f.detail).join("; ")}`
+        : result.reply;
 
     return NextResponse.json({
       reply,
-      actions: plan.actions,
-      results,
-      provider: plan.provider,
+      actions: result.actions,
+      results: result.results,
+      provider: result.provider,
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
