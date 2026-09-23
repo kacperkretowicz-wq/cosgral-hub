@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CosgralBrand, CosgralLogo } from "@/components/CosgralLogo";
 import { CosgralAmbient } from "@/components/CosgralAmbient";
 import { HubAiChat } from "@/components/HubAiChat";
+import { TileScrollLift } from "@/components/TileScrollLift";
 import { Button } from "@/components/ui/Button";
 
 const DESKTOP_NAV = [
@@ -207,6 +208,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative min-h-screen pb-[max(7rem,calc(5.5rem+env(safe-area-inset-bottom)))] text-white">
       <CosgralAmbient />
+      <TileScrollLift />
 
       {/* Desktop sidebar — xl+ */}
       <aside className="fixed left-4 top-4 z-20 hidden h-[calc(100%-2rem)] w-60 xl:flex xl:flex-col">

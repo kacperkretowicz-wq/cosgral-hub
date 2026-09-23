@@ -217,39 +217,40 @@ export function DateTimeField({
             </button>
           </div>
 
-          <div className="mb-1 grid grid-cols-7 gap-0.5 text-center font-mono text-[0.58rem] uppercase tracking-[0.12em] text-white/35">
-            {WEEK.map((d) => (
-              <div key={d} className="py-1">
-                {d}
-              </div>
-            ))}
-          </div>
+          <div className="month-cal month-cal-compact">
+            <div className="mb-1 grid grid-cols-7 gap-0.5 text-center font-mono text-[0.58rem] uppercase tracking-[0.12em] text-white/35">
+              {WEEK.map((d) => (
+                <div key={d} className="py-1">
+                  {d}
+                </div>
+              ))}
+            </div>
 
-          <div className="grid grid-cols-7 gap-0.5">
-            {weeks.flat().map((day) => {
-              const inMonth = day.getMonth() === cursor.getMonth();
-              const key = toDateValue(day);
-              const isSelected = selected && toDateValue(selected) === key;
-              const isToday = toDateValue(new Date()) === key;
-              return (
-                <button
-                  key={key + String(day.getTime())}
-                  type="button"
-                  onClick={() => pickDay(day)}
-                  className={`aspect-square rounded-lg text-sm transition ${
-                    isSelected
-                      ? "bg-white font-medium text-black"
-                      : isToday
-                        ? "border border-white/25 text-white"
-                        : inMonth
-                          ? "text-white/85 hover:bg-white/10"
-                          : "text-white/25 hover:bg-white/5"
-                  }`}
-                >
-                  {day.getDate()}
-                </button>
-              );
-            })}
+            <div className="grid grid-cols-7 gap-0.5">
+              {weeks.flat().map((day) => {
+                const inMonth = day.getMonth() === cursor.getMonth();
+                const key = toDateValue(day);
+                const isSelected = selected && toDateValue(selected) === key;
+                const isToday = toDateValue(new Date()) === key;
+                return (
+                  <button
+                    key={key + String(day.getTime())}
+                    type="button"
+                    onClick={() => pickDay(day)}
+                    className={[
+                      "month-cal-day",
+                      !inMonth ? "out-month" : "",
+                      isToday ? "is-today" : "",
+                      isSelected ? "is-selected" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    <span className="month-cal-num">{day.getDate()}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {mode === "datetime" ? (

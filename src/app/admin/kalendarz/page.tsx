@@ -231,30 +231,38 @@ export default function KalendarzPage() {
             <div key={d}>{d}</div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1">
+        <div className="month-cal grid grid-cols-7 gap-1">
           {weeks.flat().map((day) => {
             const key = isoDay(day);
             const inMonth = day.getMonth() === cursor.getMonth();
             const dayEvents = byDay.get(key) ?? [];
+            const isToday = isoDay(new Date()) === key;
             return (
               <div
                 key={key + day.getTime()}
-                className={`min-h-[88px] rounded-xl border border-white/10 p-2 ${
-                  inMonth ? "bg-white/[0.02]" : "opacity-35"
-                }`}
+                className={[
+                  "month-cal-day",
+                  !inMonth ? "out-month" : "",
+                  isToday ? "is-today" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               >
-                <p className="text-xs text-white/50">{day.getDate()}</p>
-                <div className="mt-1 space-y-1">
+                <p className="month-cal-num">{day.getDate()}</p>
+                <div className="month-cal-titles">
                   {dayEvents.slice(0, 3).map((ev) => (
-                    <p
-                      key={ev.id}
-                      className="truncate rounded bg-white/10 px-1 py-0.5 text-[10px] text-white/80"
-                      title={ev.title}
-                    >
+                    <span key={ev.id} title={ev.title}>
                       {ev.title}
-                    </p>
+                    </span>
                   ))}
                 </div>
+                {dayEvents.length > 0 ? (
+                  <div className="month-cal-dots" aria-hidden>
+                    {dayEvents.slice(0, 3).map((ev) => (
+                      <i key={ev.id} />
+                    ))}
+                  </div>
+                ) : null}
               </div>
             );
           })}
