@@ -1,9 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
+import {
+  billingStatusForWrite,
+  isInvalidBillingEnumError,
+} from "./billing-status";
 import { isSupabaseConfigured } from "./db";
 import { createLocalIntranetDb } from "./intranet-local";
 import { assertPersistentDb } from "./persistence";
 import { isMissingColumnError } from "./schema-errors";
-import type { CrmClient, Note, Project, ResourceLink } from "./types";
+import type {
+  BillingStatus,
+  CrmClient,
+  Note,
+  Project,
+  ResourceLink,
+} from "./types";
 
 const MONEY_KEYS = ["value_pln", "cost_pln", "billing_status", "paid_at"] as const;
 
@@ -21,6 +31,16 @@ function withoutMoneyFields<T extends Record<string, unknown>>(input: T) {
   const next = { ...input };
   for (const key of MONEY_KEYS) delete next[key];
   return next;
+}
+
+function withBillingForWrite<T extends { billing_status?: BillingStatus | null }>(
+  input: T,
+): T {
+  if (input.billing_status == null) return input;
+  return {
+    ...input,
+    billing_status: billingStatusForWrite(input.billing_status),
+  };
 }
 
 function getSupabaseClient() {
@@ -80,13 +100,25 @@ function createSupabaseIntranetDb() {
       input: Omit<CrmClient, "id" | "created_at" | "updated_at">,
     ): Promise<CrmClient> {
       assertPersistentDb("utworzenie klienta CRM");
-      const { data, error } = await getSupabaseClient()
+      const payload = { ...input, updated_at: new Date().toISOString() };
+      const first = await getSupabaseClient()
         .from("crm_clients")
-        .insert({ ...input, updated_at: new Date().toISOString() })
+        .insert(payload)
         .select()
         .single();
-      if (error) throw new Error(error.message);
-      return data;
+      if (!first.error) return first.data;
+
+      if (isMissingColumnError(first.error) && "tags" in payload) {
+        const { tags: _tags, ...rest } = payload;
+        const retry = await getSupabaseClient()
+          .from("crm_clients")
+          .insert(rest)
+          .select()
+          .single();
+        if (retry.error) throw new Error(retry.error.message);
+        return { ...retry.data, tags: input.tags ?? [] };
+      }
+      throw new Error(first.error.message);
     },
 
     async updateCrmClient(
@@ -94,14 +126,27 @@ function createSupabaseIntranetDb() {
       input: Partial<CrmClient>,
     ): Promise<CrmClient> {
       assertPersistentDb("aktualizacja klienta CRM");
-      const { data, error } = await getSupabaseClient()
+      const payload = { ...input, updated_at: new Date().toISOString() };
+      const first = await getSupabaseClient()
         .from("crm_clients")
-        .update({ ...input, updated_at: new Date().toISOString() })
+        .update(payload)
         .eq("id", id)
         .select()
         .single();
-      if (error) throw new Error(error.message);
-      return data;
+      if (!first.error) return first.data;
+
+      if (isMissingColumnError(first.error) && "tags" in payload) {
+        const { tags: _tags, ...rest } = payload;
+        const retry = await getSupabaseClient()
+          .from("crm_clients")
+          .update(rest)
+          .eq("id", id)
+          .select()
+          .single();
+        if (retry.error) throw new Error(retry.error.message);
+        return { ...retry.data, tags: input.tags ?? retry.data.tags ?? [] };
+      }
+      throw new Error(first.error.message);
     },
 
     async getProjects(filters?: {
@@ -139,7 +184,10 @@ function createSupabaseIntranetDb() {
       input: Omit<Project, "id" | "created_at" | "updated_at" | "crm_clients">,
     ): Promise<Project> {
       assertPersistentDb("utworzenie zlecenia");
-      const payload = { ...input, updated_at: new Date().toISOString() };
+      const payload = withBillingForWrite({
+        ...input,
+        updated_at: new Date().toISOString(),
+      });
       const first = await getSupabaseClient()
         .from("projects")
         .insert(payload)
@@ -156,6 +204,21 @@ function createSupabaseIntranetDb() {
         if (retry.error) throw new Error(retry.error.message);
         return withMoneyDefaults(retry.data as Project);
       }
+
+      if (isInvalidBillingEnumError(first.error)) {
+        const fallback = {
+          ...payload,
+          billing_status: billingStatusForWrite("wycena"),
+        };
+        const retry = await getSupabaseClient()
+          .from("projects")
+          .insert(fallback)
+          .select("*, crm_clients(*)")
+          .single();
+        if (retry.error) throw new Error(retry.error.message);
+        return withMoneyDefaults(retry.data as Project);
+      }
+
       throw new Error(first.error.message);
     },
 
@@ -165,7 +228,10 @@ function createSupabaseIntranetDb() {
     ): Promise<Project> {
       assertPersistentDb("aktualizacja zlecenia");
       const { crm_clients: _, ...rest } = input as Project;
-      const payload = { ...rest, updated_at: new Date().toISOString() };
+      const payload = withBillingForWrite({
+        ...rest,
+        updated_at: new Date().toISOString(),
+      });
       const first = await getSupabaseClient()
         .from("projects")
         .update(payload)
@@ -190,6 +256,21 @@ function createSupabaseIntranetDb() {
         if (retry.error) throw new Error(retry.error.message);
         return withMoneyDefaults(retry.data as Project);
       }
+
+      if (isInvalidBillingEnumError(first.error) && payload.billing_status) {
+        const retry = await getSupabaseClient()
+          .from("projects")
+          .update({
+            ...payload,
+            billing_status: billingStatusForWrite(payload.billing_status),
+          })
+          .eq("id", id)
+          .select("*, crm_clients(*)")
+          .single();
+        if (retry.error) throw new Error(retry.error.message);
+        return withMoneyDefaults(retry.data as Project);
+      }
+
       throw new Error(first.error.message);
     },
 

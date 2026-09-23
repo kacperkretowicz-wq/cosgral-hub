@@ -12,6 +12,7 @@ const MIGRATION_FILES = [
   "008_agency_os.sql",
   "009_paid_at.sql",
   "010_site_chat.sql",
+  "011_billing_status_and_tags.sql",
 ];
 
 function projectRef(): string {
@@ -56,6 +57,7 @@ export async function loadCriticalMigrationSql(): Promise<string> {
     "007_offer_document.sql",
     "008_agency_os.sql",
     "009_paid_at.sql",
+    "011_billing_status_and_tags.sql",
   ]);
 }
 

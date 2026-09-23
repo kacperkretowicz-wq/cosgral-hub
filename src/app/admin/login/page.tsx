@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
               type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Jakub"
+              placeholder="email@cosgral.pl"
               required
               autoComplete="username"
             />
@@ -100,10 +100,6 @@ export default function AdminLoginPage() {
               {loading ? "Logowanie..." : "Zaloguj się"}
             </Button>
           </form>
-
-          <p className="text-center text-xs text-white/35">
-            Jakub / Wiki100! · Kacper / Cosgral100!
-          </p>
 
           <p className="text-center text-xs text-white/30">
             <a href="/admin/setup" className="underline hover:text-white/60">

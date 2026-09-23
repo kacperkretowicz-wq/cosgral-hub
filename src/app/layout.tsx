@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { AppSplash } from "@/components/AppSplash";
 import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
 
@@ -43,7 +44,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap"
+        />
+      </head>
       <body className="antialiased">
+        <AppSplash />
         {children}
         <PwaRegister />
       </body>

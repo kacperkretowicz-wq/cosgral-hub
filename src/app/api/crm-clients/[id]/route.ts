@@ -6,7 +6,7 @@ import { getIntranetDb } from "@/lib/intranet-db";
 const updateSchema = z.object({
   company_name: z.string().min(1).optional(),
   contact_name: z.string().nullable().optional(),
-  email: z.string().email().nullable().optional().or(z.literal("")),
+  email: z.union([z.string().email(), z.literal(""), z.null()]).optional(),
   phone: z.string().nullable().optional(),
   industry: z.string().nullable().optional(),
   notes: z.string().optional(),

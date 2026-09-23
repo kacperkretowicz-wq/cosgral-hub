@@ -62,7 +62,7 @@ export default function FinansePage() {
     await fetch(`/api/projects/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ billing_status: "rozliczone" }),
+      body: JSON.stringify({ billing_status: "oplacone" }),
     });
     setBusyId(null);
     await load();
@@ -73,7 +73,7 @@ export default function FinansePage() {
     await fetch(`/api/projects/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ billing_status: "w_toku" }),
+      body: JSON.stringify({ billing_status: "wycena" }),
     });
     setBusyId(null);
     await load();

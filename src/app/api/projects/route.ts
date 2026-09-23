@@ -89,7 +89,7 @@ export async function POST(request: Request) {
       description: parsed.description ?? "",
       value_pln: parsed.value_pln ?? null,
       cost_pln: parsed.cost_pln ?? null,
-      billing_status: parsed.billing_status ?? "w_toku",
+      billing_status: parsed.billing_status ?? "wycena",
       paid_at: null,
     });
     return NextResponse.json(data, {

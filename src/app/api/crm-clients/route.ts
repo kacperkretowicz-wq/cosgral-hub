@@ -6,7 +6,9 @@ import { getIntranetDb } from "@/lib/intranet-db";
 const createSchema = z.object({
   company_name: z.string().min(1),
   contact_name: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
+  email: z
+    .union([z.string().email(), z.literal("")])
+    .optional(),
   phone: z.string().optional(),
   industry: z.string().optional(),
   notes: z.string().optional(),

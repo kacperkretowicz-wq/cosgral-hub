@@ -77,7 +77,7 @@ export default function NoweZlecenieForm() {
         deadline: deadline || null,
         description,
         value_pln: valuePln === "" ? null : Number(valuePln),
-        billing_status: "w_toku",
+        billing_status: "wycena",
       }),
     });
 

@@ -270,10 +270,10 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
               value={
                 project.billing_status === "oplacone" ||
                 project.billing_status === "rozliczone"
-                  ? "rozliczone"
+                  ? "oplacone"
                   : project.billing_status === "anulowane"
                     ? "anulowane"
-                    : "w_toku"
+                    : "wycena"
               }
               onChange={(e) =>
                 updateField({
@@ -283,8 +283,8 @@ export function ZlecenieEditor({ initialProject }: ZlecenieEditorProps) {
               disabled={saving}
               className="glass-field w-full px-4 py-2.5 text-sm"
             >
-              <option value="w_toku">W toku</option>
-              <option value="rozliczone">Rozliczone</option>
+              <option value="wycena">W toku</option>
+              <option value="oplacone">Rozliczone</option>
               <option value="anulowane">Anulowane</option>
             </select>
           </div>
