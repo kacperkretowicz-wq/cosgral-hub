@@ -488,18 +488,25 @@
     --tile-tint: color-mix(in srgb, var(--tile-blue-deep) 16%, transparent);
   }
 
-  .hub-span-2 {
-    grid-column: span 2;
-  }
+  /* Mobile: 2-col bento — half tiles + full-bleed calendar/charts */
+  .hub-span-2,
   .hub-span-3 {
+    grid-column: span 1;
+  }
+  .hub-mobile-full,
+  .hub-span-4,
+  .hub-span-6 {
     grid-column: span 2;
   }
   .hub-row-2 {
-    grid-row: span 1;
-    min-height: 9.5rem;
+    grid-row: span 2;
+    min-height: 11.25rem;
   }
 
   @media (min-width: 768px) {
+    .hub-mobile-full {
+      grid-column: auto;
+    }
     .hub-span-2 {
       grid-column: span 2;
     }
