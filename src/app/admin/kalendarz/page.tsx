@@ -5,7 +5,7 @@ import { MonthCal } from "@/components/MonthCal";
 import { Button } from "@/components/ui/Button";
 import { DateTimeField } from "@/components/ui/DateTimeField";
 import { EmptyState, PageHeader } from "@/components/ui/CrmUi";
-import { formatDayLong, isoDay } from "@/lib/month-cal";
+import { formatDayLong } from "@/lib/month-cal";
 import { TEAM } from "@/lib/team";
 import type { CalendarEvent } from "@/lib/types";
 
@@ -146,7 +146,7 @@ export default function KalendarzPage() {
       <PageHeader
         eyebrow="CRM"
         title="Kalendarz"
-        description="Kliknij dzień, żeby zobaczyć eventy i dodać nowe. Przypomnienia → push / mail."
+        description="Kliknij dzień, żeby zobaczyć jego wydarzenia. Klik obok kalendarza wraca do całej listy."
       />
 
       {error ? (
