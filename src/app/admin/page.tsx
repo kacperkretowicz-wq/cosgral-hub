@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { DbStatusBanner } from "@/components/DbStatusBanner";
+import { MonthCal } from "@/components/MonthCal";
 import { DonutChart, BarChart } from "@/components/ui/GlassChart";
 import { getIntranetDb } from "@/lib/intranet-db";
 import { getOpsDb } from "@/lib/ops-db";
@@ -21,15 +22,6 @@ function todayIso() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-const TILE_TONES = [
-  "hub-tile-white",
-  "hub-tile-blue",
-  "hub-tile-gray",
-  "hub-tile-silver",
-  "hub-tile-blue-deep",
-  "hub-tile-slate",
-] as const;
-
 export default async function AdminHome() {
   let projects: Project[] = [];
   let tasks: Task[] = [];
@@ -37,6 +29,7 @@ export default async function AdminHome() {
   let openProjects: Project[] = [];
   let tasksToday: Task[] = [];
   let upcomingEvents: Awaited<ReturnType<typeof listCalendarEvents>> = [];
+  let allEvents: Awaited<ReturnType<typeof listCalendarEvents>> = [];
   let unreadSite = 0;
   let recentTeam = 0;
 
@@ -60,9 +53,9 @@ export default async function AdminHome() {
   }
 
   try {
-    const events = await listCalendarEvents();
+    allEvents = await listCalendarEvents();
     const now = Date.now();
-    upcomingEvents = events
+    upcomingEvents = allEvents
       .filter((e) => new Date(e.starts_at).getTime() >= now - 3600000)
       .slice(0, 5);
   } catch {
@@ -112,76 +105,79 @@ export default async function AdminHome() {
     { label: "Gotowe", value: tasks.filter((t) => t.status === "done").length },
   ].filter((i) => i.value > 0);
 
-  const shortcuts = [
-    {
-      href: "/admin/zlecenia",
-      label: "Zlecenia",
-      meta: `${openProjects.length} otwarte`,
-      tone: TILE_TONES[0],
-      className: "hub-span-3 hub-row-2 p-5 sm:p-6",
-    },
-    {
-      href: "/admin/tasks",
-      label: "Tasks",
-      meta: `${tasksToday.length} na dziś`,
-      tone: TILE_TONES[1],
-      className: "hub-span-3 p-5 sm:p-6",
-    },
-    {
-      href: "/admin/kalendarz",
-      label: "Kalendarz",
-      meta: upcomingEvents[0]?.title ?? "Pusto",
-      tone: TILE_TONES[2],
-      className: "hub-span-2 p-5",
-    },
-    {
-      href: "/admin/czat",
-      label: "Czat strony",
-      meta: unreadSite ? `${unreadSite} wątków` : "OK",
-      tone: TILE_TONES[3],
-      className: "hub-span-2 p-5",
-    },
-    {
-      href: "/admin/team",
-      label: "Team",
-      meta: recentTeam ? `${recentTeam} / 24h` : "Cicho",
-      tone: TILE_TONES[4],
-      className: "hub-span-2 p-5",
-    },
-  ];
+  const now = new Date();
+  const eventsByDay: Record<string, string[]> = {};
+  for (const ev of allEvents) {
+    const key = ev.starts_at.slice(0, 10);
+    (eventsByDay[key] ??= []).push(ev.title);
+  }
 
   return (
     <div className="space-y-6 md:space-y-8">
-      <section className="space-y-5 py-1 md:py-2">
-        <h1 className="cosgral-wordmark text-[clamp(2rem,8vw,5.4rem)]">
+      <section className="flex flex-col items-center pb-10 pt-6 text-center md:pb-14 md:pt-8">
+        <h1 className="cosgral-wordmark text-[clamp(2.4rem,9vw,5.4rem)]">
           COSGRAL
         </h1>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/admin/zlecenia">
-            <Button>Otwórz zlecenia</Button>
-          </Link>
-          <Link href="/admin/zlecenia/nowe">
-            <Button variant="secondary">+ Zlecenie</Button>
-          </Link>
-          <Link href="/admin/klienci/nowy">
-            <Button variant="secondary">+ Klient</Button>
-          </Link>
-        </div>
       </section>
 
       <div className="hub-bento">
-        {shortcuts.map((card) => (
-          <Link
-            key={card.href}
-            href={card.href}
-            className={`hub-tile ${card.tone} ${card.className} flex flex-col justify-between`}
-          >
-            <p className="label-mono mb-6 text-white/55">{card.label}</p>
-            <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl md:text-[1.65rem]">
-              {card.meta}
+        <Link
+          href="/admin/zlecenia"
+          className="hub-tile hub-tile-white hub-span-3 hub-row-2 flex flex-col justify-between p-5 sm:p-6"
+        >
+          <p className="label-mono mb-3 text-white/55 sm:mb-6">Zlecenia</p>
+          <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl md:text-[1.65rem]">
+            {openProjects.length} otwarte
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/tasks"
+          className="hub-tile hub-tile-blue hub-span-3 flex flex-col justify-between p-5 sm:p-6"
+        >
+          <p className="label-mono mb-3 text-white/55 sm:mb-6">Tasks</p>
+          <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl md:text-[1.65rem]">
+            {tasksToday.length} na dziś
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/kalendarz"
+          className="hub-tile hub-tile-gray hub-span-2 hub-mobile-full flex flex-col justify-between p-4 sm:p-5"
+        >
+          <p className="label-mono mb-3 text-white/55 sm:mb-6">Kalendarz</p>
+          <div className="flex min-h-0 flex-1 flex-col justify-between gap-3">
+            <MonthCal
+              year={now.getFullYear()}
+              month={now.getMonth()}
+              eventsByDay={eventsByDay}
+              compact
+            />
+            <p className="truncate text-sm font-semibold tracking-tight text-white sm:text-base">
+              {upcomingEvents[0]?.title ?? "Pusto"}
             </p>
-          </Link>
-        ))}
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/czat"
+          className="hub-tile hub-tile-silver hub-span-2 flex flex-col justify-between p-5"
+        >
+          <p className="label-mono mb-3 text-white/55 sm:mb-6">Czat strony</p>
+          <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl md:text-[1.65rem]">
+            {unreadSite ? `${unreadSite} wątków` : "OK"}
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/team"
+          className="hub-tile hub-tile-blue-deep hub-span-2 flex flex-col justify-between p-5"
+        >
+          <p className="label-mono mb-3 text-white/55 sm:mb-6">Team</p>
+          <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl md:text-[1.65rem]">
+            {recentTeam ? `${recentTeam} / 24h` : "Cicho"}
+          </p>
+        </Link>
 
         {statusChart.length > 0 ? (
           <section className="hub-tile hub-tile-white hub-span-3 p-5 md:p-6">
@@ -196,7 +192,7 @@ export default async function AdminHome() {
           </section>
         ) : null}
         {serviceChart.length > 0 ? (
-          <section className="hub-tile hub-tile-gray hub-span-6 p-5 md:p-6">
+          <section className="hub-tile hub-tile-gray hub-span-6 hub-mobile-full p-5 md:p-6">
             <p className="label-mono mb-4 text-white/55">Usługi</p>
             <BarChart items={serviceChart} />
           </section>
