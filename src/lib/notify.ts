@@ -208,3 +208,112 @@ export function isEmailConfigured(): boolean {
 export function notifyEmailTo(): string {
   return emailRecipients().join(", ");
 }
+
+export function cosgralMailFrom(): string {
+  const user = process.env.SMTP_USER?.trim() || "kontakt@cosgral.pl";
+  return (
+    process.env.NOTIFY_EMAIL_FROM?.trim() || `Cosgral Hub <${user}>`
+  );
+}
+
+/**
+ * Outbound email from Cosgral mailbox (SMTP or Resend) to arbitrary recipients.
+ * Used by Cosgral AI — not limited to NOTIFY_EMAIL_TO.
+ */
+export async function sendOutboundEmail(input: {
+  to: string | string[];
+  subject: string;
+  body: string;
+  replyTo?: string;
+}): Promise<{ ok: boolean; detail: string }> {
+  const toList = (Array.isArray(input.to) ? input.to : [input.to])
+    .flatMap((s) => s.split(","))
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!toList.length) {
+    return { ok: false, detail: "Brak adresata (to)" };
+  }
+  if (!input.subject.trim()) {
+    return { ok: false, detail: "Brak tematu" };
+  }
+  if (!isEmailConfigured()) {
+    return {
+      ok: false,
+      detail:
+        "Mail nie skonfigurowany — ustaw SMTP_* (kontakt@cosgral.pl) albo RESEND_API_KEY na Netlify.",
+    };
+  }
+
+  const subject = input.subject.trim().slice(0, 180);
+  const body = input.body.trim().slice(0, 20000);
+  const from = cosgralMailFrom();
+  const replyTo = input.replyTo?.trim() || undefined;
+
+  const host = process.env.SMTP_HOST?.trim();
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim();
+  if (host && user && pass) {
+    try {
+      const port = Number(process.env.SMTP_PORT || "587");
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+      });
+      await transporter.sendMail({
+        from,
+        to: toList.join(", "),
+        replyTo,
+        subject,
+        text: body,
+        html: `<div style="font-family:system-ui,sans-serif;line-height:1.5;white-space:pre-wrap;color:#111">${escapeHtml(body)}</div>`,
+      });
+      return {
+        ok: true,
+        detail: `Wysłano z ${user} → ${toList.join(", ")} · ${subject}`,
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        detail: `SMTP: ${err instanceof Error ? err.message : "błąd"}`,
+      };
+    }
+  }
+
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (key) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from,
+          to: toList,
+          reply_to: replyTo,
+          subject,
+          text: body,
+          html: `<div style="font-family:system-ui,sans-serif;line-height:1.5;white-space:pre-wrap">${escapeHtml(body)}</div>`,
+        }),
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        return { ok: false, detail: `Resend: ${t.slice(0, 160)}` };
+      }
+      return {
+        ok: true,
+        detail: `Wysłano (Resend) → ${toList.join(", ")} · ${subject}`,
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        detail: `Resend: ${err instanceof Error ? err.message : "błąd"}`,
+      };
+    }
+  }
+
+  return { ok: false, detail: "Brak działającego transportu maila" };
+}
