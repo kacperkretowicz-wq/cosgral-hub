@@ -9,6 +9,7 @@ import {
   purgeOldSiteChat,
 } from "@/lib/site-chat";
 import { notifyTeam } from "@/lib/notify";
+import { generateSiteChatReply } from "@/lib/site-chat-ai";
 
 const postSchema = z.object({
   visitor_key: z.string().min(8).max(80),
@@ -38,6 +39,21 @@ export async function POST(request: Request) {
       body: parsed.body,
     });
 
+    let agent_message = null;
+    try {
+      const ai = await generateSiteChatReply({
+        body: parsed.body,
+        page_url: parsed.page_url,
+      });
+      agent_message = await addMessage({
+        thread_id: thread.id,
+        role: "agent",
+        body: ai.reply,
+      });
+    } catch {
+      /* non-blocking — visitor message already saved */
+    }
+
     await notifyTeam({
       title: "💬 Masz nową wiadomość od klienta",
       body: parsed.body.slice(0, 400),
@@ -45,7 +61,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      { thread_id: thread.id, message },
+      { thread_id: thread.id, message, agent_message },
       { status: 201, headers },
     );
   } catch (err) {
