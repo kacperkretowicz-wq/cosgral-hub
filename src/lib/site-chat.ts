@@ -163,11 +163,9 @@ async function hardDeleteThread(t: SiteChatThread): Promise<void> {
 
 function siteChatUsesSupabase(): boolean {
   const mode = (process.env.SITE_CHAT_STORAGE || "").toLowerCase();
-  if (mode === "blobs") return false;
   if (mode === "supabase") return isSupabaseConfigured();
-  // Netlify production already uses Blobs for live chat; keep until Supabase tables exist.
-  if (process.env.NETLIFY) return false;
-  return isSupabaseConfigured();
+  // Default: Netlify Blobs / local files. Opt in to Supabase after migrations.
+  return false;
 }
 
 export async function purgeOldSiteChat(): Promise<void> {
