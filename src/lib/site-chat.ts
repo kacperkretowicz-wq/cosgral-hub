@@ -2,6 +2,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { getStore } from "@netlify/blobs";
+import { isSupabaseConfigured } from "@/lib/db";
+import * as siteChatSb from "@/lib/site-chat-supabase";
 
 export type ChatRole = "visitor" | "agent";
 export type AgentAuthor = "ai" | "human";
@@ -159,7 +161,20 @@ async function hardDeleteThread(t: SiteChatThread): Promise<void> {
   await s.delete(visitorMapKey(t.visitor_key));
 }
 
+function siteChatUsesSupabase(): boolean {
+  const mode = (process.env.SITE_CHAT_STORAGE || "").toLowerCase();
+  if (mode === "blobs") return false;
+  if (mode === "supabase") return isSupabaseConfigured();
+  // Netlify production already uses Blobs for live chat; keep until Supabase tables exist.
+  if (process.env.NETLIFY) return false;
+  return isSupabaseConfigured();
+}
+
 export async function purgeOldSiteChat(): Promise<void> {
+  if (siteChatUsesSupabase()) {
+    await siteChatSb.purgeOldSiteChatSupabase();
+    return;
+  }
   const cutoff = Date.now() - RETENTION_MS;
   const s = kv();
 
@@ -194,6 +209,9 @@ export async function getOrCreateThread(input: {
   page_url?: string;
   user_agent?: string;
 }): Promise<SiteChatThread> {
+  if (siteChatUsesSupabase()) {
+    return siteChatSb.getOrCreateThreadSupabase(input);
+  }
   await purgeOldSiteChat();
   const key = input.visitor_key.trim().slice(0, 80);
   if (!key) throw new Error("Brak visitor_key");
@@ -229,6 +247,9 @@ export async function getOrCreateThread(input: {
 export async function findThreadByVisitor(
   visitor_key: string,
 ): Promise<SiteChatThread | null> {
+  if (siteChatUsesSupabase()) {
+    return siteChatSb.findThreadByVisitorSupabase(visitor_key);
+  }
   await purgeOldSiteChat();
   const key = visitor_key.trim().slice(0, 80);
   if (!key) return null;
@@ -238,6 +259,9 @@ export async function findThreadByVisitor(
 }
 
 export async function listThreads(): Promise<SiteChatThread[]> {
+  if (siteChatUsesSupabase()) {
+    return siteChatSb.listThreadsSupabase();
+  }
   await purgeOldSiteChat();
   const index = await readIndex();
   return [...index].sort(
@@ -246,6 +270,9 @@ export async function listThreads(): Promise<SiteChatThread[]> {
 }
 
 export async function listTrash(): Promise<SiteChatThread[]> {
+  if (siteChatUsesSupabase()) {
+    return siteChatSb.listTrashSupabase();
+  }
   await purgeOldSiteChat();
   const trash = await readTrash();
   return [...trash].sort(
@@ -256,10 +283,16 @@ export async function listTrash(): Promise<SiteChatThread[]> {
 }
 
 export async function getThread(id: string): Promise<SiteChatThread | null> {
+  if (siteChatUsesSupabase()) {
+    return siteChatSb.getThreadSupabase(id);
+  }
   return (await kv().getJson<SiteChatThread>(threadKey(id))) ?? null;
 }
 
 export async function getMessages(threadId: string): Promise<SiteChatMessage[]> {
+  if (siteChatUsesSupabase()) {
+    return siteChatSb.getMessagesSupabase(threadId);
+  }
   const data = await kv().getJson<SiteChatMessage[]>(msgsKey(threadId));
   return Array.isArray(data) ? data : [];
 }
@@ -270,6 +303,9 @@ export async function addMessage(input: {
   body: string;
   author?: AgentAuthor;
 }): Promise<SiteChatMessage> {
+  if (siteChatUsesSupabase()) {
+    return siteChatSb.addMessageSupabase(input);
+  }
   const body = input.body.trim().slice(0, 2000);
   if (!body) throw new Error("Pusta wiadomość");
 
@@ -322,6 +358,9 @@ export async function appendAiReplyForVisitor(input: {
   visitor_key: string;
   body: string;
 }): Promise<SiteChatMessage | null> {
+  if (siteChatUsesSupabase()) {
+    return siteChatSb.appendAiReplyForVisitorSupabase(input);
+  }
   const thread = await findThreadByVisitor(input.visitor_key);
   if (!thread || thread.status === "trashed") return null;
 
@@ -365,6 +404,10 @@ export function formatThreadPreview(thread: SiteChatThread): string {
 
 /** Soft-delete: move thread into trash (hidden from inbox + visitor starts fresh). */
 export async function moveThreadToTrash(threadId: string): Promise<void> {
+  if (siteChatUsesSupabase()) {
+    await siteChatSb.moveThreadToTrashSupabase(threadId);
+    return;
+  }
   const s = kv();
   const thread = await s.getJson<SiteChatThread>(threadKey(threadId));
   if (!thread) throw new Error("Nie znaleziono wątku");
@@ -387,6 +430,9 @@ export async function moveThreadToTrash(threadId: string): Promise<void> {
 }
 
 export async function emptyTrash(): Promise<number> {
+  if (siteChatUsesSupabase()) {
+    return siteChatSb.emptyTrashSupabase();
+  }
   const trash = await readTrash();
   for (const t of trash) {
     await hardDeleteThread(t);
@@ -397,6 +443,10 @@ export async function emptyTrash(): Promise<number> {
 
 /** Permanent delete (from trash or force). */
 export async function permanentlyDeleteThread(threadId: string): Promise<void> {
+  if (siteChatUsesSupabase()) {
+    await siteChatSb.permanentlyDeleteThreadSupabase(threadId);
+    return;
+  }
   const s = kv();
   const thread = await s.getJson<SiteChatThread>(threadKey(threadId));
   const index = await readIndex();
