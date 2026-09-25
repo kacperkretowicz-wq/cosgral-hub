@@ -96,6 +96,7 @@ export async function POST(request: Request) {
     const message = await addMessage({
       thread_id: parsed.thread_id,
       role: "agent",
+      author: "human",
       body: parsed.body,
     });
     return NextResponse.json({ message }, { status: 201 });

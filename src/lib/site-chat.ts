@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { getStore } from "@netlify/blobs";
 
 export type ChatRole = "visitor" | "agent";
+export type AgentAuthor = "ai" | "human";
 
 export type SiteChatThread = {
   id: string;
@@ -14,15 +15,33 @@ export type SiteChatThread = {
   created_at: string;
   last_message_at: string;
   deleted_at?: string;
+  last_message_preview?: string;
+  last_message_role?: ChatRole;
+  last_message_author?: AgentAuthor;
 };
 
 export type SiteChatMessage = {
   id: string;
   thread_id: string;
   role: ChatRole;
+  /** Set when role is agent — distinguishes Cosgral AI from human replies in Hub. */
+  author?: AgentAuthor;
   body: string;
   created_at: string;
 };
+
+function threadPreviewFromMessage(message: SiteChatMessage): {
+  last_message_preview: string;
+  last_message_role: ChatRole;
+  last_message_author?: AgentAuthor;
+} {
+  const snippet = message.body.replace(/\s+/g, " ").trim().slice(0, 140);
+  return {
+    last_message_preview: snippet,
+    last_message_role: message.role,
+    last_message_author: message.author,
+  };
+}
 
 const RETENTION_MS = 24 * 60 * 60 * 1000;
 const INDEX_KEY = "index";
@@ -249,6 +268,7 @@ export async function addMessage(input: {
   thread_id: string;
   role: ChatRole;
   body: string;
+  author?: AgentAuthor;
 }): Promise<SiteChatMessage> {
   const body = input.body.trim().slice(0, 2000);
   if (!body) throw new Error("Pusta wiadomość");
@@ -257,10 +277,20 @@ export async function addMessage(input: {
   const thread = await s.getJson<SiteChatThread>(threadKey(input.thread_id));
   if (!thread) throw new Error("Nie znaleziono wątku");
 
+  const author =
+    input.role === "agent"
+      ? input.author === "human"
+        ? "human"
+        : input.author === "ai"
+          ? "ai"
+          : "human"
+      : undefined;
+
   const message: SiteChatMessage = {
     id: randomUUID(),
     thread_id: input.thread_id,
     role: input.role,
+    ...(author ? { author } : {}),
     body,
     created_at: new Date().toISOString(),
   };
@@ -273,6 +303,7 @@ export async function addMessage(input: {
     ...thread,
     last_message_at: message.created_at,
     status: "open",
+    ...threadPreviewFromMessage(message),
   };
   await s.setJson(threadKey(input.thread_id), updated);
 
@@ -284,6 +315,52 @@ export async function addMessage(input: {
   }
 
   return message;
+}
+
+/** Persist an AI reply when the widget generated it locally (PHP fallback) or Hub timed out. */
+export async function appendAiReplyForVisitor(input: {
+  visitor_key: string;
+  body: string;
+}): Promise<SiteChatMessage | null> {
+  const thread = await findThreadByVisitor(input.visitor_key);
+  if (!thread || thread.status === "trashed") return null;
+
+  const body = input.body.trim().slice(0, 2000);
+  if (!body) return null;
+
+  const existing = await getMessages(thread.id);
+  const last = existing[existing.length - 1];
+  if (
+    last &&
+    last.role === "agent" &&
+    last.body === body &&
+    Date.now() - Date.parse(last.created_at) < 120_000
+  ) {
+    return last;
+  }
+
+  return addMessage({
+    thread_id: thread.id,
+    role: "agent",
+    author: "ai",
+    body,
+  });
+}
+
+export function formatThreadPreview(thread: SiteChatThread): string {
+  if (thread.last_message_preview) {
+    if (thread.last_message_role === "visitor") {
+      return `Gość: ${thread.last_message_preview}`;
+    }
+    if (thread.last_message_author === "ai") {
+      return `AI: ${thread.last_message_preview}`;
+    }
+    if (thread.last_message_role === "agent") {
+      return `Ty: ${thread.last_message_preview}`;
+    }
+    return thread.last_message_preview;
+  }
+  return thread.page_url || "—";
 }
 
 /** Soft-delete: move thread into trash (hidden from inbox + visitor starts fresh). */

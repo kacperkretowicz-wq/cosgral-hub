@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const SW_URL = "/sw.js?v=5";
+const SW_URL = "/sw.js?v=6";
 
 function wireWaiting(worker: ServiceWorker | null) {
   if (!worker) return;

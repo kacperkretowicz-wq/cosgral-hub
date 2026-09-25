@@ -1,4 +1,4 @@
-const CACHE = "cosgral-hub-v5";
+const CACHE = "cosgral-hub-v6";
 
 const PRECACHE = ["/", "/logo.png", "/manifest.json", "/icons/icon-192.png"];
 

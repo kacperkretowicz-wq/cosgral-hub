@@ -13,15 +13,41 @@ type Thread = {
   created_at: string;
   last_message_at: string;
   deleted_at?: string;
+  last_message_preview?: string;
+  last_message_role?: "visitor" | "agent";
+  last_message_author?: "ai" | "human";
 };
 
 type Message = {
   id: string;
   thread_id: string;
   role: "visitor" | "agent";
+  author?: "ai" | "human";
   body: string;
   created_at: string;
 };
+
+function threadSubtitle(t: Thread): string {
+  if (t.last_message_preview) {
+    if (t.last_message_role === "visitor") {
+      return `Gość: ${t.last_message_preview}`;
+    }
+    if (t.last_message_author === "ai") {
+      return `AI: ${t.last_message_preview}`;
+    }
+    if (t.last_message_role === "agent") {
+      return `Ty: ${t.last_message_preview}`;
+    }
+    return t.last_message_preview;
+  }
+  return t.page_url || "—";
+}
+
+function messageLabel(m: Message): string | null {
+  if (m.role === "visitor") return "Gość";
+  if (m.author === "human") return "Ty";
+  return "Cosgral AI";
+}
 
 type Props = {
   initialThread?: string;
@@ -355,7 +381,7 @@ export function SiteChatWorkspace({
                   key={t.id}
                   active={t.id === activeId}
                   title={shortKey(t.visitor_key)}
-                  subtitle={t.page_url || "—"}
+                  subtitle={threadSubtitle(t)}
                   meta={
                     view === "trash" && t.deleted_at
                       ? `Usunięto ${new Date(t.deleted_at).toLocaleString("pl-PL")}`
@@ -400,18 +426,30 @@ export function SiteChatWorkspace({
             ref={listRef}
             className="flex-1 space-y-2 overflow-y-auto px-4 py-3"
           >
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                  m.role === "agent"
-                    ? "ml-auto bg-white/15 text-white"
-                    : "bg-white/10 text-white"
-                }`}
-              >
-                <div className="whitespace-pre-wrap break-words">{m.body}</div>
-              </div>
-            ))}
+            {messages.map((m) => {
+              const label = messageLabel(m);
+              const isAi = m.role === "agent" && m.author !== "human";
+              const isHumanAgent = m.role === "agent" && m.author === "human";
+              return (
+                <div
+                  key={m.id}
+                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                    isAi
+                      ? "ml-auto border border-sky-400/25 bg-sky-500/15 text-white"
+                      : isHumanAgent
+                        ? "ml-auto bg-white/15 text-white"
+                        : "bg-white/10 text-white"
+                  }`}
+                >
+                  {label ? (
+                    <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-white/45">
+                      {label}
+                    </p>
+                  ) : null}
+                  <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                </div>
+              );
+            })}
           </div>
           {view === "inbox" ? (
             <form

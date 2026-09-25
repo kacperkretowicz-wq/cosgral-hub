@@ -40,18 +40,19 @@ export async function POST(request: Request) {
     });
 
     let agent_message = null;
+    const ai = await generateSiteChatReply({
+      body: parsed.body,
+      page_url: parsed.page_url,
+    });
     try {
-      const ai = await generateSiteChatReply({
-        body: parsed.body,
-        page_url: parsed.page_url,
-      });
       agent_message = await addMessage({
         thread_id: thread.id,
         role: "agent",
+        author: "ai",
         body: ai.reply,
       });
-    } catch {
-      /* non-blocking — visitor message already saved */
+    } catch (err) {
+      console.error("[site-chat] failed to save AI reply:", err);
     }
 
     await notifyTeam({
