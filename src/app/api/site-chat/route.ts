@@ -40,11 +40,19 @@ export async function POST(request: Request) {
     });
 
     let agent_message = null;
-    const ai = await generateSiteChatReply({
-      body: parsed.body,
-      page_url: parsed.page_url,
-    });
+    let ai_provider: "gemini" | "free" | "heuristic" = "heuristic";
     try {
+      const prior = await getMessages(thread.id);
+      // History before the just-saved visitor message (exclude the newest self)
+      const history = prior
+        .slice(0, -1)
+        .map((m) => ({ role: m.role, body: m.body }));
+      const ai = await generateSiteChatReply({
+        body: parsed.body,
+        page_url: parsed.page_url,
+        history,
+      });
+      ai_provider = ai.provider;
       agent_message = await addMessage({
         thread_id: thread.id,
         role: "agent",
@@ -52,7 +60,7 @@ export async function POST(request: Request) {
         body: ai.reply,
       });
     } catch (err) {
-      console.error("[site-chat] failed to save AI reply:", err);
+      console.error("[site-chat] AI reply failed:", err);
     }
 
     await notifyTeam({
@@ -62,7 +70,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      { thread_id: thread.id, message, agent_message },
+      { thread_id: thread.id, message, agent_message, ai_provider },
       { status: 201, headers },
     );
   } catch (err) {

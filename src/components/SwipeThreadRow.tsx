@@ -104,7 +104,7 @@ export function SwipeThreadRow({
   };
 
   return (
-    <div className="group relative overflow-hidden rounded-xl">
+    <div className="group relative w-full max-w-full overflow-hidden rounded-xl">
       {/* Delete rail — right side (Gmail) */}
       <div
         className="absolute inset-y-0 right-0 flex w-[88px] items-center justify-center bg-red-500/90 md:hidden"
@@ -125,7 +125,7 @@ export function SwipeThreadRow({
       </div>
 
       <div
-        className={`relative z-[1] flex items-stretch transition-colors ${
+        className={`relative z-[1] flex w-full min-w-0 items-stretch transition-colors ${
           active ? "bg-white/15" : "bg-black group-hover:bg-white/[0.04]"
         }`}
         style={{
@@ -148,13 +148,15 @@ export function SwipeThreadRow({
             }
             onSelect();
           }}
-          className="min-w-0 flex-1 touch-pan-y px-3 py-3 text-left text-sm"
+          className="min-w-0 flex-1 touch-pan-y overflow-hidden px-3 py-3 text-left text-sm"
         >
-          <div className="font-medium text-white">{title}</div>
+          <div className="truncate font-medium text-white">{title}</div>
           {subtitle ? (
             <div className="truncate text-xs text-white/40">{subtitle}</div>
           ) : null}
-          {meta ? <div className="text-[10px] text-white/30">{meta}</div> : null}
+          {meta ? (
+            <div className="truncate text-[10px] text-white/30">{meta}</div>
+          ) : null}
         </button>
 
         {/* Desktop: system-style Usuń on hover */}
