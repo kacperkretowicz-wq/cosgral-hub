@@ -319,9 +319,9 @@ export function SiteChatWorkspace({
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 text-white">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+    <div className="mx-auto max-w-6xl space-y-4 overflow-x-hidden text-white">
+      <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
           <p className="label-mono mb-1">Czat ze strony</p>
           <p className="text-sm text-white/50">
             Mobile: przesuń w lewo → Usuń (jak Gmail). Desktop: Usuń na hover.
@@ -331,6 +331,7 @@ export function SiteChatWorkspace({
         <Button
           type="button"
           variant="secondary"
+          className="shrink-0"
           onClick={() => {
             setView((v) => (v === "inbox" ? "trash" : "inbox"));
             setActiveId("");
@@ -350,8 +351,8 @@ export function SiteChatWorkspace({
         </p>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-[300px_1fr]">
-        <section className="surface flex max-h-[70vh] flex-col">
+      <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
+        <section className="surface flex max-h-[70vh] min-w-0 flex-col overflow-hidden">
           <div className="flex items-center justify-between border-b border-white/10 px-3 py-2.5">
             <span className="label-mono">
               {view === "inbox" ? "Rozmowy" : "Kosz"}
@@ -361,14 +362,14 @@ export function SiteChatWorkspace({
                 type="button"
                 variant="ghost"
                 disabled={trash.length === 0}
-                className="px-3 py-1.5 text-red-400/80 hover:bg-red-500/10 hover:text-red-300"
+                className="shrink-0 px-3 py-1.5 text-red-400/80 hover:bg-red-500/10 hover:text-red-300"
                 onClick={() => setConfirm({ kind: "empty" })}
               >
                 Opróżnij kosz
               </Button>
             ) : null}
           </div>
-          <div className="flex-1 space-y-1 overflow-y-auto p-2">
+          <div className="min-w-0 flex-1 space-y-1 overflow-x-hidden overflow-y-auto p-2">
             {list.length === 0 ? (
               <p className="p-3 text-sm text-white/40">
                 {view === "inbox"
@@ -397,7 +398,7 @@ export function SiteChatWorkspace({
           </div>
         </section>
 
-        <section className="surface flex max-h-[70vh] flex-col">
+        <section className="surface flex max-h-[70vh] min-w-0 flex-col overflow-hidden">
           <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
             <p className="min-w-0 truncate text-sm text-white/60">
               {active
@@ -424,7 +425,7 @@ export function SiteChatWorkspace({
           </div>
           <div
             ref={listRef}
-            className="flex-1 space-y-2 overflow-y-auto px-4 py-3"
+            className="min-w-0 flex-1 space-y-2 overflow-x-hidden overflow-y-auto px-4 py-3"
           >
             {messages.map((m) => {
               const label = messageLabel(m);
@@ -433,7 +434,7 @@ export function SiteChatWorkspace({
               return (
                 <div
                   key={m.id}
-                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                  className={`min-w-0 max-w-[min(85%,22rem)] rounded-2xl px-3 py-2 text-sm ${
                     isAi
                       ? "ml-auto border border-sky-400/25 bg-sky-500/15 text-white"
                       : isHumanAgent
@@ -446,7 +447,9 @@ export function SiteChatWorkspace({
                       {label}
                     </p>
                   ) : null}
-                  <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                  <div className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                    {m.body}
+                  </div>
                 </div>
               );
             })}
@@ -454,7 +457,7 @@ export function SiteChatWorkspace({
           {view === "inbox" ? (
             <form
               onSubmit={send}
-              className="flex gap-2 border-t border-white/10 p-3"
+              className="flex min-w-0 gap-2 border-t border-white/10 p-3"
             >
               <input
                 value={draft}
@@ -465,6 +468,7 @@ export function SiteChatWorkspace({
               />
               <Button
                 type="submit"
+                className="shrink-0"
                 disabled={!activeId || sending || !draft.trim()}
               >
                 Wyślij

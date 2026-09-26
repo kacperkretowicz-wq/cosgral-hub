@@ -863,7 +863,11 @@ async function callGeminiWithTools(
       toolConfig: {
         functionCallingConfig: { mode: "AUTO" },
       },
-      generationConfig: { temperature: 0.55 },
+      generationConfig: {
+        temperature: 0.55,
+        maxOutputTokens: 2048,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     }),
   });
 
