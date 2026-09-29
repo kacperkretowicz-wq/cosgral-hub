@@ -104,24 +104,43 @@ export async function ensurePortalSlug(
 export async function listPortalClients(): Promise<PortalClientSummary[]> {
   const supabase = db();
 
-  const [clientsRes, filesRes, requestsRes] = await Promise.all([
-    supabase
+  // Try with portal_slug first; if column doesn't exist yet (migration pending)
+  // fall back to query without it so clients still load.
+  let clientsRes = await supabase
+    .from("crm_clients")
+    .select("id, company_name, contact_name, email, portal_slug, updated_at")
+    .order("company_name");
+
+  const missingColumn =
+    clientsRes.error &&
+    (clientsRes.error.message?.includes("portal_slug") ||
+      clientsRes.error.code === "42703" ||
+      clientsRes.error.message?.includes("column") ||
+      clientsRes.error.message?.includes("does not exist"));
+
+  if (missingColumn) {
+    // Migration 014 not yet applied — fetch without portal_slug
+    clientsRes = await supabase
       .from("crm_clients")
-      .select("id, company_name, contact_name, email, portal_slug, updated_at")
-      .order("company_name"),
-    supabase
-      .from("portal_files")
-      .select("crm_client_id, created_at"),
-    supabase
-      .from("portal_access_requests")
-      .select("crm_client_id, status, created_at"),
+      .select("id, company_name, contact_name, email, updated_at")
+      .order("company_name") as typeof clientsRes;
+  } else if (clientsRes.error) {
+    throw new Error(clientsRes.error.message);
+  }
+
+  // Portal tables may not exist yet either — handle gracefully
+  const [filesRes, requestsRes] = await Promise.all([
+    supabase.from("portal_files").select("crm_client_id, created_at").then(
+      (r) => (r.error ? { data: [] } : r),
+    ),
+    supabase.from("portal_access_requests").select("crm_client_id, status, created_at").then(
+      (r) => (r.error ? { data: [] } : r),
+    ),
   ]);
 
-  if (clientsRes.error) throw new Error(clientsRes.error.message);
-
   const clients = clientsRes.data ?? [];
-  const files = filesRes.data ?? [];
-  const requests = requestsRes.data ?? [];
+  const files = (filesRes.data ?? []) as { crm_client_id: string; created_at: string }[];
+  const requests = (requestsRes.data ?? []) as { crm_client_id: string; status: string; created_at: string }[];
 
   return clients.map((c) => {
     const clientFiles = files.filter((f) => f.crm_client_id === c.id);
@@ -134,13 +153,13 @@ export async function listPortalClients(): Promise<PortalClientSummary[]> {
     }, null);
     return {
       id: c.id,
-      company_name: c.company_name,
-      contact_name: c.contact_name,
-      email: c.email,
-      portal_slug: c.portal_slug,
+      company_name: (c as { company_name: string }).company_name,
+      contact_name: (c as { contact_name: string | null }).contact_name ?? null,
+      email: (c as { email: string | null }).email ?? null,
+      portal_slug: (c as { portal_slug?: string | null }).portal_slug ?? null,
       file_count: clientFiles.length,
       pending_requests: pendingReqs,
-      last_activity: fileDate ?? c.updated_at ?? null,
+      last_activity: fileDate ?? (c as { updated_at?: string }).updated_at ?? null,
     };
   });
 }
