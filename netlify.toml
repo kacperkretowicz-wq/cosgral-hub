@@ -8,6 +8,14 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# Social Media module — add these in Netlify Dashboard → Site Settings → Env Vars
+# META_ACCESS_TOKEN=
+# META_INSTAGRAM_ACCOUNT_ID=
+# META_FACEBOOK_PAGE_ID=
+# LINKEDIN_ACCESS_TOKEN=
+# LINKEDIN_ORGANIZATION_ID=
+# OPENAI_API_KEY=   (optional — for DALL-E 3 image generation; Gemini used for text)
+
 [[headers]]
   for = "/sw.js"
   [headers.values]
