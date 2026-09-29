@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/CrmUi";
 import { Button } from "@/components/ui/Button";
@@ -442,7 +442,11 @@ export default function MaterialyDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<TabId>("pliki");
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareSlug, setShareSlug] = useState<string | null>(null);
+  const [generatingSlug, setGeneratingSlug] = useState(false);
   const [copied, setCopied] = useState(false);
+  const shareInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     if (!client?.portal_slug && !loading) return;
@@ -487,12 +491,35 @@ export default function MaterialyDetailPage() {
     void load();
   };
 
+  // ── Share / generate slug logic ───────────────────────────────────────
+  const openShare = async () => {
+    setShareOpen(true);
+    if (client?.portal_slug) {
+      setShareSlug(client.portal_slug);
+      return;
+    }
+    // Generate slug on first open
+    setGeneratingSlug(true);
+    const res = await fetch("/api/portal/generate-slug", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ crm_client_id: clientId }),
+    });
+    const data = await res.json();
+    if (res.ok && data.slug) {
+      setShareSlug(data.slug);
+      setClient((prev) => prev ? { ...prev, portal_slug: data.slug } : prev);
+    }
+    setGeneratingSlug(false);
+  };
+
   const copyLink = async () => {
-    if (!client?.portal_slug) return;
-    const url = `${window.location.origin}/portal/${client.portal_slug}`;
+    if (!shareSlug) return;
+    const url = `${window.location.origin}/portal/${shareSlug}`;
     await navigator.clipboard.writeText(url);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    shareInputRef.current?.select();
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const TABS: { id: TabId; label: string; badge?: number }[] = [
@@ -523,25 +550,103 @@ export default function MaterialyDetailPage() {
         title={client?.company_name ?? "Katalog klienta"}
         description={client?.portal_slug ? `Portal: /portal/${client.portal_slug}` : "Brak linku portalu"}
         actions={
-          <div className="flex gap-2">
-            {client?.portal_slug && (
-              <Button variant="secondary" type="button" onClick={copyLink}>
-                {copied ? "✓ Skopiowano" : "Kopiuj link klienta"}
-              </Button>
-            )}
-            {client?.portal_slug && (
-              <a
-                href={`/portal/${client.portal_slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-2xl border border-white/20 bg-white/8 px-4 py-2 text-sm text-white/80 hover:bg-white/12"
-              >
-                Podgląd portalu ↗
-              </a>
-            )}
-          </div>
+          <Button type="button" onClick={openShare}>
+            <svg
+              className="mr-1.5 inline-block h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              viewBox="0 0 24 24"
+              aria-hidden
+            >
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+            Udostępnij klientowi
+          </Button>
         }
       />
+
+      {/* Share modal */}
+      {shareOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setShareOpen(false)}
+        >
+          <div className="w-full max-w-md rounded-3xl border border-white/12 bg-[#111111] p-6 shadow-2xl">
+            {/* Modal header */}
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-white/40">Udostępnij katalog</p>
+                <h2 className="mt-1 text-lg font-medium text-white">{client?.company_name}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShareOpen(false)}
+                className="rounded-full p-1.5 text-white/40 hover:bg-white/8 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {generatingSlug ? (
+              <div className="flex items-center justify-center gap-3 py-8">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+                <span className="text-sm text-white/50">Generuję link…</span>
+              </div>
+            ) : shareSlug ? (
+              <>
+                <p className="mb-4 text-sm text-white/55">
+                  Wyślij ten link klientowi. Po kliknięciu będzie mógł poprosić o dostęp — dostaniesz powiadomienie i zatwierdzisz jednym kliknięciem.
+                </p>
+
+                {/* URL box */}
+                <div className="mb-3 flex items-center gap-2 rounded-2xl border border-white/15 bg-white/[0.05] pr-2 pl-4">
+                  <input
+                    ref={shareInputRef}
+                    type="text"
+                    readOnly
+                    value={`${typeof window !== "undefined" ? window.location.origin : "https://cosgralhub.netlify.app"}/portal/${shareSlug}`}
+                    className="min-w-0 flex-1 bg-transparent py-3 text-sm text-white/80 outline-none selection:bg-white/20"
+                    onClick={() => shareInputRef.current?.select()}
+                  />
+                  <button
+                    type="button"
+                    onClick={copyLink}
+                    className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                      copied
+                        ? "bg-emerald-500/20 text-emerald-300"
+                        : "bg-white/10 text-white hover:bg-white/18"
+                    }`}
+                  >
+                    {copied ? "✓ Skopiowano!" : "Kopiuj link"}
+                  </button>
+                </div>
+
+                <a
+                  href={`/portal/${shareSlug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-center text-xs text-white/30 hover:text-white/60 transition-colors"
+                >
+                  Podgląd portalu ↗
+                </a>
+              </>
+            ) : (
+              <p className="py-8 text-center text-sm text-red-300">Nie udało się wygenerować linku</p>
+            )}
+
+            <div className="mt-5 border-t border-white/8 pt-4">
+              <p className="text-[0.65rem] text-white/25">
+                Prośby o dostęp pojawią się w zakładce <strong className="text-white/40">Dostęp</strong> poniżej.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
