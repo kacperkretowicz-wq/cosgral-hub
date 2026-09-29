@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { PageHeader, EmptyState } from "@/components/ui/CrmUi";
 import type { SmPost, SmPostStatus, SmQueueStats } from "@/lib/sm-db";
 
-// ── Platform pill ──────────────────────────────────────────────────────────
 function PlatformBadge({ platform }: { platform: string }) {
   const colors: Record<string, string> = {
     instagram: "bg-pink-500/15 text-pink-300 border-pink-500/25",
@@ -19,7 +18,6 @@ function PlatformBadge({ platform }: { platform: string }) {
   );
 }
 
-// ── Status dot ─────────────────────────────────────────────────────────────
 function StatusDot({ status }: { status: SmPostStatus }) {
   const colors: Record<SmPostStatus, string> = {
     draft:     "bg-white/30",
@@ -41,7 +39,6 @@ function StatusDot({ status }: { status: SmPostStatus }) {
   );
 }
 
-// ── Stats bar ──────────────────────────────────────────────────────────────
 function StatsBar({ stats }: { stats: SmQueueStats }) {
   const items = [
     { label: "Drafty",        value: stats.draft,           color: "text-white/70" },
@@ -62,6 +59,133 @@ function StatsBar({ stats }: { stats: SmQueueStats }) {
   );
 }
 
+// ── Image uploader inside a post card ─────────────────────────────────────
+function ImageUploader({
+  postId,
+  currentUrl,
+  onUploaded,
+}: {
+  postId: string;
+  currentUrl: string | null;
+  onUploaded: (url: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [mode, setMode] = useState<"idle" | "url">("idle");
+  const [err, setErr] = useState("");
+
+  const handleFile = async (file: File) => {
+    if (!file) return;
+    setUploading(true);
+    setErr("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/sm/upload-image", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) { setErr(data.error ?? "Błąd uploadu"); return; }
+      // Save URL to post
+      await fetch(`/api/sm/posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_url: data.url }),
+      });
+      onUploaded(data.url);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUrl = async () => {
+    if (!urlInput.trim()) return;
+    await fetch(`/api/sm/posts/${postId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image_url: urlInput.trim() }),
+    });
+    onUploaded(urlInput.trim());
+    setUrlInput("");
+    setMode("idle");
+  };
+
+  const CANVA_TEMPLATE =
+    "https://www.canva.com/design/create?width=1080&height=1080&units=px";
+
+  return (
+    <div className="space-y-2">
+      {err ? (
+        <p className="text-xs text-red-300">{err}</p>
+      ) : null}
+
+      {mode === "url" ? (
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            placeholder="https://..."
+            className="glass-field flex-1 rounded-xl px-3 py-2 text-xs"
+            onKeyDown={(e) => e.key === "Enter" && void handleUrl()}
+          />
+          <button
+            type="button"
+            onClick={() => void handleUrl()}
+            className="rounded-xl bg-white/10 px-3 py-2 text-xs hover:bg-white/15"
+          >
+            OK
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("idle")}
+            className="rounded-xl px-2 py-2 text-xs text-white/40 hover:text-white/70"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => inputRef.current?.click()}
+            className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/70 hover:bg-white/10 disabled:opacity-50"
+          >
+            {uploading ? "Wgrywam…" : "📁 Wgraj z dysku"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("url")}
+            className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/70 hover:bg-white/10"
+          >
+            🔗 Wklej URL
+          </button>
+          <a
+            href={CANVA_TEMPLATE}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-xl border border-[#7D2AE8]/40 bg-[#7D2AE8]/15 px-3 py-2 text-xs text-purple-300 hover:bg-[#7D2AE8]/25"
+          >
+            🎨 Canva
+          </a>
+        </div>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleFile(f);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
 // ── Post card ──────────────────────────────────────────────────────────────
 function PostCard({
   post,
@@ -73,6 +197,8 @@ function PostCard({
   const [busy, setBusy] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [caption, setCaption] = useState(post.caption);
+  const [imageUrl, setImageUrl] = useState<string | null>(post.image_url);
+  const [showUpload, setShowUpload] = useState(false);
 
   const act = async (action: "approve" | "reject" | "publish" | "delete") => {
     setBusy(true);
@@ -97,7 +223,7 @@ function PostCard({
           return;
         }
       } else if (action === "delete") {
-        if (!confirm(`Usunąć post?`)) return;
+        if (!confirm("Usunąć post?")) return;
         await fetch(`/api/sm/posts/${post.id}`, { method: "DELETE" });
       }
       onChanged();
@@ -126,22 +252,53 @@ function PostCard({
 
   return (
     <div className="surface flex flex-col overflow-hidden">
-      {/* Image */}
-      {post.image_url ? (
-        <div className="relative aspect-square w-full overflow-hidden rounded-[calc(1.35rem-1px)] rounded-b-none">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={post.image_url}
-            alt=""
-            className="h-full w-full object-cover"
-            loading="lazy"
+      {/* Image area */}
+      <div className="relative aspect-square w-full overflow-hidden rounded-[calc(1.35rem-1px)] rounded-b-none">
+        {imageUrl ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt=""
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+            <button
+              type="button"
+              onClick={() => setShowUpload((v) => !v)}
+              className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-1 text-[0.6rem] text-white/80 hover:bg-black/80"
+            >
+              ✏️ Zmień
+            </button>
+          </>
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-white/[0.03]">
+            <span className="label-mono opacity-30">BRAK GRAFIKI</span>
+            <button
+              type="button"
+              onClick={() => setShowUpload((v) => !v)}
+              className="rounded-full border border-white/20 px-3 py-1.5 text-xs text-white/60 hover:border-white/40 hover:text-white/90"
+            >
+              + Dodaj grafikę
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Upload panel (toggle) */}
+      {showUpload ? (
+        <div className="border-b border-white/8 px-4 py-3">
+          <ImageUploader
+            postId={post.id}
+            currentUrl={imageUrl}
+            onUploaded={(url) => {
+              setImageUrl(url);
+              setShowUpload(false);
+              onChanged();
+            }}
           />
         </div>
-      ) : (
-        <div className="flex aspect-square w-full items-center justify-center rounded-[calc(1.35rem-1px)] rounded-b-none bg-white/[0.03]">
-          <span className="label-mono">NO IMAGE</span>
-        </div>
-      )}
+      ) : null}
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-3 p-4">
@@ -226,12 +383,12 @@ function PostCard({
 
 // ── Filter tabs ────────────────────────────────────────────────────────────
 const STATUS_FILTERS: { value: string; label: string }[] = [
-  { value: "",                       label: "Wszystkie" },
-  { value: "draft",                  label: "Drafty" },
-  { value: "approved",               label: "Zatwierdzone" },
-  { value: "scheduled",              label: "Zaplanowane" },
-  { value: "published",              label: "Opublikowane" },
-  { value: "failed",                 label: "Błędy" },
+  { value: "",          label: "Wszystkie" },
+  { value: "draft",     label: "Drafty" },
+  { value: "approved",  label: "Zatwierdzone" },
+  { value: "scheduled", label: "Zaplanowane" },
+  { value: "published", label: "Opublikowane" },
+  { value: "failed",    label: "Błędy" },
 ];
 
 // ── Weekly calendar ────────────────────────────────────────────────────────
@@ -287,6 +444,24 @@ function WeekCalendar({ posts }: { posts: SmPost[] }) {
   );
 }
 
+// ── Generate error banner ──────────────────────────────────────────────────
+function GenerateResult({ result, onDismiss }: { result: { ok: boolean; message: string }; onDismiss: () => void }) {
+  if (result.ok) {
+    return (
+      <div className="mb-4 flex items-center justify-between rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+        <span>✓ {result.message}</span>
+        <button type="button" onClick={onDismiss} className="ml-4 text-emerald-300/60 hover:text-emerald-300">✕</button>
+      </div>
+    );
+  }
+  return (
+    <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+      <span>⚠ {result.message}</span>
+      <button type="button" onClick={onDismiss} className="ml-4 text-red-300/60 hover:text-red-300">✕</button>
+    </div>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────
 export default function SmPage() {
   const [posts, setPosts] = useState<SmPost[]>([]);
@@ -296,6 +471,7 @@ export default function SmPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [genResult, setGenResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -305,12 +481,12 @@ export default function SmPage() {
       params.set("limit", "60");
       const res = await fetch(`/api/sm/posts?${params}`, { cache: "no-store" });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Błąd"); return; }
+      if (!res.ok) { setError(data.error ?? "Błąd ładowania postów"); return; }
       setPosts(data.posts ?? []);
       setStats(data.stats ?? {});
       setError("");
     } catch {
-      setError("Błąd sieci");
+      setError("Błąd sieci — sprawdź połączenie");
     } finally {
       setLoading(false);
     }
@@ -320,11 +496,26 @@ export default function SmPage() {
 
   const generate = async () => {
     setGenerating(true);
+    setGenResult(null);
     try {
-      const res = await fetch("/api/sm/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const res = await fetch("/api/sm/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
       const data = await res.json();
-      if (!res.ok) { alert(data.error ?? "Błąd generowania"); return; }
+      if (!res.ok) {
+        setGenResult({ ok: false, message: data.error ?? "Błąd generowania" });
+        return;
+      }
+      const count = data.posts?.length ?? 0;
+      setGenResult({
+        ok: true,
+        message: `Wygenerowano ${count} post${count === 1 ? "" : count < 5 ? "y" : "ów"} — temat: ${data.theme_label ?? data.theme}`,
+      });
       await load();
+    } catch (e) {
+      setGenResult({ ok: false, message: e instanceof Error ? e.message : "Błąd sieci" });
     } finally {
       setGenerating(false);
     }
@@ -345,6 +536,12 @@ export default function SmPage() {
         }
       />
 
+      {/* Generate result banner */}
+      {genResult ? (
+        <GenerateResult result={genResult} onDismiss={() => setGenResult(null)} />
+      ) : null}
+
+      {/* Load error */}
       {error ? (
         <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}

@@ -1,10 +1,16 @@
 /**
  * COSGRAL SM — AI Content Generation
- * Uses Gemini (already available via GEMINI_API_KEY) for text generation.
+ * Uses Gemini 2.5 Flash (same as HUB AI) for text generation.
  * Images: DALL-E 3 via OpenAI (OPENAI_API_KEY) or placeholder when unavailable.
  */
 
 import type { SmPlatform, SmPostType } from "./sm-db";
+
+// Reuse the same model/URL as the rest of HUB
+const GEMINI_MODEL = "gemini-2.5-flash";
+function geminiUrl(apiKey: string) {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+}
 
 // ── Brand config ─────────────────────────────────────────────────────────
 
@@ -84,23 +90,27 @@ export async function generateCaption(opts: {
   const geminiKey = process.env.GEMINI_API_KEY;
   if (geminiKey) {
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: fullPrompt }] }],
-            generationConfig: { temperature: 0.85, maxOutputTokens: 1200 },
-          }),
-        },
-      );
-      const data = await res.json();
-      const text: string =
-        data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-      return parseGeneratedText(text, opts.theme);
+      const res = await fetch(geminiUrl(geminiKey), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: BRAND_VOICE }] },
+          contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+          generationConfig: {
+            temperature: 0.85,
+            maxOutputTokens: 1200,
+            thinkingConfig: { thinkingBudget: 0 },
+          },
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const text: string =
+          data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+        if (text) return parseGeneratedText(text, opts.theme);
+      }
     } catch {
-      // fall through
+      // fall through to placeholder
     }
   }
 
