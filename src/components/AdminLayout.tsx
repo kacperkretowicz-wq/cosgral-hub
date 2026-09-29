@@ -16,6 +16,7 @@ const DESKTOP_NAV = [
   { href: "/admin/tasks", label: "Tasks" },
   { href: "/admin/kalendarz", label: "Kalendarz" },
   { href: "/admin/finanse", label: "Finanse" },
+  { href: "/admin/materialy", label: "Materiały" },
   { href: "/admin/czat", label: "Czat strony" },
   { href: "/admin/sm", label: "Social Media" },
   { href: "/admin/team", label: "Team" },
@@ -26,6 +27,7 @@ const MORE_ITEMS = [
   { href: "/admin", label: "Home", icon: "home" as const },
   { href: "/admin/kalendarz", label: "Kalendarz", icon: "cal" as const },
   { href: "/admin/finanse", label: "Finanse", icon: "wallet" as const },
+  { href: "/admin/materialy", label: "Materiały", icon: "folder" as const },
   { href: "/admin/sm", label: "Social Media", icon: "spark" as const },
   { href: "/admin/czat", label: "Czat strony", icon: "chat" as const },
   { href: "/admin/team", label: "Team", icon: "team" as const },
@@ -58,6 +60,7 @@ const MORE_ACTIVE_PREFIXES = [
   "/admin/leady",
   "/admin/harmonogram",
   "/admin/sm",
+  "/admin/materialy",
 ];
 
 function NavIcon({ name, className = "" }: { name: string; className?: string }) {
@@ -155,6 +158,12 @@ function NavIcon({ name, className = "" }: { name: string; className?: string })
         <svg {...common}>
           <path d="M4 6h16v12H4V6Z" />
           <path d="M4 13h4l2 2h4l2-2h4" />
+        </svg>
+      );
+    case "folder":
+      return (
+        <svg {...common}>
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
         </svg>
       );
     default:
