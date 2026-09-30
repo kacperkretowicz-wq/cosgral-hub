@@ -5,7 +5,7 @@ import {
   getGoogleAuth,
   isGoogleWorkspaceConfigured,
 } from "@/lib/google-auth";
-import { getOrCreateRootFolder } from "@/lib/gdrive-folders";
+import { getOrCreateRootFolder, resetRootFolderCache } from "@/lib/gdrive-folders";
 
 export async function GET() {
   const configured = isGoogleWorkspaceConfigured();
@@ -29,32 +29,39 @@ export async function GET() {
     const auth = getGoogleAuth();
     const drive = google.drive({ version: "v3", auth: auth! });
 
-    // Use self-healing logic — auto-fixes stale GOOGLE_DRIVE_ROOT_FOLDER_ID
-    const rootId = await getOrCreateRootFolder(drive);
+    // Get cached folder ID
+    let rootId = await getOrCreateRootFolder(drive);
 
-    const folder = await drive.files.get({
-      fileId: rootId,
-      fields: "id,name,mimeType",
-      supportsAllDrives: true,
-    });
+    // Status endpoint DOES verify — this is the one place we call Drive API
+    // to confirm the folder is still alive. If stale, auto-heal.
+    try {
+      const folder = await drive.files.get({
+        fileId: rootId,
+        fields: "id,name,mimeType",
+        supportsAllDrives: true,
+      });
 
-    return NextResponse.json({
-      ok: true,
-      configured: true,
-      root_folder: {
-        id: folder.data.id,
-        name: folder.data.name,
-      },
-    });
+      return NextResponse.json({
+        ok: true,
+        configured: true,
+        root_folder: { id: folder.data.id, name: folder.data.name },
+      });
+    } catch {
+      // Folder is stale — reset cache and recreate
+      await resetRootFolderCache();
+      rootId = await getOrCreateRootFolder(drive);
+      const folder = await drive.files.get({ fileId: rootId, fields: "id,name" });
+      return NextResponse.json({
+        ok: true,
+        configured: true,
+        healed: true,
+        root_folder: { id: folder.data.id, name: folder.data.name },
+      });
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
-      {
-        ok: false,
-        configured: true,
-        error: message,
-        authorize_url: "/api/google/oauth/authorize",
-      },
+      { ok: false, configured: true, error: message, authorize_url: "/api/google/oauth/authorize" },
       { status: 503 },
     );
   }
