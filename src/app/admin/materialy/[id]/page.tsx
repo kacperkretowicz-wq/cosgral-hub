@@ -178,7 +178,7 @@ async function uploadFileToDriveAdmin(
     xhr.onload = () => {
       if (xhr.status === 200 || xhr.status === 201) {
         try { onProgress(100); resolve((JSON.parse(xhr.responseText) as { id?: string }).id ?? ""); }
-        catch { reject(new Error("Błąd odpowiedzi Google")); }
+        catch { reject(new Error("Błąd odpowiedzi serwera")); }
       } else { reject(new Error(`Drive błąd ${xhr.status}`)); }
     };
     xhr.onerror = () => reject(new Error("Błąd sieci"));
@@ -261,7 +261,7 @@ function DropzoneUpload({
             <p className="text-sm text-white/60">
               Przeciągnij pliki tutaj lub <span className="text-white/90 underline">kliknij</span>
             </p>
-            <p className="mt-1 text-xs text-white/30">Zdjęcia, wideo, PDF · do 5 GB · Google Drive</p>
+            <p className="mt-1 text-xs text-white/30">Zdjęcia, wideo, PDF · bez limitu rozmiaru</p>
           </>
         )}
       </div>

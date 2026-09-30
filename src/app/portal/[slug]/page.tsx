@@ -78,10 +78,10 @@ async function uploadFileToDrive(
           onProgress(100);
           resolve(resp.id ?? "");
         } catch {
-          reject(new Error("Nieprawidłowa odpowiedź Google"));
+          reject(new Error("Nieprawidłowa odpowiedź serwera"));
         }
       } else {
-        reject(new Error(`Google Drive błąd: ${xhr.status}`));
+        reject(new Error(`Błąd przesyłania: ${xhr.status}`));
       }
     };
     xhr.onerror = () => reject(new Error("Błąd sieci podczas wysyłania"));
@@ -404,8 +404,8 @@ function FileGrid({ files, queue, onUpload }: {
           </svg>
         )}
         <div>
-          <p className="text-sm text-[--ink]">{anyUploading ? "Przesyłam do Google Drive…" : "Dodaj pliki"}</p>
-          <p className="label-mono mt-0.5">zdjęcia · wideo · pdf — do 5 GB</p>
+          <p className="text-sm text-[--ink]">{anyUploading ? "Przesyłam pliki…" : "Dodaj pliki"}</p>
+          <p className="label-mono mt-0.5">zdjęcia · wideo · pdf</p>
         </div>
         <input ref={inputRef} type="file" multiple
           accept="image/*,video/*,.mov,.mp4,.m4v,.heic,.heif,application/pdf"
@@ -629,7 +629,7 @@ function PortalDashboard({ slug, companyName, crm_client_id, callerName }: {
         <div className="hub-tile p-6 mb-6 flex items-center justify-between"
           style={{ "--tile-glow": "rgba(91,141,239,0.55)", "--tile-tint": "rgba(91,141,239,0.1)" } as React.CSSProperties}>
           <div>
-            <p className="label-mono mb-1">Twój katalog · Google Drive</p>
+            <p className="label-mono mb-1">Twój katalog</p>
             <h1 className="text-xl font-light tracking-tight">{companyName}</h1>
           </div>
           <div className="text-right hidden sm:block">

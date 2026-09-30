@@ -218,9 +218,9 @@ function DeleteCatalogModal({
                 Zostaną trwale usunięte:
               </p>
               <ul className="mt-2 space-y-1 text-xs text-white/45">
-                <li>• Wszystkie pliki z <span className="text-white/65">Google Drive</span></li>
-                <li>• Folder klienta w Drive (<span className="font-mono text-white/65">COSGRAL HUB / {client.company_name}</span>)</li>
-                <li>• Wszystkie pliki, notatki i wiadomości w <span className="text-white/65">Supabase</span></li>
+                <li>• Wszystkie pliki z katalogu klienta</li>
+                <li>• Folder <span className="font-mono text-white/65">Cosgral HUB / {client.company_name}</span></li>
+                <li>• Wszystkie pliki, notatki i wiadomości w systemie</li>
                 <li>• Historia dostępu do portalu</li>
               </ul>
               <p className="mt-3 text-xs text-white/35">
@@ -252,7 +252,7 @@ function DeleteCatalogModal({
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-red-500/30 border-t-red-400" />
             <div className="text-center">
               <p className="text-sm text-white/70 font-medium">Usuwam katalog…</p>
-              <p className="text-xs text-white/35 mt-1">Google Drive + Supabase</p>
+              <p className="text-xs text-white/35 mt-1">Usuwam pliki i dane klienta</p>
             </div>
           </div>
         )}
