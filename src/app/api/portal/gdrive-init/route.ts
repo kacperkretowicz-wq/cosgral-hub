@@ -87,6 +87,13 @@ export async function POST(request: Request) {
   const folderId = await ensureClientDriveFolder(drive, crm_client_id, companyName);
 
   // ── Resumable Upload Session URI ──────────────────────────────────────────
+  // Pass the browser's Origin so Google sets correct CORS headers on the
+  // session URI — without this the browser XHR PUT gets a CORS error.
+  const browserOrigin =
+    request.headers.get("origin") ??
+    request.headers.get("referer")?.split("/").slice(0, 3).join("/") ??
+    "https://cosgralhub.netlify.app";
+
   const initRes = await fetch(
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable",
     {
@@ -96,6 +103,7 @@ export async function POST(request: Request) {
         "Content-Type": "application/json; charset=UTF-8",
         "X-Upload-Content-Type": mime_type || "application/octet-stream",
         "X-Upload-Content-Length": String(size_bytes ?? 0),
+        "Origin": browserOrigin,
       },
       body: JSON.stringify({ name: file_name, parents: [folderId] }),
     }

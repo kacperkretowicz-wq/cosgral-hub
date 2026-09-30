@@ -145,7 +145,51 @@ function FileGrid({
   );
 }
 
-// ── Google Drive upload (mirrors portal logic) ────────────────────────────
+// ── Google Drive upload (chunked 5 MB, mirrors portal logic) ─────────────
+async function uploadChunkedAdmin(
+  uploadUri: string,
+  file: File,
+  mimeType: string,
+  onProgress: (pct: number) => void,
+): Promise<string> {
+  const CHUNK = 5 * 1024 * 1024;
+  const total = file.size;
+  let offset = 0;
+
+  while (offset < total) {
+    const end = Math.min(offset + CHUNK, total);
+    const chunk = file.slice(offset, end);
+
+    const fileId = await new Promise<string | null>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", uploadUri);
+      xhr.setRequestHeader("Content-Type", mimeType);
+      xhr.setRequestHeader("Content-Range", `bytes ${offset}-${end - 1}/${total}`);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.min(95, Math.round(((offset + e.loaded) / total) * 95)));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200 || xhr.status === 201) {
+          try { onProgress(100); resolve((JSON.parse(xhr.responseText) as { id?: string }).id ?? ""); }
+          catch { reject(new Error("Błąd odpowiedzi serwera")); }
+        } else if (xhr.status === 308) {
+          resolve(null); // chunk accepted, continue
+        } else {
+          reject(new Error(`Błąd przesyłania: ${xhr.status}`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Błąd sieci"));
+      xhr.send(chunk);
+    });
+
+    if (fileId !== null) return fileId;
+    offset = end;
+  }
+  throw new Error("Upload zakończony bez ID pliku");
+}
+
 async function uploadFileToDriveAdmin(
   file: File,
   crm_client_id: string,
@@ -170,20 +214,7 @@ async function uploadFileToDriveAdmin(
   if (!initRes.ok) { const e = await initRes.json(); throw new Error(e.error ?? "Błąd init"); }
   const { uploadUri, folderId } = await initRes.json() as { uploadUri: string; folderId: string };
 
-  const fileId = await new Promise<string>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("PUT", uploadUri);
-    xhr.setRequestHeader("Content-Type", mimeType);
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 95)); };
-    xhr.onload = () => {
-      if (xhr.status === 200 || xhr.status === 201) {
-        try { onProgress(100); resolve((JSON.parse(xhr.responseText) as { id?: string }).id ?? ""); }
-        catch { reject(new Error("Błąd odpowiedzi serwera")); }
-      } else { reject(new Error(`Drive błąd ${xhr.status}`)); }
-    };
-    xhr.onerror = () => reject(new Error("Błąd sieci"));
-    xhr.send(file);
-  });
+  const fileId = await uploadChunkedAdmin(uploadUri, file, mimeType, onProgress);
   return { gdrive_file_id: fileId, gdrive_folder_id: folderId };
 }
 

@@ -20,13 +20,75 @@ function isImage(m: string) { return m.startsWith("image/"); }
 function isVideo(m: string) { return m.startsWith("video/"); }
 function isGdrive(f: PortalFile) { return f.storage_provider === "gdrive" || !!f.gdrive_file_id; }
 
-// ── Upload logic (Google Drive Resumable) ─────────────────────────────────
+// ── Upload logic (Google Drive Resumable — chunked 5 MB) ──────────────────
 interface UploadItem {
   id: string;          // temp id
   file: File;
   progress: number;    // 0-100
   status: "pending" | "uploading" | "done" | "error";
   error?: string;
+}
+
+/** Send file in 5 MB chunks to a Google Drive resumable session URI. */
+async function uploadChunked(
+  uploadUri: string,
+  file: File,
+  mimeType: string,
+  onProgress: (pct: number) => void,
+  signal: AbortSignal,
+): Promise<string> {
+  const CHUNK = 5 * 1024 * 1024; // 5 MB — Google requires multiples of 256 KB
+  const total = file.size;
+  let offset = 0;
+
+  while (offset < total) {
+    if (signal.aborted) throw new Error("Anulowano");
+
+    const end = Math.min(offset + CHUNK, total);
+    const chunk = file.slice(offset, end);
+
+    const fileId = await new Promise<string | null>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", uploadUri);
+      xhr.setRequestHeader("Content-Type", mimeType);
+      xhr.setRequestHeader("Content-Range", `bytes ${offset}-${end - 1}/${total}`);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const overall = offset + e.loaded;
+          onProgress(Math.min(95, Math.round((overall / total) * 95)));
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200 || xhr.status === 201) {
+          // Final chunk — Google returns file metadata
+          try {
+            const resp = JSON.parse(xhr.responseText) as { id?: string };
+            onProgress(100);
+            resolve(resp.id ?? "");
+          } catch {
+            reject(new Error("Nieprawidłowa odpowiedź serwera"));
+          }
+        } else if (xhr.status === 308) {
+          // Resume Incomplete — chunk accepted, more to come
+          resolve(null);
+        } else {
+          reject(new Error(`Błąd przesyłania: ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Błąd sieci podczas wysyłania"));
+      signal.addEventListener("abort", () => { xhr.abort(); reject(new Error("Anulowano")); });
+
+      xhr.send(chunk);
+    });
+
+    if (fileId !== null) return fileId;  // upload complete
+    offset = end;
+  }
+
+  throw new Error("Upload zakończony bez ID pliku");
 }
 
 async function uploadFileToDrive(
@@ -61,34 +123,8 @@ async function uploadFileToDrive(
   }
   const { uploadUri, folderId } = await initRes.json() as { uploadUri: string; folderId: string };
 
-  // Step 2: PUT file directly to Google Drive (browser → Google, bypasses Netlify)
-  const fileId = await new Promise<string>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("PUT", uploadUri);
-    xhr.setRequestHeader("Content-Type", mimeType);
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 95));
-    };
-
-    xhr.onload = () => {
-      if (xhr.status === 200 || xhr.status === 201) {
-        try {
-          const resp = JSON.parse(xhr.responseText) as { id?: string };
-          onProgress(100);
-          resolve(resp.id ?? "");
-        } catch {
-          reject(new Error("Nieprawidłowa odpowiedź serwera"));
-        }
-      } else {
-        reject(new Error(`Błąd przesyłania: ${xhr.status}`));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Błąd sieci podczas wysyłania"));
-    signal.addEventListener("abort", () => { xhr.abort(); reject(new Error("Anulowano")); });
-
-    xhr.send(file);
-  });
+  // Step 2: upload in 5 MB chunks directly to Google (browser → Google, bypasses Netlify)
+  const fileId = await uploadChunked(uploadUri, file, mimeType, onProgress, signal);
 
   return { gdrive_file_id: fileId, gdrive_folder_id: folderId };
 }
