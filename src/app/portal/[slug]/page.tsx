@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { CosgralBrand } from "@/components/CosgralLogo";
 import type { PortalFile, PortalNote, PortalMessage } from "@/lib/portal-db";
 
 // ── helpers ───────────────────────────────────────────────────────────────
@@ -18,30 +19,53 @@ function fmtDate(iso: string) {
 function isImage(m: string) { return m.startsWith("image/"); }
 function isVideo(m: string) { return m.startsWith("video/"); }
 
-// ── Cosgral wordmark ──────────────────────────────────────────────────────
-function CosgralMark({ dim = false }: { dim?: boolean }) {
+// ── Ambient background (matches CosgralAmbient from admin) ────────────────
+function PortalAmbient() {
   return (
-    <span
-      className={`text-[0.65rem] font-bold uppercase tracking-[0.35em] ${
-        dim ? "text-white/25" : "text-white/60"
-      }`}
-    >
-      Cosgral
-    </span>
+    <>
+      {/* Deep noise grain layer — same as body::after in globals.css */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.07] mix-blend-overlay"
+        style={{ backgroundImage: "url('/cosgral/charcoal-grain.jpg')", backgroundSize: "280px" }}
+      />
+      {/* Radial glow top-left */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed z-0"
+        style={{
+          top: "-20vh", left: "-15vw",
+          width: "70vmax", height: "70vmax",
+          borderRadius: "50%",
+          background: "radial-gradient(circle closest-side, rgba(91,141,239,0.13) 0%, transparent 70%)",
+        }}
+      />
+      {/* Radial glow bottom-right */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed z-0"
+        style={{
+          bottom: "-20vh", right: "-15vw",
+          width: "60vmax", height: "60vmax",
+          borderRadius: "50%",
+          background: "radial-gradient(circle closest-side, rgba(255,255,255,0.06) 0%, transparent 70%)",
+        }}
+      />
+    </>
   );
 }
 
 // ── Top bar ───────────────────────────────────────────────────────────────
 function TopBar({ companyName, callerName }: { companyName: string; callerName?: string }) {
   return (
-    <header className="fixed top-0 inset-x-0 z-30 flex items-center justify-between px-6 py-4 bg-[#030303]/80 backdrop-blur-2xl border-b border-white/[0.06]">
-      <CosgralMark />
+    <header className="fixed top-0 inset-x-0 z-40 flex items-center justify-between px-5 py-3 glass-strong border-b border-white/[0.08]">
+      <CosgralBrand size={22} subtitle="Hub" />
       <div className="flex items-center gap-3">
-        <span className="hidden sm:block text-xs text-white/35 tracking-wide">{companyName}</span>
+        <span className="hidden sm:block label-mono">{companyName}</span>
         {callerName && (
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-[0.6rem] font-semibold text-white/70 uppercase">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full surface text-[0.65rem] font-semibold text-white/80 uppercase">
             {callerName.slice(0, 1)}
-          </span>
+          </div>
         )}
       </div>
     </header>
@@ -51,18 +75,22 @@ function TopBar({ companyName, callerName }: { companyName: string; callerName?:
 // ── Loading screen ────────────────────────────────────────────────────────
 function LoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#030303]">
-      <div className="flex flex-col items-center gap-5">
-        <CosgralMark dim />
-        <div className="h-px w-24 overflow-hidden bg-white/10">
-          <div className="h-full w-1/2 animate-[slide_1.4s_ease-in-out_infinite] bg-white/40" />
+    <div className="flex min-h-screen items-center justify-center bg-[--bg]">
+      <PortalAmbient />
+      <div className="relative z-10 flex flex-col items-center gap-6">
+        <CosgralBrand size={32} subtitle="Hub" />
+        <div className="h-px w-32 overflow-hidden rounded-full bg-white/[0.08]">
+          <div
+            className="h-full w-1/2 rounded-full bg-white/40"
+            style={{ animation: "slide 1.4s ease-in-out infinite" }}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-// ── Request access ────────────────────────────────────────────────────────
+// ── Request Access view ───────────────────────────────────────────────────
 function RequestAccessView({
   slug,
   companyName,
@@ -96,89 +124,83 @@ function RequestAccessView({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#030303]">
-      {/* hero */}
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-24">
-        <div className="w-full max-w-[400px] space-y-10">
+    <div className="relative min-h-screen bg-[--bg] flex flex-col items-center justify-center px-5 py-20">
+      <PortalAmbient />
+      <div className="relative z-10 w-full max-w-md space-y-8">
 
-          {/* Brand + title */}
-          <div className="space-y-4">
-            <CosgralMark />
-            <div>
-              <h1 className="text-3xl font-light tracking-tight text-[#F5F3EE]">
-                Katalog materiałów
-              </h1>
-              <p className="mt-1.5 text-sm text-white/40">{companyName}</p>
-            </div>
-            <div className="h-px w-full bg-white/8" />
-            <p className="text-sm leading-relaxed text-white/45">
-              Podaj swoje imię — Cosgral otrzyma powiadomienie i w ciągu chwili zatwierdzi Twój dostęp.
-            </p>
+        {/* Hero card */}
+        <div className="hub-tile p-8 space-y-6">
+          {/* Brand */}
+          <div className="flex items-center gap-3">
+            <CosgralBrand size={28} subtitle="Hub" />
           </div>
 
+          {/* Title */}
+          <div className="space-y-1">
+            <p className="label-mono">Materiały klienta</p>
+            <h1 className="text-2xl font-light tracking-tight text-[--ink]">{companyName}</h1>
+          </div>
+
+          <div className="h-px bg-white/[0.08]" />
+
+          <p className="text-sm leading-relaxed text-white/50">
+            Podaj swoje imię — Cosgral otrzyma powiadomienie i w ciągu chwili zatwierdzi dostęp.
+          </p>
+
           {/* Form */}
-          <div className="space-y-3">
-            <div>
-              <label className="mb-1.5 block text-[0.65rem] uppercase tracking-[0.18em] text-white/35">
-                Imię i nazwisko
-              </label>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="label-mono">Imię i nazwisko</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Jan Kowalski"
                 autoFocus
-                className="w-full border-0 border-b border-white/15 bg-transparent pb-2.5 pt-1 text-base text-[#F5F3EE] placeholder-white/20 outline-none transition-colors focus:border-white/40"
+                className="glass-field w-full px-5 py-3 text-sm text-[--ink] placeholder-white/20 rounded-2xl"
                 onKeyDown={(e) => e.key === "Enter" && void submit()}
               />
             </div>
-            <div>
-              <label className="mb-1.5 block text-[0.65rem] uppercase tracking-[0.18em] text-white/35">
-                Email <span className="text-white/20 normal-case">(opcjonalnie)</span>
+            <div className="space-y-1.5">
+              <label className="label-mono">
+                Email <span className="normal-case text-white/20">(opcjonalnie)</span>
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="jan@firma.pl"
-                className="w-full border-0 border-b border-white/15 bg-transparent pb-2.5 pt-1 text-base text-[#F5F3EE] placeholder-white/20 outline-none transition-colors focus:border-white/40"
+                className="glass-field w-full px-5 py-3 text-sm text-[--ink] placeholder-white/20 rounded-2xl"
                 onKeyDown={(e) => e.key === "Enter" && void submit()}
               />
             </div>
-
-            {error && (
-              <p className="text-xs text-red-400/90">{error}</p>
-            )}
-
-            <div className="pt-4">
-              <button
-                type="button"
-                onClick={submit}
-                disabled={submitting || !name.trim()}
-                className="group relative w-full overflow-hidden rounded-full bg-[#F5F3EE] px-8 py-3.5 text-sm font-semibold text-[#0A0A0A] transition-all duration-300 hover:bg-white disabled:opacity-40"
-              >
-                {submitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black/70" />
-                    Wysyłam…
-                  </span>
-                ) : (
-                  "Poproś o dostęp"
-                )}
-              </button>
-            </div>
+            {error && <p className="text-xs text-red-400/90">{error}</p>}
           </div>
 
-          <p className="text-center text-[0.65rem] text-white/20">
-            Twoje dane są bezpieczne i używane wyłącznie w celu identyfikacji.
-          </p>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={submitting || !name.trim()}
+            className="w-full rounded-full bg-[--ink] py-3.5 text-sm font-semibold text-[--bg] transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black/70" />
+                Wysyłam…
+              </span>
+            ) : "Poproś o dostęp"}
+          </button>
         </div>
+
+        <p className="text-center text-[0.65rem] text-white/20">
+          Twoje dane są bezpieczne i używane wyłącznie w celu identyfikacji.
+        </p>
       </div>
     </div>
   );
 }
 
-// ── Waiting for approval ──────────────────────────────────────────────────
+// ── Waiting view ──────────────────────────────────────────────────────────
 function WaitingView({
   requestId,
   companyName,
@@ -189,14 +211,11 @@ function WaitingView({
   onApproved: (token: string) => void;
 }) {
   const [dots, setDots] = useState(0);
-
-  // Animate dots
   useEffect(() => {
     const id = setInterval(() => setDots((d) => (d + 1) % 4), 500);
     return () => clearInterval(id);
   }, []);
 
-  // Poll for approval every 5s
   useEffect(() => {
     const id = setInterval(async () => {
       try {
@@ -206,39 +225,40 @@ function WaitingView({
           document.cookie = `portal_session=${data.token};path=/;max-age=${60 * 60 * 24 * 30};samesite=lax`;
           onApproved(data.token);
         }
-      } catch { /* ignore network errors while polling */ }
+      } catch { /* ignore network errors */ }
     }, 5000);
     return () => clearInterval(id);
   }, [requestId, onApproved]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#030303] px-6">
-      <div className="w-full max-w-[400px] space-y-10 text-center">
-        <CosgralMark dim />
+    <div className="relative min-h-screen bg-[--bg] flex flex-col items-center justify-center px-5">
+      <PortalAmbient />
+      <div className="relative z-10 w-full max-w-sm">
+        <div className="hub-tile p-10 text-center space-y-8">
+          <CosgralBrand size={28} subtitle="Hub" className="justify-center" />
 
-        {/* Pulsing ring */}
-        <div className="mx-auto flex h-20 w-20 items-center justify-center">
-          <div className="absolute h-20 w-20 animate-ping rounded-full bg-white/5" />
-          <div className="relative h-12 w-12 rounded-full bg-white/[0.07] flex items-center justify-center">
-            <div className="h-4 w-4 rounded-full bg-white/30" />
+          {/* Pulsing ring */}
+          <div className="mx-auto flex h-20 w-20 items-center justify-center relative">
+            <div className="absolute h-20 w-20 animate-ping rounded-full bg-white/[0.06]" />
+            <div className="relative h-12 w-12 rounded-full surface flex items-center justify-center">
+              <div className="h-4 w-4 rounded-full bg-white/40" />
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-3">
-          <h2 className="text-2xl font-light text-[#F5F3EE]">
-            Prośba wysłana{"·".repeat(0)}
-            <span className="text-white/30">{".".repeat(dots)}</span>
-          </h2>
-          <p className="text-sm leading-relaxed text-white/40">
-            Cosgral otrzymał powiadomienie.<br />
-            Po zatwierdzeniu dostęp otworzy się automatycznie.
-          </p>
-          <p className="text-xs text-white/20">{companyName}</p>
-        </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-light text-[--ink]">
+              Prośba wysłana
+              <span className="text-white/30">{".".repeat(dots)}</span>
+            </h2>
+            <p className="text-sm text-white/40">
+              Cosgral otrzymał powiadomienie.<br />
+              Po zatwierdzeniu dostęp otworzy się automatycznie.
+            </p>
+            <p className="label-mono mt-2">{companyName}</p>
+          </div>
 
-        <p className="text-[0.65rem] text-white/15">
-          Możesz zostawić tę kartę otwartą.
-        </p>
+          <p className="text-[0.6rem] text-white/15">Możesz zostawić tę kartę otwartą.</p>
+        </div>
       </div>
     </div>
   );
@@ -254,60 +274,76 @@ function FileGrid({ files, uploading, onUpload }: {
 
   return (
     <div className="space-y-4">
-      {/* Upload strip */}
+      {/* Upload tile */}
       <div
         onClick={() => inputRef.current?.click()}
-        className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed border-white/10 px-5 py-4 transition-colors hover:border-white/20 hover:bg-white/[0.02]"
+        className="hub-tile group flex cursor-pointer items-center gap-4 px-5 py-4 transition-all"
+        style={{ "--tile-glow": "rgba(91,141,239,0.6)", "--tile-tint": "rgba(91,141,239,0.1)" } as React.CSSProperties}
       >
         {uploading ? (
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white/60 shrink-0" />
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/70 shrink-0" />
         ) : (
-          <svg className="h-4 w-4 shrink-0 text-white/35" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+          <svg className="h-5 w-5 shrink-0 text-white/50" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
           </svg>
         )}
         <div>
-          <p className="text-sm text-white/55 group-hover:text-white/80 transition-colors">
-            {uploading ? "Wgrywam pliki…" : "Wgraj pliki"}
-          </p>
-          <p className="text-[0.62rem] text-white/25">Zdjęcia, wideo, PDF · max 100 MB</p>
+          <p className="text-sm text-[--ink]">{uploading ? "Przesyłam…" : "Dodaj pliki"}</p>
+          <p className="label-mono mt-0.5">zdjęcia · wideo · pdf</p>
         </div>
+        {/* Hidden file input — accept ALL images and videos (iOS camera roll) */}
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept="image/*,video/*,.mov,.mp4,.m4v,.heic,.heif,application/pdf"
+          className="hidden"
+          onChange={(e) => onUpload(e.target.files)}
+        />
       </div>
-      <input ref={inputRef} type="file" multiple
-        accept="image/*,video/mp4,video/quicktime,video/webm,application/pdf"
-        className="hidden"
-        onChange={(e) => { onUpload(e.target.files); e.target.value = ""; }}
-      />
 
-      {files.length === 0 ? (
-        <div className="py-16 text-center">
-          <p className="text-sm text-white/20">Brak plików w katalogu</p>
-          <p className="mt-1 text-xs text-white/12">Wgraj pierwszy materiał powyżej</p>
+      {files.length === 0 && !uploading && (
+        <div className="surface-list px-6 py-12 text-center">
+          <p className="text-sm text-white/30">Brak plików — prześlij pierwsze materiały powyżej.</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      )}
+
+      {/* Grid */}
+      {files.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {files.map((f) => (
-            <a key={f.id} href={f.public_url ?? "#"} target="_blank" rel="noopener noreferrer"
-              className="group relative overflow-hidden rounded-xl bg-white/[0.04] transition-colors hover:bg-white/[0.07]"
-            >
+            <div key={f.id} className="hub-tile overflow-hidden group">
               {isImage(f.mime_type) && f.public_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={f.public_url} alt={f.file_name}
-                  className="aspect-square w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                  loading="lazy"
-                />
+                <a href={f.public_url} target="_blank" rel="noopener noreferrer">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={f.public_url}
+                    alt={f.file_name}
+                    className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </a>
+              ) : isVideo(f.mime_type) && f.public_url ? (
+                <a href={f.public_url} target="_blank" rel="noopener noreferrer" className="block">
+                  <div className="aspect-square w-full bg-black flex items-center justify-center">
+                    <svg className="h-10 w-10 text-white/40" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </a>
               ) : (
-                <div className="flex aspect-square w-full items-center justify-center">
-                  <span className="text-3xl opacity-50">
-                    {isVideo(f.mime_type) ? "▶" : f.mime_type === "application/pdf" ? "📄" : "📁"}
-                  </span>
+                <div className="aspect-square w-full flex flex-col items-center justify-center gap-2 p-4">
+                  <svg className="h-8 w-8 text-white/30" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                  </svg>
+                  <p className="text-[0.6rem] text-white/30 text-center leading-tight break-all">{f.file_name}</p>
                 </div>
               )}
-              <div className="p-2.5">
-                <p className="truncate text-[0.65rem] text-white/60">{f.file_name}</p>
-                <p className="mt-0.5 text-[0.58rem] text-white/25">{fmtSize(f.size_bytes)}</p>
+              {/* Meta bar */}
+              <div className="px-3 py-2 flex items-center justify-between border-t border-white/[0.06]">
+                <p className="text-[0.6rem] text-white/35 truncate max-w-[70%]">{f.file_name}</p>
+                <span className="label-mono text-[0.55rem]">{fmtSize(f.size_bytes)}</span>
               </div>
-            </a>
+            </div>
           ))}
         </div>
       )}
@@ -324,7 +360,7 @@ function NotesPanel({ notes, crm_client_id, onChanged }: {
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const add = async () => {
+  const save = async () => {
     if (!text.trim()) return;
     setSaving(true);
     await fetch("/api/portal/notes", {
@@ -338,33 +374,37 @@ function NotesPanel({ notes, crm_client_id, onChanged }: {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex gap-3">
+    <div className="space-y-4">
+      {/* New note card */}
+      <div className="hub-tile p-5 space-y-3" style={{ "--tile-glow": "rgba(255,255,255,0.35)" } as React.CSSProperties}>
+        <p className="label-mono">Nowa notatka</p>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Napisz notatkę…"
-          rows={3}
-          className="flex-1 resize-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-[#F5F3EE] placeholder-white/20 outline-none focus:border-white/20 transition-colors"
-          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void add(); }}
+          placeholder="Wpisz treść notatki…"
+          rows={4}
+          className="glass-field w-full rounded-2xl px-4 py-3 text-sm text-[--ink] placeholder-white/20 resize-none"
         />
-        <button type="button" onClick={add} disabled={saving || !text.trim()}
-          className="self-end rounded-xl bg-[#F5F3EE] px-5 py-3 text-sm font-semibold text-[#0A0A0A] hover:bg-white disabled:opacity-40 transition-opacity"
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving || !text.trim()}
+          className="rounded-full bg-[--ink] px-6 py-2.5 text-sm font-semibold text-[--bg] transition-opacity hover:opacity-90 disabled:opacity-40"
         >
-          {saving ? "…" : "Dodaj"}
+          {saving ? "Zapisuję…" : "Zapisz notatkę"}
         </button>
       </div>
 
       {notes.length === 0 ? (
-        <p className="py-12 text-center text-sm text-white/20">Brak notatek</p>
+        <div className="surface-list px-6 py-12 text-center">
+          <p className="text-sm text-white/30">Brak notatek.</p>
+        </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {notes.map((n) => (
-            <div key={n.id} className="rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3.5">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/75">{n.content}</p>
-              <p className="mt-2 text-[0.6rem] text-white/25">
-                {n.author === "admin" ? "Cosgral" : n.author_name ?? "Ty"} · {fmtDate(n.created_at)}
-              </p>
+            <div key={n.id} className="surface p-5 space-y-2">
+              <p className="text-sm leading-relaxed text-white/80 whitespace-pre-wrap">{n.content}</p>
+              <p className="label-mono">{fmtDate(n.created_at)}</p>
             </div>
           ))}
         </div>
@@ -394,7 +434,7 @@ function ChatPanel({ messages, crm_client_id, callerName, onNewMessage }: {
     await fetch("/api/portal/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ crm_client_id, content: text.trim() }),
+      body: JSON.stringify({ crm_client_id, content: text.trim(), sender: "client", sender_name: callerName }),
     });
     setText("");
     setSending(false);
@@ -402,30 +442,28 @@ function ChatPanel({ messages, crm_client_id, callerName, onNewMessage }: {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Messages */}
-      <div className="h-[55vh] overflow-y-auto rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
+    <div className="space-y-4">
+      {/* Messages area */}
+      <div className="surface-list p-4 min-h-[260px] max-h-[420px] overflow-y-auto flex flex-col gap-3">
         {messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-            <div className="rounded-full bg-white/[0.06] p-4">
-              <svg className="h-5 w-5 text-white/30" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
-              </svg>
-            </div>
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
+            <svg className="h-8 w-8 text-white/15" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+            </svg>
             <p className="text-sm text-white/25">Napisz wiadomość do Cosgral</p>
-            <p className="text-xs text-white/15">Odpowiemy jak najszybciej</p>
+            <p className="label-mono">Odpowiemy jak najszybciej</p>
           </div>
         ) : (
           messages.map((m) => (
             <div key={m.id} className={`flex ${m.sender === "client" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[82%] space-y-1 ${m.sender === "client" ? "items-end" : "items-start"} flex flex-col`}>
+              <div className={`max-w-[82%] space-y-1 flex flex-col ${m.sender === "client" ? "items-end" : "items-start"}`}>
                 {m.sender === "admin" && (
-                  <span className="text-[0.58rem] uppercase tracking-widest text-white/25 px-1">Cosgral</span>
+                  <span className="label-mono px-1">Cosgral</span>
                 )}
                 <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                   m.sender === "client"
-                    ? "rounded-br-sm bg-[#F5F3EE] text-[#0A0A0A]"
-                    : "rounded-bl-sm bg-white/[0.09] text-white/85"
+                    ? "rounded-br-sm bg-[--ink] text-[--bg]"
+                    : "rounded-bl-sm glass text-white/85"
                 }`}>
                   {m.content}
                 </div>
@@ -437,21 +475,21 @@ function ChatPanel({ messages, crm_client_id, callerName, onNewMessage }: {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
+      {/* Input row */}
       <div className="flex items-end gap-2">
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Napisz wiadomość…"
-          className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-[#F5F3EE] placeholder-white/20 outline-none focus:border-white/20 transition-colors"
+          className="glass-field flex-1 px-5 py-3 text-sm text-[--ink] placeholder-white/20 rounded-2xl"
           onKeyDown={(e) => e.key === "Enter" && void send()}
         />
         <button
           type="button"
           onClick={send}
           disabled={sending || !text.trim()}
-          className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-[#F5F3EE] text-[#0A0A0A] transition-opacity disabled:opacity-40 hover:bg-white"
+          className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-[--ink] text-[--bg] transition-opacity disabled:opacity-40 hover:opacity-90"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
@@ -466,10 +504,7 @@ function ChatPanel({ messages, crm_client_id, callerName, onNewMessage }: {
 type PortalTab = "pliki" | "notatki" | "czat";
 
 function PortalDashboard({
-  slug,
-  companyName,
-  crm_client_id,
-  callerName,
+  slug, companyName, crm_client_id, callerName,
 }: {
   slug: string;
   companyName: string;
@@ -498,7 +533,6 @@ function PortalDashboard({
   }, [crm_client_id]);
 
   useEffect(() => { void loadAll(); }, [loadAll]);
-
   useEffect(() => {
     if (tab !== "czat") return;
     const id = setInterval(loadChat, 8000);
@@ -525,58 +559,57 @@ function PortalDashboard({
   ];
 
   return (
-    <div className="min-h-screen bg-[#030303] text-[#F5F3EE]">
+    <div className="relative min-h-screen bg-[--bg] text-[--ink]">
+      <PortalAmbient />
       <TopBar companyName={companyName} callerName={callerName} />
 
-      <div className="mx-auto max-w-2xl px-5 pt-24 pb-16">
-        {/* Page title */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-light tracking-tight text-[#F5F3EE]">{companyName}</h1>
-          <p className="mt-1 text-sm text-white/35">Twój katalog materiałów</p>
+      <div className="relative z-10 mx-auto max-w-2xl px-4 pt-20 pb-20">
+
+        {/* Page header tile */}
+        <div className="hub-tile p-6 mb-6 flex items-center justify-between"
+          style={{ "--tile-glow": "rgba(91,141,239,0.55)", "--tile-tint": "rgba(91,141,239,0.1)" } as React.CSSProperties}>
+          <div>
+            <p className="label-mono mb-1">Twój katalog</p>
+            <h1 className="text-xl font-light tracking-tight">{companyName}</h1>
+          </div>
+          <div className="text-right hidden sm:block">
+            <p className="label-mono">pliki</p>
+            <p className="text-2xl font-light">{files.length}</p>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-8 flex gap-0 border-b border-white/[0.08]">
+        {/* Tabs — pill style */}
+        <div className="glass-pill mb-6 flex gap-1 rounded-full p-1">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`relative flex items-center gap-2 pb-3 pr-6 text-sm transition-colors ${
-                tab === t.id ? "text-[#F5F3EE]" : "text-white/30 hover:text-white/55"
+              className={`relative flex-1 flex items-center justify-center gap-1.5 rounded-full py-2.5 text-sm font-medium transition-all duration-200 ${
+                tab === t.id
+                  ? "bg-[--ink] text-[--bg] shadow-sm"
+                  : "text-white/45 hover:text-white/70"
               }`}
             >
               {t.label}
               {t.count > 0 && (
-                <span className="text-[0.6rem] text-white/25">{t.count}</span>
-              )}
-              {tab === t.id && (
-                <span className="absolute bottom-0 left-0 right-6 h-px bg-[#F5F3EE]/60" />
+                <span className={`text-[0.58rem] ${tab === t.id ? "text-[--bg]/50" : "text-white/25"}`}>
+                  {t.count}
+                </span>
               )}
             </button>
           ))}
         </div>
 
-        {/* Tab content */}
-        {tab === "pliki" && (
-          <FileGrid files={files} uploading={uploading} onUpload={uploadFiles} />
-        )}
-        {tab === "notatki" && (
-          <NotesPanel notes={notes} crm_client_id={crm_client_id} onChanged={loadAll} />
-        )}
-        {tab === "czat" && (
-          <ChatPanel
-            messages={messages}
-            crm_client_id={crm_client_id}
-            callerName={callerName}
-            onNewMessage={loadChat}
-          />
-        )}
+        {/* Content */}
+        {tab === "pliki"   && <FileGrid files={files} uploading={uploading} onUpload={uploadFiles} />}
+        {tab === "notatki" && <NotesPanel notes={notes} crm_client_id={crm_client_id} onChanged={loadAll} />}
+        {tab === "czat"    && <ChatPanel messages={messages} crm_client_id={crm_client_id} callerName={callerName} onNewMessage={loadChat} />}
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-white/[0.06] py-6 text-center">
-        <CosgralMark dim />
+      <footer className="relative z-10 border-t border-white/[0.06] py-6 flex justify-center">
+        <CosgralBrand size={18} subtitle="Hub" />
       </footer>
     </div>
   );
@@ -597,12 +630,10 @@ export default function PortalPage() {
 
   useEffect(() => {
     async function init() {
-      // 1. Check for existing session cookie first
       const sessionRes = await fetch("/api/portal/session");
       const sessionData = await sessionRes.json();
 
       if (sessionData.authenticated) {
-        // Already have a valid session — go straight to dashboard
         const res = await fetch(`/api/portal/${slug}`, { cache: "no-store" });
         const data = await res.json();
         if (!res.ok) { setView({ phase: "not_found" }); return; }
@@ -615,39 +646,31 @@ export default function PortalPage() {
         return;
       }
 
-      // 2. No session — check if slug is valid to show the right screen
       const slugRes = await fetch(`/api/portal/${slug}`, { cache: "no-store" });
-
       if (slugRes.status === 401) {
-        // Slug exists but unauthenticated — show access request form
-        // We don't have company name from this response so we derive it from slug
         const friendly = slug
-          .replace(/-[a-z0-9]{4}$/, "")   // strip 4-char random suffix
+          .replace(/-[a-z0-9]{4}$/, "")
           .replace(/-/g, " ")
           .replace(/\b\w/g, (c) => c.toUpperCase());
         setView({ phase: "request_access", companyName: friendly });
         return;
       }
-
-      if (!slugRes.ok) {
-        setView({ phase: "not_found" });
-        return;
-      }
+      if (!slugRes.ok) { setView({ phase: "not_found" }); return; }
     }
     void init();
   }, [slug]);
-
-  // ── render ────────────────────────────────────────────────────────────
 
   if (view.phase === "loading") return <LoadingScreen />;
 
   if (view.phase === "not_found") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#030303] gap-6 px-6 text-center">
-        <CosgralMark dim />
-        <div>
-          <h1 className="text-2xl font-light text-[#F5F3EE]">Nie znaleziono katalogu</h1>
-          <p className="mt-2 text-sm text-white/35">
+      <div className="relative min-h-screen bg-[--bg] flex flex-col items-center justify-center gap-8 px-6 text-center">
+        <PortalAmbient />
+        <div className="relative z-10 hub-tile p-10 max-w-sm w-full space-y-4">
+          <CosgralBrand size={28} subtitle="Hub" className="justify-center" />
+          <div className="h-px bg-white/[0.08]" />
+          <h1 className="text-xl font-light text-[--ink]">Nie znaleziono katalogu</h1>
+          <p className="text-sm text-white/40">
             Sprawdź link który otrzymałeś od Cosgral.
           </p>
         </div>

@@ -5,18 +5,36 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 const BUCKET = "client-materials";
-const MAX_SIZE = 100 * 1024 * 1024; // 100 MB
-const ALLOWED_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/svg+xml",
-  "video/mp4",
-  "video/quicktime",
-  "video/webm",
-  "application/pdf",
-];
+const MAX_SIZE = 200 * 1024 * 1024; // 200 MB — increased for mobile videos
+
+// Accept ALL image and video MIME types (covers iOS .mov / video/quicktime,
+// HEVC, Android WebM, etc.). Unknown types from mobile browsers are also
+// allowed as long as they start with "image/" or "video/".
+function isAllowedType(mime: string): boolean {
+  if (!mime) return false;
+  // Explicit allow-list for non-image/video types
+  if (mime === "application/pdf") return true;
+  // Accept all image/* and video/* — this handles:
+  //   video/quicktime  (.mov  — iPhone default)
+  //   video/mp4        (.mp4  — H.264 / HEVC)
+  //   video/hevc       (.mp4  — HEVC alt label)
+  //   video/x-m4v      (.m4v  — Apple TV)
+  //   video/webm       (.webm — Android/Chrome)
+  //   video/ogg        (.ogv)
+  //   video/mpeg       (.mpeg)
+  //   image/jpeg, image/heic, image/png, image/webp, image/gif, etc.
+  if (mime.startsWith("image/")) return true;
+  if (mime.startsWith("video/")) return true;
+  return false;
+}
+
+// Friendly label for error messages
+function mimeLabel(mime: string): string {
+  if (mime.startsWith("video/")) return "wideo";
+  if (mime.startsWith("image/")) return "zdjęcie";
+  if (mime === "application/pdf") return "PDF";
+  return mime;
+}
 
 function getServiceClient() {
   return createClient(
@@ -63,11 +81,37 @@ export async function POST(request: Request) {
   }
 
   if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: "Plik przekracza 100 MB" }, { status: 400 });
+    return NextResponse.json({ error: "Plik przekracza 200 MB" }, { status: 400 });
   }
-  if (!ALLOWED_TYPES.includes(file.type)) {
+
+  // Resolve MIME type — mobile browsers sometimes report empty type for .mov files
+  let mimeType = file.type || "";
+  if (!mimeType) {
+    // Infer from extension as fallback
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const extMap: Record<string, string> = {
+      mov: "video/quicktime",
+      mp4: "video/mp4",
+      m4v: "video/x-m4v",
+      webm: "video/webm",
+      mpeg: "video/mpeg",
+      mpg: "video/mpeg",
+      avi: "video/x-msvideo",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      webp: "image/webp",
+      gif: "image/gif",
+      heic: "image/heic",
+      heif: "image/heif",
+      pdf: "application/pdf",
+    };
+    mimeType = extMap[ext] ?? `application/octet-stream`;
+  }
+
+  if (!isAllowedType(mimeType)) {
     return NextResponse.json(
-      { error: "Niedozwolony typ pliku. Obsługiwane: JPG, PNG, WEBP, GIF, MP4, PDF" },
+      { error: `Niedozwolony typ pliku (${mimeLabel(mimeType)}). Obsługiwane: zdjęcia, wideo, PDF` },
       { status: 400 },
     );
   }
@@ -80,7 +124,7 @@ export async function POST(request: Request) {
   // Ensure bucket exists
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
-    .upload(storagePath, buffer, { contentType: file.type, upsert: false });
+    .upload(storagePath, buffer, { contentType: mimeType, upsert: false });
 
   if (uploadError) {
     if (
@@ -96,7 +140,7 @@ export async function POST(request: Request) {
       }
       const { error: retry } = await supabase.storage
         .from(BUCKET)
-        .upload(storagePath, buffer, { contentType: file.type, upsert: false });
+        .upload(storagePath, buffer, { contentType: mimeType, upsert: false });
       if (retry) return NextResponse.json({ error: retry.message }, { status: 500 });
     } else {
       return NextResponse.json({ error: uploadError.message }, { status: 500 });
@@ -111,7 +155,7 @@ export async function POST(request: Request) {
   const portalFile = await createPortalFile({
     crm_client_id,
     file_name: file.name,
-    mime_type: file.type,
+    mime_type: mimeType,
     storage_path: storagePath,
     public_url: signedData?.signedUrl ?? null,
     uploaded_by: caller.sender,
