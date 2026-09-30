@@ -319,6 +319,253 @@ function WaitingView({ requestId, companyName, onApproved }: {
   );
 }
 
+// ── Shared auth card shell ────────────────────────────────────────────────
+function AuthCard({ companyName, children }: { companyName: string; children: React.ReactNode }) {
+  return (
+    <div className="relative min-h-screen bg-[--bg] flex flex-col items-center justify-center px-5 py-16 overflow-hidden">
+      <PortalAmbient />
+      {/* Decorative glow rings */}
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(91,141,239,0.07) 0%, transparent 65%)" }} />
+      <div className="relative z-10 w-full max-w-md space-y-6">
+        {/* Logo strip */}
+        <div className="flex items-center justify-between">
+          <CosgralBrand size={22} subtitle="Hub" />
+          <span className="label-mono text-white/30">{companyName}</span>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── SetupAuth — first-time account creation ───────────────────────────────
+function SetupAuthView({ slug, companyName, onDone }: {
+  slug: string; companyName: string;
+  onDone: (token: string, crm_client_id: string, username: string) => void;
+}) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
+  const [showPin, setShowPin] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    if (!username.trim()) { setError("Podaj nazwę użytkownika"); return; }
+    if (password.length < 4) { setError("Hasło musi mieć co najmniej 4 znaki"); return; }
+    if (pin && !/^\d{4}$/.test(pin)) { setError("PIN musi mieć dokładnie 4 cyfry"); return; }
+    setSubmitting(true); setError("");
+    try {
+      const res = await fetch("/api/portal/setup-auth", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, username: username.trim(), password, pin: pin || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Błąd — spróbuj ponownie"); return; }
+      document.cookie = `portal_session=${data.token};path=/;max-age=${60 * 60 * 24 * 30};samesite=lax`;
+      onDone(data.token, data.crm_client_id, data.requester_name);
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <AuthCard companyName={companyName}>
+      {/* Tile with icon */}
+      <div className="hub-tile p-7 space-y-6"
+        style={{ "--tile-glow": "rgba(91,141,239,0.6)", "--tile-tint": "rgba(91,141,239,0.08)" } as React.CSSProperties}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.08] text-xl">🔐</div>
+          <div>
+            <p className="label-mono">Nowe konto</p>
+            <h1 className="text-lg font-medium text-white mt-0.5">Utwórz dane dostępu</h1>
+          </div>
+        </div>
+        <div className="h-px bg-white/[0.06]" />
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="label-mono">Login</label>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+              placeholder="twój_login" autoComplete="username" autoFocus
+              className="glass-field w-full px-4 py-3 text-sm text-white placeholder-white/20 rounded-2xl"
+              onKeyDown={(e) => e.key === "Enter" && void submit()} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="label-mono">Hasło <span className="text-white/25 normal-case">(min. 4 znaki)</span></label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••" autoComplete="new-password"
+              className="glass-field w-full px-4 py-3 text-sm text-white placeholder-white/20 rounded-2xl"
+              onKeyDown={(e) => e.key === "Enter" && void submit()} />
+          </div>
+
+          {/* PIN toggle */}
+          <button type="button" onClick={() => setShowPin(!showPin)}
+            className="flex items-center gap-2 text-xs text-white/40 hover:text-white/70 transition-colors">
+            <span className={`h-4 w-4 rounded border transition-colors ${showPin ? "border-white/40 bg-white/10" : "border-white/20"}`}>
+              {showPin && <span className="flex h-full w-full items-center justify-center text-[0.55rem]">✓</span>}
+            </span>
+            Dodaj szybki PIN (4 cyfry) — opcjonalnie
+          </button>
+          {showPin && (
+            <div className="space-y-1.5">
+              <label className="label-mono">PIN <span className="text-white/25 normal-case">(4 cyfry)</span></label>
+              <input type="text" inputMode="numeric" maxLength={4} value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="1234"
+                className="glass-field w-32 px-4 py-3 text-sm text-white placeholder-white/20 rounded-2xl tracking-widest text-center"
+                onKeyDown={(e) => e.key === "Enter" && void submit()} />
+            </div>
+          )}
+
+          {error && <p className="text-xs text-red-400/90">{error}</p>}
+        </div>
+
+        <button type="button" onClick={submit} disabled={submitting || !username.trim() || !password}
+          className="w-full rounded-2xl py-3.5 text-sm font-semibold transition-all disabled:opacity-40"
+          style={{ background: "rgba(255,255,255,0.12)", color: "white" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.18)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}>
+          {submitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+              Tworzę konto…
+            </span>
+          ) : "Utwórz konto i wejdź →"}
+        </button>
+      </div>
+      <p className="text-center text-[0.6rem] text-white/20 leading-relaxed">
+        Tylko Ty masz dostęp do tego katalogu. Twoje dane są zaszyfrowane.
+      </p>
+    </AuthCard>
+  );
+}
+
+// ── LoginView ─────────────────────────────────────────────────────────────
+function LoginView({ slug, companyName, onDone }: {
+  slug: string; companyName: string;
+  onDone: (token: string, crm_client_id: string, username: string) => void;
+}) {
+  const [mode, setMode] = useState<"password" | "pin">("password");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    if (!username.trim()) { setError("Podaj login"); return; }
+    if (mode === "password" && !password) { setError("Podaj hasło"); return; }
+    if (mode === "pin" && !/^\d{4}$/.test(pin)) { setError("PIN musi mieć 4 cyfry"); return; }
+    setSubmitting(true); setError("");
+    try {
+      const res = await fetch("/api/portal/auth-login", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug, username: username.trim(),
+          ...(mode === "password" ? { password } : { pin }),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Błąd logowania"); return; }
+      document.cookie = `portal_session=${data.token};path=/;max-age=${60 * 60 * 24 * 30};samesite=lax`;
+      onDone(data.token, data.crm_client_id, data.requester_name);
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <AuthCard companyName={companyName}>
+      <div className="hub-tile p-7 space-y-6"
+        style={{ "--tile-glow": "rgba(91,141,239,0.55)", "--tile-tint": "rgba(91,141,239,0.07)" } as React.CSSProperties}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.08] text-xl">
+            {mode === "password" ? "🔑" : "🔢"}
+          </div>
+          <div>
+            <p className="label-mono">Katalog klienta</p>
+            <h1 className="text-lg font-medium text-white mt-0.5">Zaloguj się</h1>
+          </div>
+        </div>
+
+        {/* Mode toggle */}
+        <div className="flex rounded-2xl overflow-hidden border border-white/[0.08]">
+          {(["password", "pin"] as const).map((m) => (
+            <button key={m} type="button" onClick={() => { setMode(m); setError(""); }}
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+                mode === m ? "bg-white/10 text-white" : "text-white/35 hover:text-white/60"
+              }`}>
+              {m === "password" ? "Login + Hasło" : "Login + PIN"}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="label-mono">Login</label>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+              placeholder="twój_login" autoComplete="username" autoFocus
+              className="glass-field w-full px-4 py-3 text-sm text-white placeholder-white/20 rounded-2xl"
+              onKeyDown={(e) => e.key === "Enter" && void submit()} />
+          </div>
+          {mode === "password" ? (
+            <div className="space-y-1.5">
+              <label className="label-mono">Hasło</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••" autoComplete="current-password"
+                className="glass-field w-full px-4 py-3 text-sm text-white placeholder-white/20 rounded-2xl"
+                onKeyDown={(e) => e.key === "Enter" && void submit()} />
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="label-mono">PIN</label>
+              <div className="flex gap-3">
+                {[0, 1, 2, 3].map((i) => (
+                  <input key={i} type="text" inputMode="numeric" maxLength={1}
+                    value={pin[i] ?? ""}
+                    id={`pin-${i}`}
+                    onChange={(e) => {
+                      const d = e.target.value.replace(/\D/g, "");
+                      const newPin = (pin.split("").concat(Array(4).fill(""))).slice(0, 4);
+                      newPin[i] = d;
+                      const joined = newPin.join("").slice(0, 4);
+                      setPin(joined);
+                      if (d && i < 3) document.getElementById(`pin-${i + 1}`)?.focus();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Backspace" && !pin[i] && i > 0) {
+                        document.getElementById(`pin-${i - 1}`)?.focus();
+                      }
+                      if (e.key === "Enter") void submit();
+                    }}
+                    className="glass-field w-14 h-14 text-center text-xl font-light text-white rounded-2xl"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          {error && <p className="text-xs text-red-400/90">{error}</p>}
+        </div>
+
+        <button type="button" onClick={submit}
+          disabled={submitting || !username.trim() || (mode === "password" ? !password : pin.length < 4)}
+          className="w-full rounded-2xl py-3.5 text-sm font-semibold transition-all disabled:opacity-40"
+          style={{ background: "rgba(255,255,255,0.12)", color: "white" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.18)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}>
+          {submitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+              Loguję…
+            </span>
+          ) : "Wejdź do katalogu →"}
+        </button>
+      </div>
+      <p className="text-center text-[0.6rem] text-white/20">
+        Link do katalogu jest prywatny — tylko Ty masz do niego dostęp.
+      </p>
+    </AuthCard>
+  );
+}
+
 // ── Upload Queue UI ───────────────────────────────────────────────────────
 function UploadQueue({ items, onRetry }: { items: UploadItem[]; onRetry: (item: UploadItem) => void }) {
   if (items.length === 0) return null;
@@ -757,7 +1004,9 @@ function PortalDashboard({ slug, companyName, crm_client_id, callerName }: {
 type ViewState =
   | { phase: "loading" }
   | { phase: "not_found" }
-  | { phase: "request_access"; companyName: string }
+  | { phase: "setup_auth"; companyName: string }
+  | { phase: "login"; companyName: string }
+  | { phase: "request_access"; companyName: string }        // legacy fallback
   | { phase: "waiting"; requestId: string; companyName: string }
   | { phase: "dashboard"; companyName: string; crm_client_id: string; callerName: string };
 
@@ -768,6 +1017,7 @@ export default function PortalPage() {
 
   useEffect(() => {
     async function init() {
+      // 1. Check for existing session
       const sessionRes = await fetch("/api/portal/session");
       const sessionData = await sessionRes.json();
       if (sessionData.authenticated) {
@@ -777,16 +1027,30 @@ export default function PortalPage() {
         setView({ phase: "dashboard", companyName: data.client.company_name, crm_client_id: data.client.id, callerName: sessionData.requester_name ?? "Klient" });
         return;
       }
+
+      // 2. Resolve slug → client
       const slugRes = await fetch(`/api/portal/${slug}`, { cache: "no-store" });
-      if (slugRes.status === 401) {
-        const friendly = slug.replace(/-[a-z0-9]{4}$/, "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-        setView({ phase: "request_access", companyName: friendly });
-        return;
-      }
       if (!slugRes.ok) { setView({ phase: "not_found" }); return; }
+      const slugData = await slugRes.json();
+      const companyName: string = slugData.client?.company_name ?? slug.replace(/-[a-z0-9]{4}$/, "").replace(/-/g, " ");
+
+      // 3. Check if client has set up portal auth
+      // (We try to "probe" by calling check-auth — if it has an account, go to login)
+      const authRes = await fetch(`/api/portal/check-auth?slug=${encodeURIComponent(slug)}`);
+      const authData = await authRes.json();
+
+      if (authData.has_auth) {
+        setView({ phase: "login", companyName });
+      } else {
+        setView({ phase: "setup_auth", companyName });
+      }
     }
     void init();
   }, [slug]);
+
+  const handleAuthDone = (token: string, crm_client_id: string, username: string, companyName: string) => {
+    setView({ phase: "dashboard", companyName, crm_client_id, callerName: username });
+  };
 
   if (view.phase === "loading") return <LoadingScreen />;
 
@@ -804,11 +1068,21 @@ export default function PortalPage() {
     );
   }
 
+  if (view.phase === "setup_auth") {
+    return <SetupAuthView slug={slug} companyName={view.companyName}
+      onDone={(token, crm_client_id, username) => handleAuthDone(token, crm_client_id, username, view.companyName)} />;
+  }
+
+  if (view.phase === "login") {
+    return <LoginView slug={slug} companyName={view.companyName}
+      onDone={(token, crm_client_id, username) => handleAuthDone(token, crm_client_id, username, view.companyName)} />;
+  }
+
+  // Legacy flows (kept for backwards compatibility)
   if (view.phase === "request_access") {
     return <RequestAccessView slug={slug} companyName={view.companyName}
       onRequested={(requestId) => setView({ phase: "waiting", requestId, companyName: view.companyName })} />;
   }
-
   if (view.phase === "waiting") {
     return <WaitingView requestId={view.requestId} companyName={view.companyName}
       onApproved={async () => {

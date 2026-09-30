@@ -256,15 +256,36 @@ export async function rejectAccessRequest(id: string): Promise<void> {
 /** Validate a session token — returns the access request if approved. */
 export async function validatePortalSession(
   token: string,
-): Promise<PortalAccessRequest | null> {
+): Promise<{ crm_client_id: string; requester_name: string } | null> {
+  // Check new portal_auth sessions first
+  const { data: authRow } = await db()
+    .from("portal_auth")
+    .select("crm_client_id, username, session_expires_at")
+    .eq("session_token", token)
+    .single();
+
+  if (authRow) {
+    const expires = authRow.session_expires_at ? new Date(authRow.session_expires_at) : null;
+    if (!expires || expires > new Date()) {
+      return {
+        crm_client_id: authRow.crm_client_id as string,
+        requester_name: authRow.username as string,
+      };
+    }
+  }
+
+  // Fallback: legacy portal_access_requests sessions
   const { data, error } = await db()
     .from("portal_access_requests")
-    .select("*")
+    .select("crm_client_id, requester_name")
     .eq("token", token)
     .eq("status", "approved")
     .single();
-  if (error) return null;
-  return data as PortalAccessRequest;
+  if (error || !data) return null;
+  return {
+    crm_client_id: data.crm_client_id as string,
+    requester_name: (data.requester_name as string) ?? "Klient",
+  };
 }
 
 // ── Files ───────────────────────────────────────────────────────────────────

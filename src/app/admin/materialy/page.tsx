@@ -309,7 +309,7 @@ function ClientCard({
         </div>
         <div className="flex items-center gap-2">
           {c.pending_requests > 0 && (
-            <span className="shrink-0 rounded-full bg-amber-400/20 px-2 py-0.5 text-[0.65rem] font-semibold text-amber-300">
+            <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[0.65rem] font-semibold text-white/70">
               {c.pending_requests} oczek.
             </span>
           )}
@@ -451,8 +451,8 @@ export default function MaterialyPage() {
 
       {/* Pending requests banner */}
       {totalPending > 0 && (
-        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-amber-400/25 bg-amber-400/10 px-4 py-3">
-          <span className="text-sm text-amber-200">
+        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3">
+          <span className="text-sm text-white/70">
             🔑 {totalPending} {totalPending === 1 ? "klient prosi" : "klientów prosi"} o dostęp — otwórz jego katalog aby zatwierdzić
           </span>
         </div>
@@ -471,7 +471,7 @@ export default function MaterialyPage() {
           <p className="label-mono mt-1">Plików łącznie</p>
         </div>
         <div className="surface p-4 text-center">
-          <p className="text-2xl font-light text-amber-400">{totalPending}</p>
+          <p className="text-2xl font-light text-white">{totalPending}</p>
           <p className="label-mono mt-1">Oczekujących</p>
         </div>
       </div>

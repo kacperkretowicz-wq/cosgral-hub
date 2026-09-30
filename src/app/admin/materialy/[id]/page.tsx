@@ -445,6 +445,11 @@ function ChatPanel({
     onNewMessage();
   };
 
+  const deleteMessage = async (id: string) => {
+    await fetch(`/api/portal/messages/${id}`, { method: "DELETE" });
+    onNewMessage();
+  };
+
   return (
     <div className="flex flex-col gap-3">
       {/* Messages */}
@@ -455,7 +460,7 @@ function ChatPanel({
           messages.map((m) => (
             <div
               key={m.id}
-              className={`flex ${m.sender === "admin" ? "justify-end" : "justify-start"}`}
+              className={`group flex items-start gap-2 ${m.sender === "admin" ? "flex-row-reverse" : "flex-row"}`}
             >
               <div
                 className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm ${
@@ -469,6 +474,13 @@ function ChatPanel({
                 </p>
                 <p className="leading-relaxed">{m.content}</p>
               </div>
+              <button
+                type="button"
+                onClick={() => void deleteMessage(m.id)}
+                className="hidden group-hover:flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-white/20 hover:bg-red-500/15 hover:text-red-400 transition-colors text-xs mt-1"
+              >
+                ✕
+              </button>
             </div>
           ))
         )}
@@ -489,6 +501,61 @@ function ChatPanel({
           {sending ? "…" : "Wyślij"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+// ── PortalAuthSection — shows client portal auth status, allows revoking ──
+
+function PortalAuthSection({ crm_client_id }: { crm_client_id: string }) {
+  const [auth, setAuth] = useState<{ id: string; username: string; created_at: string; session_expires_at?: string } | null | undefined>(undefined);
+  const [revoking, setRevoking] = useState(false);
+
+  const load = async () => {
+    const res = await fetch(`/api/portal/auth-status?crm_client_id=${crm_client_id}`);
+    const d = await res.json();
+    setAuth(d.auth);
+  };
+
+  useEffect(() => { void load(); }, [crm_client_id]);
+
+  const revoke = async () => {
+    if (!confirm("Cofnąć dostęp portalu? Klient będzie musiał utworzyć nowe konto.")) return;
+    setRevoking(true);
+    await fetch(`/api/portal/auth-status?crm_client_id=${crm_client_id}`, { method: "DELETE" });
+    setRevoking(false);
+    void load();
+  };
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 space-y-3">
+      <p className="label-mono">Dostęp portalu klienta</p>
+      {auth === undefined ? (
+        <p className="text-sm text-white/30">Sprawdzam…</p>
+      ) : auth === null ? (
+        <div className="flex items-center gap-3">
+          <div className="h-2 w-2 rounded-full bg-white/20" />
+          <p className="text-sm text-white/50">Klient nie utworzył jeszcze konta</p>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-2 w-2 rounded-full bg-emerald-400" />
+            <div>
+              <p className="text-sm text-white font-medium">{auth.username}</p>
+              <p className="text-[0.6rem] text-white/30">Konto utworzone {new Date(auth.created_at).toLocaleDateString("pl-PL")}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={revoke}
+            disabled={revoking}
+            className="rounded-xl border border-red-500/25 px-3 py-1.5 text-xs text-red-400/70 hover:bg-red-500/10 hover:text-red-300 transition-colors disabled:opacity-40"
+          >
+            {revoking ? "Cofam…" : "Cofnij dostęp"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -515,6 +582,13 @@ function AccessRequests({
     onChanged();
   };
 
+  const del = async (id: string) => {
+    setBusy(id);
+    await fetch(`/api/portal/access-requests/${id}`, { method: "DELETE" });
+    setBusy(null);
+    onChanged();
+  };
+
   if (requests.length === 0) {
     return <p className="label-mono opacity-30">Brak próśb o dostęp</p>;
   }
@@ -526,7 +600,7 @@ function AccessRequests({
           key={r.id}
           className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${
             r.status === "pending"
-              ? "border-amber-400/25 bg-amber-400/8"
+              ? "border-white/20 bg-white/[0.04]"
               : r.status === "approved"
               ? "border-emerald-500/25 bg-emerald-500/8"
               : "border-white/10 bg-white/[0.03]"
@@ -542,7 +616,7 @@ function AccessRequests({
 
           <span className={`text-[0.6rem] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full border ${
             r.status === "pending"
-              ? "border-amber-400/40 text-amber-300"
+              ? "border-white/25 text-white/60"
               : r.status === "approved"
               ? "border-emerald-400/40 text-emerald-300"
               : "border-white/20 text-white/40"
@@ -565,12 +639,30 @@ function AccessRequests({
                 type="button"
                 onClick={() => act(r.id, "reject")}
                 disabled={busy === r.id}
-                className="text-xs text-red-300/70 hover:text-red-300"
+                className="text-xs text-white/40 hover:text-white/70"
               >
                 ✕
               </Button>
             </div>
           )}
+
+          {/* Delete any status */}
+          <button
+            type="button"
+            onClick={() => void del(r.id)}
+            disabled={busy === r.id}
+            title="Usuń wpis"
+            className="shrink-0 rounded-full p-1.5 text-white/20 hover:bg-red-500/15 hover:text-red-400 transition-colors"
+          >
+            <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
         </div>
       ))}
     </div>
@@ -848,7 +940,17 @@ export default function MaterialyDetailPage() {
         )}
 
         {tab === "dostep" && (
-          <AccessRequests requests={requests} onChanged={load} />
+          <div className="space-y-6">
+            {/* Portal Auth Status */}
+            <PortalAuthSection crm_client_id={clientId} />
+            {/* Legacy access requests */}
+            {requests.length > 0 && (
+              <div>
+                <p className="label-mono mb-3 opacity-50">Poprzednie prośby o dostęp (legacy)</p>
+                <AccessRequests requests={requests} onChanged={load} />
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
