@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/api-auth";
 import {
   getCrmClientBySlug,
   listPortalFiles,
@@ -16,7 +15,7 @@ export async function GET(
 ) {
   const { slug } = await params;
 
-  // Check if caller is admin or authenticated client
+  // Verify if caller is admin
   const isAdmin = await (async () => {
     try {
       const { requireAdmin: ra } = await import("@/lib/api-auth");
@@ -27,24 +26,31 @@ export async function GET(
     }
   })();
 
+  // Check portal session for clients
   let callerName: string | null = null;
+  let isAuthenticatedClient = false;
   if (!isAdmin) {
-    // Validate portal session cookie
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get("portal_session")?.value;
-    if (!sessionToken) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (sessionToken) {
+      const session = await validatePortalSession(sessionToken);
+      if (session) {
+        callerName = session.requester_name;
+        isAuthenticatedClient = true;
+      }
     }
-    const session = await validatePortalSession(sessionToken);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    callerName = session.requester_name;
   }
 
+  // Resolve slug → client (always allowed — needed to show login/setup screen)
   const client = await getCrmClientBySlug(slug);
   if (!client) {
     return NextResponse.json({ error: "Katalog nie istnieje" }, { status: 404 });
+  }
+
+  // Unauthenticated visitor: return only basic client info so the portal can
+  // render the SetupAuth / Login screens without exposing files.
+  if (!isAdmin && !isAuthenticatedClient) {
+    return NextResponse.json({ client: { id: client.id, company_name: client.company_name }, caller: "guest" });
   }
 
   try {
