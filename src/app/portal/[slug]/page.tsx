@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { CosgralBrand } from "@/components/CosgralLogo";
+import { CosgralAmbient } from "@/components/CosgralAmbient";
 import type { PortalFile, PortalNote, PortalMessage } from "@/lib/portal-db";
 
 // ── helpers ───────────────────────────────────────────────────────────────
@@ -154,22 +155,6 @@ async function uploadFileToDrive(
   return { gdrive_file_id: fileId, gdrive_folder_id: folderId };
 }
 
-// ── Ambient background ────────────────────────────────────────────────────
-function PortalAmbient() {
-  return (
-    <>
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 opacity-[0.07] mix-blend-overlay"
-        style={{ backgroundImage: "url('/cosgral/charcoal-grain.jpg')", backgroundSize: "280px" }} />
-      <div aria-hidden className="pointer-events-none fixed z-0"
-        style={{ top: "-20vh", left: "-15vw", width: "70vmax", height: "70vmax", borderRadius: "50%",
-          background: "radial-gradient(circle closest-side, rgba(91,141,239,0.13) 0%, transparent 70%)" }} />
-      <div aria-hidden className="pointer-events-none fixed z-0"
-        style={{ bottom: "-20vh", right: "-15vw", width: "60vmax", height: "60vmax", borderRadius: "50%",
-          background: "radial-gradient(circle closest-side, rgba(255,255,255,0.06) 0%, transparent 70%)" }} />
-    </>
-  );
-}
-
 // ── TopBar ────────────────────────────────────────────────────────────────
 function TopBar({ companyName, callerName }: { companyName: string; callerName?: string }) {
   return (
@@ -190,8 +175,8 @@ function TopBar({ companyName, callerName }: { companyName: string; callerName?:
 // ── Loading ───────────────────────────────────────────────────────────────
 function LoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[--bg]">
-      <PortalAmbient />
+    <div className="flex min-h-screen items-center justify-center">
+      <CosgralAmbient />
       <div className="relative z-10 flex flex-col items-center gap-6">
         <CosgralBrand size={32} subtitle="Hub" />
         <div className="h-px w-32 overflow-hidden rounded-full bg-white/[0.08]">
@@ -227,8 +212,8 @@ function RequestAccessView({ slug, companyName, onRequested }: {
   };
 
   return (
-    <div className="relative min-h-screen bg-[--bg] flex flex-col items-center justify-center px-5 py-20">
-      <PortalAmbient />
+    <div className="relative min-h-screen flex flex-col items-center justify-center px-5 py-20">
+      <CosgralAmbient />
       <div className="relative z-10 w-full max-w-md space-y-8">
         <div className="hub-tile p-8 space-y-6">
           <CosgralBrand size={28} subtitle="Hub" />
@@ -296,8 +281,8 @@ function WaitingView({ requestId, companyName, onApproved }: {
   }, [requestId, onApproved]);
 
   return (
-    <div className="relative min-h-screen bg-[--bg] flex flex-col items-center justify-center px-5">
-      <PortalAmbient />
+    <div className="relative min-h-screen flex flex-col items-center justify-center px-5">
+      <CosgralAmbient />
       <div className="relative z-10 w-full max-w-sm">
         <div className="hub-tile p-10 text-center space-y-8">
           <CosgralBrand size={28} subtitle="Hub" className="justify-center" />
@@ -322,8 +307,8 @@ function WaitingView({ requestId, companyName, onApproved }: {
 // ── Shared auth card shell ────────────────────────────────────────────────
 function AuthCard({ companyName, children }: { companyName: string; children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen bg-[--bg] flex flex-col items-center justify-center px-5 py-16 overflow-hidden">
-      <PortalAmbient />
+    <div className="relative min-h-screen flex flex-col items-center justify-center px-5 py-16 overflow-hidden">
+      <CosgralAmbient />
       {/* Decorative glow rings */}
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
         style={{ background: "radial-gradient(circle, rgba(91,141,239,0.07) 0%, transparent 65%)" }} />
@@ -954,8 +939,8 @@ function PortalDashboard({ slug, companyName, crm_client_id, callerName }: {
   ];
 
   return (
-    <div className="relative min-h-screen bg-[--bg] text-[--ink]">
-      <PortalAmbient />
+    <div className="relative min-h-screen text-[--ink]">
+      <CosgralAmbient />
       <TopBar companyName={companyName} callerName={callerName} />
 
       <div className="relative z-10 mx-auto max-w-2xl px-4 pt-20 pb-20">
@@ -1056,8 +1041,8 @@ export default function PortalPage() {
 
   if (view.phase === "not_found") {
     return (
-      <div className="relative min-h-screen bg-[--bg] flex flex-col items-center justify-center gap-8 px-6 text-center">
-        <PortalAmbient />
+      <div className="relative min-h-screen flex flex-col items-center justify-center gap-8 px-6 text-center">
+        <CosgralAmbient />
         <div className="relative z-10 hub-tile p-10 max-w-sm w-full space-y-4">
           <CosgralBrand size={28} subtitle="Hub" className="justify-center" />
           <div className="h-px bg-white/[0.08]" />
