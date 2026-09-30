@@ -3,21 +3,17 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/api-auth";
 import { getIntranetDb } from "@/lib/intranet-db";
 import { getGoogleAuth, isGoogleWorkspaceConfigured } from "@/lib/google-auth";
+import { ensureClientDriveFolder } from "@/lib/gdrive-folders";
 import { google } from "googleapis";
-// Dynamic import to avoid circular dep — reuse ensureClientDriveFolder logic inline
-import { createClient } from "@supabase/supabase-js";
 
 /** Fire-and-forget: create Drive folder for new client */
 async function createDriveFolderForClient(clientId: string, companyName: string) {
   if (!isGoogleWorkspaceConfigured()) return;
   try {
-    // Dynamically import to avoid issues at build time
-    const { ensureClientDriveFolder } = await import("@/app/api/portal/gdrive-init/route");
     const auth = getGoogleAuth()!;
     const drive = google.drive({ version: "v3", auth });
     await ensureClientDriveFolder(drive, clientId, companyName);
   } catch (err) {
-    // Non-fatal — folder will be created lazily on first upload
     console.warn("[crm-clients] Could not pre-create Drive folder:", err);
   }
 }
