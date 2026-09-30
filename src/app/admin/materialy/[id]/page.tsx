@@ -156,18 +156,21 @@ async function uploadChunkedAdmin(
   const total = file.size;
   let offset = 0;
 
-  while (offset < total) {
-    const end = Math.min(offset + CHUNK, total);
-    const chunk = file.slice(offset, end);
+  const sendChunk = (start: number, end: number, isLast: boolean): Promise<string | null> =>
+    new Promise((resolve, reject) => {
+      const chunk = file.slice(start, end);
+      const rangeHeader = isLast
+        ? `bytes ${start}-${end - 1}/${total}`
+        : `bytes ${start}-${end - 1}/*`;
 
-    const fileId = await new Promise<string | null>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", uploadUri);
+      xhr.timeout = 5 * 60 * 1000;
       xhr.setRequestHeader("Content-Type", mimeType);
-      xhr.setRequestHeader("Content-Range", `bytes ${offset}-${end - 1}/${total}`);
+      xhr.setRequestHeader("Content-Range", rangeHeader);
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
-          onProgress(Math.min(95, Math.round(((offset + e.loaded) / total) * 95)));
+          onProgress(Math.min(95, Math.round(((start + e.loaded) / total) * 95)));
         }
       };
       xhr.onload = () => {
@@ -175,14 +178,27 @@ async function uploadChunkedAdmin(
           try { onProgress(100); resolve((JSON.parse(xhr.responseText) as { id?: string }).id ?? ""); }
           catch { reject(new Error("Błąd odpowiedzi serwera")); }
         } else if (xhr.status === 308) {
-          resolve(null); // chunk accepted, continue
+          resolve(null);
         } else {
-          reject(new Error(`Błąd przesyłania: ${xhr.status}`));
+          reject(new Error(`Błąd ${xhr.status}: ${xhr.statusText || "nieznany"}`));
         }
       };
+      xhr.ontimeout = () => reject(new Error("Timeout — za wolne połączenie"));
       xhr.onerror = () => reject(new Error("Błąd sieci"));
       xhr.send(chunk);
     });
+
+  while (offset < total) {
+    const end = Math.min(offset + CHUNK, total);
+    const isLast = end === total;
+
+    let fileId: string | null;
+    try {
+      fileId = await sendChunk(offset, end, isLast);
+    } catch {
+      await new Promise((r) => setTimeout(r, 2000));
+      fileId = await sendChunk(offset, end, isLast);
+    }
 
     if (fileId !== null) return fileId;
     offset = end;

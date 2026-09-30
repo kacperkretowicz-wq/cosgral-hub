@@ -101,8 +101,10 @@ export async function POST(request: Request) {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json; charset=UTF-8",
+        // NOTE: We intentionally omit X-Upload-Content-Length because iOS
+        // transcodes HEVC video on the fly — the reported file.size may differ
+        // from the actual bytes sent, causing Google to reject with 400.
         "X-Upload-Content-Type": mime_type || "application/octet-stream",
-        "X-Upload-Content-Length": String(size_bytes ?? 0),
         "Origin": browserOrigin,
       },
       body: JSON.stringify({ name: file_name, parents: [folderId] }),

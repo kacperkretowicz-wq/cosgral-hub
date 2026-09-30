@@ -29,7 +29,16 @@ interface UploadItem {
   error?: string;
 }
 
-/** Send file in 5 MB chunks to a Google Drive resumable session URI. */
+/**
+ * Send file in 5 MB chunks to a Google Drive resumable session URI.
+ *
+ * Key fixes:
+ *  - Intermediate chunks use Content-Range: bytes start-end/* (no total declared)
+ *    → avoids 400 error when iOS transcodes HEVC video (size may differ)
+ *  - Final chunk: bytes start-end/total (required by Google)
+ *  - 5-minute timeout per chunk
+ *  - One automatic retry per chunk on network/timeout error
+ */
 async function uploadChunked(
   uploadUri: string,
   file: File,
@@ -37,32 +46,32 @@ async function uploadChunked(
   onProgress: (pct: number) => void,
   signal: AbortSignal,
 ): Promise<string> {
-  const CHUNK = 5 * 1024 * 1024; // 5 MB — Google requires multiples of 256 KB
+  const CHUNK = 5 * 1024 * 1024; // 5 MB — multiple of 256 KB (Google requirement)
   const total = file.size;
   let offset = 0;
 
-  while (offset < total) {
-    if (signal.aborted) throw new Error("Anulowano");
+  const sendChunk = (start: number, end: number, isLast: boolean): Promise<string | null> =>
+    new Promise((resolve, reject) => {
+      const chunk = file.slice(start, end);
+      // Use `*` for intermediate chunks — avoids size-mismatch 400 on iOS
+      const rangeHeader = isLast
+        ? `bytes ${start}-${end - 1}/${total}`
+        : `bytes ${start}-${end - 1}/*`;
 
-    const end = Math.min(offset + CHUNK, total);
-    const chunk = file.slice(offset, end);
-
-    const fileId = await new Promise<string | null>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", uploadUri);
+      xhr.timeout = 5 * 60 * 1000; // 5-minute timeout per chunk
       xhr.setRequestHeader("Content-Type", mimeType);
-      xhr.setRequestHeader("Content-Range", `bytes ${offset}-${end - 1}/${total}`);
+      xhr.setRequestHeader("Content-Range", rangeHeader);
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
-          const overall = offset + e.loaded;
-          onProgress(Math.min(95, Math.round((overall / total) * 95)));
+          onProgress(Math.min(95, Math.round(((start + e.loaded) / total) * 95)));
         }
       };
 
       xhr.onload = () => {
         if (xhr.status === 200 || xhr.status === 201) {
-          // Final chunk — Google returns file metadata
           try {
             const resp = JSON.parse(xhr.responseText) as { id?: string };
             onProgress(100);
@@ -71,20 +80,36 @@ async function uploadChunked(
             reject(new Error("Nieprawidłowa odpowiedź serwera"));
           }
         } else if (xhr.status === 308) {
-          // Resume Incomplete — chunk accepted, more to come
-          resolve(null);
+          resolve(null); // chunk OK, continue
         } else {
-          reject(new Error(`Błąd przesyłania: ${xhr.status}`));
+          reject(new Error(`Błąd ${xhr.status}: ${xhr.statusText || "nieznany"}`));
         }
       };
 
-      xhr.onerror = () => reject(new Error("Błąd sieci podczas wysyłania"));
-      signal.addEventListener("abort", () => { xhr.abort(); reject(new Error("Anulowano")); });
+      xhr.ontimeout = () => reject(new Error("Timeout — za wolne połączenie"));
+      xhr.onerror = () => reject(new Error("Błąd sieci (sprawdź połączenie)"));
 
+      signal.addEventListener("abort", () => { xhr.abort(); reject(new Error("Anulowano")); }, { once: true });
       xhr.send(chunk);
     });
 
-    if (fileId !== null) return fileId;  // upload complete
+  while (offset < total) {
+    if (signal.aborted) throw new Error("Anulowano");
+    const end = Math.min(offset + CHUNK, total);
+    const isLast = end === total;
+
+    // Auto-retry once on network/timeout error
+    let fileId: string | null;
+    try {
+      fileId = await sendChunk(offset, end, isLast);
+    } catch (err) {
+      if (err instanceof Error && err.message === "Anulowano") throw err;
+      // Wait 2s then retry
+      await new Promise((r) => setTimeout(r, 2000));
+      fileId = await sendChunk(offset, end, isLast);
+    }
+
+    if (fileId !== null) return fileId;
     offset = end;
   }
 
@@ -118,8 +143,8 @@ async function uploadFileToDrive(
     signal,
   });
   if (!initRes.ok) {
-    const err = await initRes.json();
-    throw new Error(err.error ?? "Błąd inicjalizacji upload");
+    const err = await initRes.json().catch(() => ({}));
+    throw new Error(err.error ?? `Błąd inicjalizacji (${initRes.status})`);
   }
   const { uploadUri, folderId } = await initRes.json() as { uploadUri: string; folderId: string };
 
@@ -295,7 +320,7 @@ function WaitingView({ requestId, companyName, onApproved }: {
 }
 
 // ── Upload Queue UI ───────────────────────────────────────────────────────
-function UploadQueue({ items }: { items: UploadItem[] }) {
+function UploadQueue({ items, onRetry }: { items: UploadItem[]; onRetry: (item: UploadItem) => void }) {
   if (items.length === 0) return null;
   return (
     <div className="space-y-2">
@@ -328,7 +353,16 @@ function UploadQueue({ items }: { items: UploadItem[] }) {
             </div>
           )}
           {item.status === "error" && (
-            <p className="text-xs text-red-400/80">{item.error}</p>
+            <div className="space-y-1.5">
+              <p className="text-xs text-red-400/80">{item.error}</p>
+              <button
+                type="button"
+                onClick={() => onRetry(item)}
+                className="text-xs text-white/50 underline hover:text-white/80 transition-colors"
+              >
+                ↺ Spróbuj ponownie
+              </button>
+            </div>
           )}
         </div>
       ))}
@@ -416,10 +450,11 @@ function FileCard({ f }: { f: PortalFile }) {
 }
 
 // ── File grid ─────────────────────────────────────────────────────────────
-function FileGrid({ files, queue, onUpload }: {
+function FileGrid({ files, queue, onUpload, onRetry }: {
   files: PortalFile[];
   queue: UploadItem[];
   onUpload: (f: FileList | null) => void;
+  onRetry: (item: UploadItem) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const anyUploading = queue.some((q) => q.status === "uploading" || q.status === "pending");
@@ -449,7 +484,7 @@ function FileGrid({ files, queue, onUpload }: {
       </div>
 
       {/* Active upload queue with progress bars */}
-      <UploadQueue items={queue} />
+      <UploadQueue items={queue} onRetry={handleRetry} />
 
       {files.length === 0 && queue.length === 0 && (
         <div className="surface-list px-6 py-12 text-center">
@@ -599,6 +634,19 @@ function PortalDashboard({ slug, companyName, crm_client_id, callerName }: {
   }, [tab, loadChat]);
 
   // ── Google Drive upload with progress ──────────────────────────────────
+
+  // Retry a single failed item
+  const handleRetry = (item: UploadItem) => {
+    // Reset item to pending
+    setQueue((q) =>
+      q.map((i) => i.id === item.id ? { ...i, status: "pending", progress: 0, error: undefined } : i)
+    );
+    // Re-use the existing upload flow via a synthetic single-file list
+    const dt = new DataTransfer();
+    dt.items.add(item.file);
+    void handleUpload(dt.files);
+  };
+
   const handleUpload = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
     const newItems: UploadItem[] = Array.from(fileList).map((file) => ({
@@ -622,8 +670,8 @@ function PortalDashboard({ slug, companyName, crm_client_id, callerName }: {
           controller.signal
         );
 
-        // Register in Supabase
-        await fetch("/api/portal/gdrive-complete", {
+        // Register in Supabase — check for errors explicitly
+        const completeRes = await fetch("/api/portal/gdrive-complete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -635,6 +683,10 @@ function PortalDashboard({ slug, companyName, crm_client_id, callerName }: {
             crm_client_id,
           }),
         });
+        if (!completeRes.ok) {
+          const errData = await completeRes.json().catch(() => ({}));
+          throw new Error(errData.error ?? `Błąd zapisu (${completeRes.status})`);
+        }
 
         setQueue((q) => q.map((i) => i.id === item.id ? { ...i, status: "done", progress: 100 } : i));
       } catch (err) {
@@ -689,7 +741,7 @@ function PortalDashboard({ slug, companyName, crm_client_id, callerName }: {
           ))}
         </div>
 
-        {tab === "pliki"   && <FileGrid files={files} queue={queue} onUpload={handleUpload} />}
+        {tab === "pliki"   && <FileGrid files={files} queue={queue} onUpload={handleUpload} onRetry={handleRetry} />}
         {tab === "notatki" && <NotesPanel notes={notes} crm_client_id={crm_client_id} onChanged={loadAll} />}
         {tab === "czat"    && <ChatPanel messages={messages} crm_client_id={crm_client_id} callerName={callerName} onNewMessage={loadChat} />}
       </div>
