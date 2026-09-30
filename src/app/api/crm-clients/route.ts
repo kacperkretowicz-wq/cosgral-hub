@@ -2,6 +2,25 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/api-auth";
 import { getIntranetDb } from "@/lib/intranet-db";
+import { getGoogleAuth, isGoogleWorkspaceConfigured } from "@/lib/google-auth";
+import { google } from "googleapis";
+// Dynamic import to avoid circular dep — reuse ensureClientDriveFolder logic inline
+import { createClient } from "@supabase/supabase-js";
+
+/** Fire-and-forget: create Drive folder for new client */
+async function createDriveFolderForClient(clientId: string, companyName: string) {
+  if (!isGoogleWorkspaceConfigured()) return;
+  try {
+    // Dynamically import to avoid issues at build time
+    const { ensureClientDriveFolder } = await import("@/app/api/portal/gdrive-init/route");
+    const auth = getGoogleAuth()!;
+    const drive = google.drive({ version: "v3", auth });
+    await ensureClientDriveFolder(drive, clientId, companyName);
+  } catch (err) {
+    // Non-fatal — folder will be created lazily on first upload
+    console.warn("[crm-clients] Could not pre-create Drive folder:", err);
+  }
+}
 
 const createSchema = z.object({
   company_name: z.string().min(1),
@@ -46,6 +65,8 @@ export async function POST(request: Request) {
       notes: parsed.notes ?? "",
       tags: parsed.tags ?? [],
     });
+    // Auto-create Google Drive folder (non-blocking)
+    void createDriveFolderForClient(data.id as string, parsed.company_name);
     return NextResponse.json(data);
   } catch (err) {
     if (err instanceof z.ZodError) {

@@ -2,14 +2,8 @@
  * POST /api/portal/gdrive-init
  *
  * White-label Google Drive resumable upload initiation.
- * Called by the portal client BEFORE sending the file.
- *
- * Flow:
- *  1. Verify caller (admin session or portal_session cookie)
- *  2. Ensure a per-client folder exists in Google Drive under GOOGLE_DRIVE_ROOT_FOLDER_ID
- *  3. Ask Google for a Resumable Upload Session URI (no file data sent to Netlify)
- *  4. Return { uploadUri, accessToken, folderId } to the browser
- *     → browser will PUT the file directly to uploadUri, showing progress
+ * Self-healing: auto-creates COSGRAL HUB root folder if the configured one
+ * is missing or stale, caches the working ID in Supabase hub_settings.
  */
 
 import { NextResponse } from "next/server";
@@ -27,15 +21,65 @@ function db() {
   );
 }
 
-/** Ensure a Drive folder exists for the client; return its ID. */
-async function ensureClientFolder(
+/** Get or auto-create the COSGRAL HUB root folder in Google Drive.
+ *  Priority: 1) hub_settings cache  2) GOOGLE_DRIVE_ROOT_FOLDER_ID env  3) create new */
+async function getOrCreateRootFolder(
+  drive: ReturnType<typeof google.drive>
+): Promise<string> {
+  const supabase = db();
+
+  // 1. Check Supabase cache
+  const { data: setting } = await supabase
+    .from("hub_settings")
+    .select("value")
+    .eq("key", "gdrive_root_folder_id")
+    .single();
+
+  if (setting?.value) {
+    // Verify it still exists
+    try {
+      await drive.files.get({ fileId: setting.value, fields: "id" });
+      return setting.value;
+    } catch {
+      // Stale — fall through to create new
+    }
+  }
+
+  // 2. Try env var
+  const envId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+  if (envId) {
+    try {
+      await drive.files.get({ fileId: envId, fields: "id" });
+      // Save to cache
+      await supabase.from("hub_settings").upsert({ key: "gdrive_root_folder_id", value: envId });
+      return envId;
+    } catch {
+      // Stale env var — fall through to create new
+    }
+  }
+
+  // 3. Auto-create "COSGRAL HUB" at Drive root
+  const res = await drive.files.create({
+    requestBody: {
+      name: "COSGRAL HUB",
+      mimeType: "application/vnd.google-apps.folder",
+    },
+    fields: "id",
+  });
+  const newId = res.data.id!;
+  await supabase.from("hub_settings").upsert({ key: "gdrive_root_folder_id", value: newId });
+  return newId;
+}
+
+/** Ensure a per-client subfolder exists under the root. Returns folder ID. */
+export async function ensureClientDriveFolder(
   drive: ReturnType<typeof google.drive>,
-  rootFolderId: string,
   crm_client_id: string,
   companyName: string
 ): Promise<string> {
-  // Check cache in Supabase
   const supabase = db();
+
+  // Check cache on crm_clients row
   const { data: client } = await supabase
     .from("crm_clients")
     .select("gdrive_portal_folder_id")
@@ -43,22 +87,30 @@ async function ensureClientFolder(
     .single();
 
   if (client?.gdrive_portal_folder_id) {
-    return client.gdrive_portal_folder_id as string;
+    // Verify still accessible
+    try {
+      await drive.files.get({ fileId: client.gdrive_portal_folder_id as string, fields: "id" });
+      return client.gdrive_portal_folder_id as string;
+    } catch {
+      // Stale — recreate
+    }
   }
 
-  // Create folder in Drive
-  const folderName = `[Portal] ${companyName} (${crm_client_id.slice(0, 8)})`;
+  const rootId = await getOrCreateRootFolder(drive);
+
+  // Create client subfolder
+  const folderName = companyName.trim().toUpperCase();
   const res = await drive.files.create({
     requestBody: {
       name: folderName,
       mimeType: "application/vnd.google-apps.folder",
-      parents: [rootFolderId],
+      parents: [rootId],
     },
     fields: "id",
   });
   const folderId = res.data.id!;
 
-  // Cache in crm_clients (column may not exist — ignore error)
+  // Cache on client row
   await supabase
     .from("crm_clients")
     .update({ gdrive_portal_folder_id: folderId })
@@ -107,7 +159,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  // ── Google Drive check ────────────────────────────────────────────────────
+  // ── Google Drive ──────────────────────────────────────────────────────────
   if (!isGoogleWorkspaceConfigured()) {
     return NextResponse.json(
       { error: "Google Drive nie jest skonfigurowany. Skontaktuj się z Cosgral." },
@@ -117,8 +169,6 @@ export async function POST(request: Request) {
 
   const auth = getGoogleAuth()!;
   const drive = google.drive({ version: "v3", auth });
-
-  // Get fresh access token (auto-refreshes via refresh_token)
   const { token: accessToken } = await auth.getAccessToken();
   if (!accessToken) {
     return NextResponse.json({ error: "Brak tokenu Google" }, { status: 503 });
@@ -133,12 +183,9 @@ export async function POST(request: Request) {
     .single();
   const companyName = (clientRow?.company_name as string | null) ?? "Klient";
 
-  const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID!;
-  const folderId = await ensureClientFolder(drive, rootFolderId, crm_client_id, companyName);
+  const folderId = await ensureClientDriveFolder(drive, crm_client_id, companyName);
 
-  // ── Initiate Resumable Upload ─────────────────────────────────────────────
-  // We call the Drive API directly (fetch) rather than through the SDK
-  // because the SDK doesn't expose the raw Session URI header.
+  // ── Resumable Upload Session URI ──────────────────────────────────────────
   const initRes = await fetch(
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable",
     {
@@ -149,10 +196,7 @@ export async function POST(request: Request) {
         "X-Upload-Content-Type": mime_type || "application/octet-stream",
         "X-Upload-Content-Length": String(size_bytes ?? 0),
       },
-      body: JSON.stringify({
-        name: file_name,
-        parents: [folderId],
-      }),
+      body: JSON.stringify({ name: file_name, parents: [folderId] }),
     }
   );
 

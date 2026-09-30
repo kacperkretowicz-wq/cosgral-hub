@@ -38,6 +38,8 @@ function FileGrid({
   files: PortalFile[];
   onDelete: (id: string) => void;
 }) {
+  const [previewId, setPreviewId] = useState<string | null>(null);
+
   if (files.length === 0) {
     return (
       <div className="flex items-center justify-center rounded-2xl border border-dashed border-white/15 py-12">
@@ -48,53 +50,141 @@ function FileGrid({
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      {files.map((f) => (
-        <div key={f.id} className="group relative overflow-hidden rounded-2xl bg-white/[0.04]">
-          {/* Preview */}
-          {isImage(f.mime_type) && f.public_url ? (
-            <a href={f.public_url} target="_blank" rel="noopener noreferrer">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={f.public_url}
-                alt={f.file_name}
-                className="aspect-square w-full object-cover"
-                loading="lazy"
-              />
-            </a>
-          ) : isVideo(f.mime_type) && f.public_url ? (
-            <a href={f.public_url} target="_blank" rel="noopener noreferrer"
-              className="flex aspect-square w-full items-center justify-center bg-white/[0.06]">
-              <span className="text-3xl">▶</span>
-            </a>
-          ) : (
-            <a href={f.public_url ?? "#"} target="_blank" rel="noopener noreferrer"
-              className="flex aspect-square w-full items-center justify-center bg-white/[0.06]">
-              <span className="text-3xl">
-                {f.mime_type === "application/pdf" ? "📄" : "📁"}
-              </span>
-            </a>
-          )}
+      {files.map((f) => {
+        const isGdrive = !!f.gdrive_file_id;
+        const viewUrl = isGdrive
+          ? `https://drive.google.com/file/d/${f.gdrive_file_id}/view`
+          : f.public_url;
+        const embedUrl = isGdrive
+          ? `https://drive.google.com/file/d/${f.gdrive_file_id}/preview`
+          : f.public_url;
+        const thumbUrl = isGdrive
+          ? `https://drive.google.com/thumbnail?id=${f.gdrive_file_id}&sz=w400`
+          : null;
+        const downloadUrl = isGdrive
+          ? `https://drive.google.com/uc?export=download&id=${f.gdrive_file_id}`
+          : f.public_url;
 
-          {/* Info bar */}
-          <div className="p-2">
-            <p className="truncate text-[0.65rem] text-white/70">{f.file_name}</p>
-            <p className="text-[0.6rem] text-white/35">
-              {fmtSize(f.size_bytes)} · {f.uploaded_by === "client" ? f.uploader_name ?? "klient" : "admin"}
-            </p>
+        return (
+          <div key={f.id} className="hub-tile group overflow-hidden">
+            {/* Preview */}
+            <div
+              className="relative aspect-video w-full cursor-pointer bg-black/30"
+              onClick={() => isVideo(f.mime_type) && setPreviewId(previewId === f.id ? null : f.id)}
+            >
+              {isImage(f.mime_type) ? (
+                <a href={viewUrl ?? "#"} target="_blank" rel="noopener noreferrer">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={thumbUrl ?? f.public_url ?? ""}
+                    alt={f.file_name}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </a>
+              ) : isVideo(f.mime_type) ? (
+                previewId === f.id && embedUrl ? (
+                  <iframe src={embedUrl} className="h-full w-full border-0" allow="autoplay" allowFullScreen />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 relative">
+                    {thumbUrl && <img src={thumbUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />}
+                    <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
+                      <svg className="h-4 w-4 translate-x-0.5 text-white/80" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                    </div>
+                    <span className="relative z-10 label-mono text-white/40 text-[0.55rem]">kliknij aby odtworzyć</span>
+                  </div>
+                )
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <span className="text-3xl opacity-40">
+                    {f.mime_type === "application/pdf" ? "📄" : "📁"}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Info bar */}
+            <div className="px-3 py-2 space-y-1">
+              <p className="truncate text-[0.65rem] text-white/70">{f.file_name}</p>
+              <div className="flex items-center justify-between gap-1">
+                <span className="label-mono text-[0.55rem]">{fmtSize(f.size_bytes)}</span>
+                <div className="flex items-center gap-1.5">
+                  {/* Download */}
+                  {downloadUrl && (
+                    <a href={downloadUrl} target="_blank" rel="noopener noreferrer"
+                      title="Pobierz" className="text-white/30 hover:text-white/70 transition-colors">
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                      </svg>
+                    </a>
+                  )}
+                  {/* Share / View */}
+                  {viewUrl && (
+                    <button type="button" title="Kopiuj link"
+                      onClick={() => { void navigator.clipboard.writeText(viewUrl); }}
+                      className="text-white/30 hover:text-white/70 transition-colors">
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                      </svg>
+                    </button>
+                  )}
+                  {/* Delete */}
+                  <button type="button" title="Usuń" onClick={() => onDelete(f.id)}
+                    className="text-white/30 hover:text-red-400 transition-colors">
+                    <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-
-          {/* Delete button */}
-          <button
-            type="button"
-            onClick={() => onDelete(f.id)}
-            className="absolute right-1.5 top-1.5 hidden rounded-full bg-black/70 p-1 text-xs text-white/70 hover:text-red-300 group-hover:flex"
-          >
-            ✕
-          </button>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
+}
+
+// ── Google Drive upload (mirrors portal logic) ────────────────────────────
+async function uploadFileToDriveAdmin(
+  file: File,
+  crm_client_id: string,
+  onProgress: (pct: number) => void
+): Promise<{ gdrive_file_id: string; gdrive_folder_id: string }> {
+  let mimeType = file.type || "";
+  if (!mimeType) {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const map: Record<string, string> = {
+      mov: "video/quicktime", mp4: "video/mp4", m4v: "video/x-m4v",
+      webm: "video/webm", jpg: "image/jpeg", jpeg: "image/jpeg",
+      png: "image/png", webp: "image/webp", heic: "image/heic",
+      heif: "image/heif", pdf: "application/pdf",
+    };
+    mimeType = map[ext] ?? "application/octet-stream";
+  }
+  const initRes = await fetch("/api/portal/gdrive-init", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ file_name: file.name, mime_type: mimeType, size_bytes: file.size, crm_client_id }),
+  });
+  if (!initRes.ok) { const e = await initRes.json(); throw new Error(e.error ?? "Błąd init"); }
+  const { uploadUri, folderId } = await initRes.json() as { uploadUri: string; folderId: string };
+
+  const fileId = await new Promise<string>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadUri);
+    xhr.setRequestHeader("Content-Type", mimeType);
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 95)); };
+    xhr.onload = () => {
+      if (xhr.status === 200 || xhr.status === 201) {
+        try { onProgress(100); resolve((JSON.parse(xhr.responseText) as { id?: string }).id ?? ""); }
+        catch { reject(new Error("Błąd odpowiedzi Google")); }
+      } else { reject(new Error(`Drive błąd ${xhr.status}`)); }
+    };
+    xhr.onerror = () => reject(new Error("Błąd sieci"));
+    xhr.send(file);
+  });
+  return { gdrive_file_id: fileId, gdrive_folder_id: folderId };
 }
 
 // ── Dropzone ─────────────────────────────────────────────────────────────
@@ -116,17 +206,31 @@ function DropzoneUpload({
     setUploading(true);
     const msgs: string[] = [];
     for (const file of Array.from(fileList)) {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("crm_client_id", crm_client_id);
-      const res = await fetch("/api/portal/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      msgs.push(res.ok ? `✓ ${file.name}` : `✕ ${file.name}: ${data.error ?? "błąd"}`);
+      try {
+        const { gdrive_file_id, gdrive_folder_id } = await uploadFileToDriveAdmin(
+          file, crm_client_id,
+          (pct) => setProgress([`⬆ ${file.name} — ${pct}%`])
+        );
+        const res = await fetch("/api/portal/gdrive-complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gdrive_file_id, gdrive_folder_id,
+            file_name: file.name,
+            mime_type: file.type || "application/octet-stream",
+            size_bytes: file.size,
+            crm_client_id,
+          }),
+        });
+        msgs.push(res.ok ? `✓ ${file.name}` : `✕ ${file.name}: błąd rejestracji`);
+      } catch (err) {
+        msgs.push(`✕ ${file.name}: ${err instanceof Error ? err.message : "błąd"}`);
+      }
     }
     setProgress(msgs);
     setUploading(false);
     onUploaded();
-    setTimeout(() => setProgress([]), 4000);
+    setTimeout(() => setProgress([]), 5000);
   };
 
   return (
@@ -157,7 +261,7 @@ function DropzoneUpload({
             <p className="text-sm text-white/60">
               Przeciągnij pliki tutaj lub <span className="text-white/90 underline">kliknij</span>
             </p>
-            <p className="mt-1 text-xs text-white/30">JPG, PNG, WEBP, MP4, PDF · max 100 MB</p>
+            <p className="mt-1 text-xs text-white/30">Zdjęcia, wideo, PDF · do 5 GB · Google Drive</p>
           </>
         )}
       </div>
@@ -176,7 +280,7 @@ function DropzoneUpload({
         ref={inputRef}
         type="file"
         multiple
-        accept="image/*,video/mp4,video/quicktime,video/webm,application/pdf"
+        accept="image/*,video/*,.mov,.mp4,.heic,.heif,application/pdf"
         className="hidden"
         onChange={(e) => {
           void uploadFiles(e.target.files);
