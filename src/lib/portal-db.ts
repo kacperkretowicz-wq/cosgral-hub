@@ -21,12 +21,19 @@ export interface PortalFile {
   crm_client_id: string;
   file_name: string;
   mime_type: string;
+  /** Supabase Storage path (legacy) or empty string when storage_provider=gdrive */
   storage_path: string;
   public_url: string | null;
   uploaded_by: "admin" | "client";
   uploader_name: string | null;
   size_bytes: number;
   created_at: string;
+  /** Google Drive file ID — present when storage_provider = 'gdrive' */
+  gdrive_file_id?: string | null;
+  /** Google Drive parent folder ID */
+  gdrive_folder_id?: string | null;
+  /** 'supabase' (legacy) or 'gdrive' (new default) */
+  storage_provider?: "supabase" | "gdrive";
 }
 
 export interface PortalNote {
@@ -275,25 +282,44 @@ export async function listPortalFiles(crm_client_id: string): Promise<PortalFile
 export async function createPortalFile(
   input: Omit<PortalFile, "id" | "created_at">,
 ): Promise<PortalFile> {
+  // Build insert payload — omit undefined optional fields so Supabase
+  // uses column defaults rather than inserting NULL explicitly.
+  const payload: Record<string, unknown> = {
+    crm_client_id: input.crm_client_id,
+    file_name: input.file_name,
+    mime_type: input.mime_type,
+    storage_path: input.storage_path ?? "",
+    public_url: input.public_url ?? null,
+    uploaded_by: input.uploaded_by,
+    uploader_name: input.uploader_name ?? null,
+    size_bytes: input.size_bytes,
+  };
+  if (input.gdrive_file_id !== undefined) payload.gdrive_file_id = input.gdrive_file_id;
+  if (input.gdrive_folder_id !== undefined) payload.gdrive_folder_id = input.gdrive_folder_id;
+  if (input.storage_provider !== undefined) payload.storage_provider = input.storage_provider;
+
   const { data, error } = await db()
     .from("portal_files")
-    .insert(input)
+    .insert(payload)
     .select()
     .single();
   if (error) throw new Error(error.message);
   return data as PortalFile;
 }
 
-export async function deletePortalFile(id: string): Promise<string | null> {
+export async function deletePortalFile(id: string): Promise<{ storage_path: string | null; gdrive_file_id: string | null }> {
   const { data: file } = await db()
     .from("portal_files")
-    .select("storage_path")
+    .select("storage_path, gdrive_file_id")
     .eq("id", id)
     .single();
 
   const { error } = await db().from("portal_files").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  return file?.storage_path ?? null;
+  return {
+    storage_path: file?.storage_path ?? null,
+    gdrive_file_id: file?.gdrive_file_id ?? null,
+  };
 }
 
 // ── Notes ───────────────────────────────────────────────────────────────────
