@@ -1,18 +1,34 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { KlienciListClient } from "@/components/KlienciListClient";
-import { getIntranetDb } from "@/lib/intranet-db";
 import type { CrmClient } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+export default function KlienciPage() {
+  const [clients, setClients] = useState<CrmClient[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-export default async function KlienciPage() {
-  let clients: CrmClient[] = [];
-  let error = "";
+  const load = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/crm-clients", { cache: "no-store" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d.error ?? "Błąd ładowania");
+        return;
+      }
+      const data = await res.json();
+      setClients(Array.isArray(data) ? data : (data.clients ?? []));
+    } catch {
+      setError("Błąd sieci");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  try {
-    clients = await getIntranetDb().getCrmClients();
-  } catch (e) {
-    error = e instanceof Error ? e.message : "Błąd ładowania";
-  }
+  useEffect(() => { void load(); }, []);
 
   return (
     <div>
@@ -21,7 +37,13 @@ export default async function KlienciPage() {
           {error}
         </div>
       ) : null}
-      <KlienciListClient clients={clients} />
+      {loading ? (
+        <div className="flex items-center justify-center py-20 text-white/40 text-sm">
+          Ładowanie klientów…
+        </div>
+      ) : (
+        <KlienciListClient clients={clients} />
+      )}
     </div>
   );
 }

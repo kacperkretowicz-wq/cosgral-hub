@@ -5,6 +5,7 @@ import {
   getGoogleAuth,
   isGoogleWorkspaceConfigured,
 } from "@/lib/google-auth";
+import { getOrCreateRootFolder } from "@/lib/gdrive-folders";
 
 export async function GET() {
   const configured = isGoogleWorkspaceConfigured();
@@ -17,7 +18,6 @@ export async function GET() {
         !process.env.GOOGLE_CLIENT_ID && "GOOGLE_CLIENT_ID",
         !process.env.GOOGLE_CLIENT_SECRET && "GOOGLE_CLIENT_SECRET",
         !process.env.GOOGLE_REFRESH_TOKEN && "GOOGLE_REFRESH_TOKEN",
-        !process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID && "GOOGLE_DRIVE_ROOT_FOLDER_ID",
       ].filter(Boolean),
       authorize_url: createGoogleOAuth2Client()
         ? "/api/google/oauth/authorize"
@@ -27,8 +27,10 @@ export async function GET() {
 
   try {
     const auth = getGoogleAuth();
-    const rootId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID!;
     const drive = google.drive({ version: "v3", auth: auth! });
+
+    // Use self-healing logic — auto-fixes stale GOOGLE_DRIVE_ROOT_FOLDER_ID
+    const rootId = await getOrCreateRootFolder(drive);
 
     const folder = await drive.files.get({
       fileId: rootId,
