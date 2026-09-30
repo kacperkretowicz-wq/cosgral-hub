@@ -731,7 +731,7 @@ function FileGrid({ files, queue, onUpload, onRetry }: {
       </div>
 
       {/* Active upload queue with progress bars */}
-      <UploadQueue items={queue} onRetry={handleRetry} />
+      <UploadQueue items={queue} onRetry={onRetry} />
 
       {files.length === 0 && queue.length === 0 && (
         <div className="surface-list px-6 py-12 text-center">

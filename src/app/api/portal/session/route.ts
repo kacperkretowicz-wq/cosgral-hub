@@ -19,6 +19,5 @@ export async function GET() {
     authenticated: true,
     crm_client_id: session.crm_client_id,
     requester_name: session.requester_name,
-    requester_email: session.requester_email,
   });
 }
