@@ -806,7 +806,7 @@ type AiMsg = { role: "user" | "assistant"; content: string };
 function AiTab({ crm_client_id }: { crm_client_id: string }) {
   const [messages, setMessages] = useState<AiMsg[]>([{
     role: "assistant",
-    content: "Cześć! Jestem Asystentem Cosgral — wiem wszystko o Twoim projekcie. Zapytaj mnie o aktualny status, termin realizacji, co zostało zrobione albo czego oczekujemy od Ciebie.",
+    content: "Asystent Cosgral online. Zapytaj mnie o aktualny status projektu, termin realizacji, co zostało zrobione lub czego agencja oczekuje od Ciebie.",
   }]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
