@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { validatePortalSession, createPortalMessage, listPortalMessages } from "@/lib/portal-db";
+import { validatePortalSession, createPortalMessage, listPortalMessages, sendPortalPush } from "@/lib/portal-db";
 import { cookies } from "next/headers";
 import { z } from "zod";
 
@@ -51,5 +51,11 @@ export async function POST(request: Request) {
   if (!caller.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const message = await createPortalMessage(crm_client_id, caller.sender, caller.name, content);
+
+  // Push notification: notify client when admin sends, notify nobody when client sends (admin uses Hub)
+  if (caller.sender === "admin") {
+    void sendPortalPush(crm_client_id, "Nowa wiadomość od Cosgral", content.slice(0, 100));
+  }
+
   return NextResponse.json({ message });
 }

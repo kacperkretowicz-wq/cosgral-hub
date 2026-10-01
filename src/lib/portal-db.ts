@@ -407,3 +407,63 @@ export async function createPortalMessage(
   if (error) throw new Error(error.message);
   return data as PortalMessage;
 }
+
+// ── Portal Push Notifications ─────────────────────────────────────────────
+
+/**
+ * Send a Web Push notification to all subscribed devices of a portal client.
+ * Safe to call from admin actions — silently skips if push is not configured.
+ */
+export async function sendPortalPush(
+  crm_client_id: string,
+  title: string,
+  body?: string,
+): Promise<void> {
+  try {
+    const { isWebPushConfigured } = await import("@/lib/web-push");
+    if (!isWebPushConfigured()) return;
+
+    const { data: subs } = await db()
+      .from("portal_push_subscriptions")
+      .select("endpoint, keys_p256dh, keys_auth")
+      .eq("crm_client_id", crm_client_id);
+
+    if (!subs || subs.length === 0) return;
+
+    const webpush = (await import("web-push")).default;
+    const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ?? "";
+    const priv = process.env.VAPID_PRIVATE_KEY?.trim() ?? "";
+    if (!pub || !priv) return;
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT?.trim() ?? "mailto:kontakt@cosgral.pl",
+      pub,
+      priv,
+    );
+
+    const payload = JSON.stringify({ title, body: body ?? "", href: "/" });
+    const stale: string[] = [];
+
+    await Promise.allSettled(
+      subs.map(async (s) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: s.endpoint, keys: { p256dh: s.keys_p256dh, auth: s.keys_auth } },
+            payload,
+          );
+        } catch {
+          stale.push(s.endpoint);
+        }
+      }),
+    );
+
+    // Remove stale subscriptions
+    if (stale.length > 0) {
+      await db()
+        .from("portal_push_subscriptions")
+        .delete()
+        .in("endpoint", stale);
+    }
+  } catch {
+    // Never throw — push is best-effort
+  }
+}
