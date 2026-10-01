@@ -42,10 +42,10 @@ interface Project {
 }
 
 const STATUS_STEPS = [
-  { key: "nowe", label: "Zlecenie przyjęte", icon: "📋" },
-  { key: "w_trakcie", label: "W realizacji", icon: "⚙️" },
-  { key: "oczekuje", label: "Oczekuje na Ciebie", icon: "🔔" },
-  { key: "zakonczone", label: "Gotowe!", icon: "✅" },
+  { key: "nowe", label: "Zlecenie przyjęte" },
+  { key: "w_trakcie", label: "W realizacji" },
+  { key: "oczekuje", label: "Oczekuje na Ciebie" },
+  { key: "zakonczone", label: "Gotowe!" },
 ];
 const STATUS_INDEX: Record<string, number> = {
   nowe: 0, w_trakcie: 1, oczekuje: 2, zakonczone: 3, anulowane: 3,
@@ -257,7 +257,9 @@ function SetupAuthView({ slug, companyName, onDone }: {
     <AuthCard companyName={companyName}>
       <div className="hub-tile p-7 space-y-5" style={{ "--tile-glow": "rgba(91,141,239,0.6)", "--tile-tint": "rgba(91,141,239,0.08)" } as React.CSSProperties}>
         <div className="flex items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.08] text-xl">🔐</div>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.08]">
+            <svg className="h-5 w-5 text-white/40" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>
+          </div>
           <div><p className="label-mono">Nowe konto</p><h1 className="text-lg font-medium text-white mt-0.5">Utwórz dane dostępu</h1></div>
         </div>
         <div className="h-px bg-white/[0.06]" />
@@ -274,7 +276,7 @@ function SetupAuthView({ slug, companyName, onDone }: {
           </div>
           <button type="button" onClick={() => setShowPin(!showPin)} className="flex items-center gap-2 text-xs text-white/40 hover:text-white/70 transition-colors">
             <span className={`h-4 w-4 rounded border transition-colors ${showPin ? "border-white/40 bg-white/10" : "border-white/20"}`}>
-              {showPin && <span className="flex h-full w-full items-center justify-center text-[0.55rem]">✓</span>}
+              {showPin && <span className="flex h-full w-full items-center justify-center text-[0.55rem] text-white/80">ok</span>}
             </span>
             Dodaj szybki PIN (4 cyfry) — opcjonalnie
           </button>
@@ -333,7 +335,9 @@ function LoginView({ slug, companyName, onDone }: {
     <AuthCard companyName={companyName}>
       <div className="hub-tile p-7 space-y-5" style={{ "--tile-glow": "rgba(91,141,239,0.55)", "--tile-tint": "rgba(91,141,239,0.07)" } as React.CSSProperties}>
         <div className="flex items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.08] text-xl">{mode === "password" ? "🔑" : "🔢"}</div>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.08]">
+            <svg className="h-5 w-5 text-white/40" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 0 1 21.75 8.25Z" /></svg>
+          </div>
           <div><p className="label-mono">Katalog klienta</p><h1 className="text-lg font-medium text-white mt-0.5">Zaloguj się</h1></div>
         </div>
         <div className="flex rounded-2xl overflow-hidden border border-white/[0.08]">
@@ -400,7 +404,7 @@ function UploadQueue({ items, onRetry }: { items: UploadItem[]; onRetry: (item: 
           style={{ "--tile-glow": item.status === "error" ? "rgba(239,68,68,0.5)" : "rgba(91,141,239,0.5)", "--tile-tint": "rgba(91,141,239,0.08)" } as React.CSSProperties}>
           <div className="flex items-center justify-between">
             <span className="text-sm text-white/80 truncate max-w-[70%]">{item.file.name}</span>
-            <span className="label-mono">{item.status === "done" ? "✓ gotowe" : item.status === "error" ? "błąd" : item.status === "pending" ? "czekam…" : `${item.progress}%`}</span>
+            <span className="label-mono">{item.status === "done" ? "gotowe" : item.status === "error" ? "błąd" : item.status === "pending" ? "czekam…" : `${item.progress}%`}</span>
           </div>
           {item.status === "uploading" && (
             <div className="h-1 rounded-full bg-white/[0.08] overflow-hidden">
@@ -506,7 +510,9 @@ function FileGrid({ files, queue, onUpload, onRetry, lastVisit }: {
       {newFiles.length > 0 && (
         <div className="hub-tile px-5 py-3 flex items-center gap-3"
           style={{ "--tile-glow": "rgba(91,141,239,0.7)", "--tile-tint": "rgba(91,141,239,0.12)" } as React.CSSProperties}>
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5b8def]/20 text-sm">📂</span>
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5b8def]/20">
+              <svg className="h-3.5 w-3.5 text-[#5b8def]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" /></svg>
+            </span>
           <div>
             <p className="text-sm text-white/90 font-medium">Cosgral dodał {newFiles.length} {newFiles.length === 1 ? "nowy plik" : "nowe pliki"}</p>
             <p className="label-mono">od Twojej ostatniej wizyty</p>
@@ -561,7 +567,9 @@ function StatusTab({ crm_client_id }: { crm_client_id: string }) {
   if (projects.length === 0) {
     return (
       <div className="hub-tile px-6 py-12 text-center space-y-3">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.06] text-2xl">📋</div>
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.06]">
+          <svg className="h-7 w-7 text-white/25" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" /></svg>
+        </div>
         <p className="text-sm text-white/50">Brak zleceń przypisanych do Twojego konta.</p>
         <p className="label-mono">Skontaktuj się z Cosgral przez czat</p>
       </div>
@@ -610,7 +618,9 @@ function StatusTab({ crm_client_id }: { crm_client_id: string }) {
                             : "border-white/30 bg-white/10"
                           : "border-white/[0.08] bg-black/20"
                         }`}>
-                        {done ? step.icon : <span className="h-1.5 w-1.5 rounded-full bg-white/20" />}
+                        {done ? (
+                          <svg className="h-3.5 w-3.5 text-white/70" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        ) : <span className="h-1.5 w-1.5 rounded-full bg-white/20" />}
                         {active && <span className="absolute inset-0 rounded-full animate-ping bg-[#5b8def]/20" />}
                       </div>
                       <p className={`text-[0.6rem] text-center leading-tight px-0.5 ${done ? "text-white/60" : "text-white/20"} ${active ? "text-white/90 font-medium" : ""}`}>
@@ -654,7 +664,7 @@ function StatusTab({ crm_client_id }: { crm_client_id: string }) {
 
             {waiting && (
               <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] px-4 py-3">
-                <p className="text-sm text-amber-200/80">🔔 Cosgral oczekuje na materiały lub informacje od Ciebie. Napisz do nas przez zakładkę <strong className="text-amber-200">Czat</strong>.</p>
+                <p className="text-sm text-amber-200/80">Cosgral oczekuje na materiały lub informacje od Ciebie. Napisz do nas przez zakładkę <strong className="text-amber-200">Czat</strong>.</p>
               </div>
             )}
           </div>
@@ -759,7 +769,7 @@ function NotesPanel({ notes, crm_client_id, onChanged }: {
     <div className="space-y-4">
       <div className="hub-tile p-5 space-y-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">📝</span>
+          <svg className="h-4 w-4 text-white/40 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
           <div>
             <p className="text-sm font-medium text-white/90">Brief / Notatka</p>
             <p className="label-mono">Prześlij nam dodatkowe informacje, linki lub uwagi</p>
@@ -796,7 +806,7 @@ type AiMsg = { role: "user" | "assistant"; content: string };
 function AiTab({ crm_client_id }: { crm_client_id: string }) {
   const [messages, setMessages] = useState<AiMsg[]>([{
     role: "assistant",
-    content: "Cześć! Jestem Asystentem Cosgral — wiem wszystko o Twoim projekcie. Zapytaj mnie o aktualny status, termin realizacji, co zostało zrobione albo czego oczekujemy od Ciebie. 🎯",
+    content: "Cześć! Jestem Asystentem Cosgral — wiem wszystko o Twoim projekcie. Zapytaj mnie o aktualny status, termin realizacji, co zostało zrobione albo czego oczekujemy od Ciebie.",
   }]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -974,8 +984,12 @@ function NotificationsTab() {
     <div className="space-y-4">
       <div className="hub-tile p-6 space-y-5" style={{ "--tile-glow": state === "enabled" ? "rgba(34,197,94,0.5)" : "rgba(91,141,239,0.5)", "--tile-tint": "rgba(91,141,239,0.06)" } as React.CSSProperties}>
         <div className="flex items-center gap-4">
-          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl ${state === "enabled" ? "bg-green-400/10" : "bg-white/[0.06]"}`}>
-            {state === "enabled" ? "🔔" : state === "denied" ? "🔕" : "🔕"}
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${state === "enabled" ? "bg-green-400/10" : "bg-white/[0.06]"}`}>
+            {state === "enabled" ? (
+              <svg className="h-5 w-5 text-green-400" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /></svg>
+            ) : (
+              <svg className="h-5 w-5 text-white/30" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.143 17.082a24.248 24.248 0 0 0 3.714 0m-3.714 0a3 3 0 1 1-3.143-2.857M9.143 17.082c-.236-1.064-.428-2.139-.566-3.216m0 0A12.034 12.034 0 0 1 8.25 9a3.75 3.75 0 0 1 7.5 0c0 1.624-.31 3.176-.857 4.573m0 0c.286-.16.578-.318.864-.47M18 12a3.75 3.75 0 0 1-3.75 3.75 3.75 3.75 0 0 1 3.75-3.75" /></svg>
+            )}
           </div>
           <div>
             <p className="text-base font-medium text-white">Powiadomienia push</p>
@@ -1033,13 +1047,12 @@ function NotificationsTab() {
       {/* Devices grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { icon: "📱", label: "iPhone / iPad", note: "iOS 16.4+ Safari PWA" },
-          { icon: "🤖", label: "Android", note: "Chrome / Firefox" },
-          { icon: "🍎", label: "macOS Safari", note: "Safari 16+" },
-          { icon: "💻", label: "Windows / Mac", note: "Chrome / Edge" },
+          { label: "iPhone / iPad", note: "iOS 16.4+ Safari PWA" },
+          { label: "Android", note: "Chrome / Firefox" },
+          { label: "macOS Safari", note: "Safari 16+" },
+          { label: "Windows / Mac", note: "Chrome / Edge" },
         ].map((d) => (
-          <div key={d.label} className="hub-tile p-4 text-center space-y-2">
-            <div className="text-2xl">{d.icon}</div>
+          <div key={d.label} className="hub-tile p-4 text-center space-y-1.5">
             <p className="text-xs font-medium text-white/70">{d.label}</p>
             <p className="label-mono">{d.note}</p>
           </div>
@@ -1166,13 +1179,13 @@ function PortalDashboard({ slug, companyName, crm_client_id, callerName, onLogou
   const newFilesCount = files.filter((f) => f.uploaded_by === "admin" && new Date(f.created_at) > new Date(lastVisit)).length;
   const unreadMessages = messages.filter((m) => m.sender === "admin" && new Date(m.created_at) > new Date(lastVisit)).length;
 
-  const TABS: { id: PortalTab; label: string; badge?: number; icon: string }[] = [
-    { id: "pliki", label: "Pliki", badge: newFilesCount || undefined, icon: "📁" },
-    { id: "status", label: "Status", icon: "📊" },
-    { id: "czat", label: "Czat", badge: unreadMessages || undefined, icon: "💬" },
-    { id: "brief", label: "Brief", icon: "📝" },
-    { id: "ai", label: "AI", icon: "🤖" },
-    { id: "powiadomienia", label: "Alerty", icon: "🔔" },
+  const TABS: { id: PortalTab; label: string; badge?: number }[] = [
+    { id: "pliki", label: "Pliki", badge: newFilesCount || undefined },
+    { id: "status", label: "Status" },
+    { id: "czat", label: "Czat", badge: unreadMessages || undefined },
+    { id: "brief", label: "Brief" },
+    { id: "ai", label: "AI" },
+    { id: "powiadomienia", label: "Alerty" },
   ];
 
   return (
@@ -1210,7 +1223,6 @@ function PortalDashboard({ slug, companyName, crm_client_id, callerName, onLogou
               className={`relative flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
                 tab === t.id ? "bg-[--ink] text-[--bg] shadow-sm" : "glass text-white/45 hover:text-white/70"
               }`}>
-              <span className="text-base leading-none">{t.icon}</span>
               <span>{t.label}</span>
               {t.badge != null && t.badge > 0 && (
                 <span className={`flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[0.55rem] font-bold ${tab === t.id ? "bg-[--bg]/20 text-[--bg]" : "bg-[#5b8def] text-white"}`}>
