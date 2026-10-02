@@ -18,7 +18,6 @@ const DESKTOP_NAV = [
   { href: "/admin/finanse", label: "Finanse" },
   { href: "/admin/materialy", label: "Materiały" },
   { href: "/admin/czat", label: "Czat strony" },
-  { href: "/admin/sm", label: "Social Media" },
   { href: "/admin/team", label: "Team" },
   { href: "/admin/powiadomienia", label: "Powiadomienia" },
 ];
@@ -28,7 +27,6 @@ const MORE_ITEMS = [
   { href: "/admin/kalendarz", label: "Kalendarz", icon: "cal" as const },
   { href: "/admin/finanse", label: "Finanse", icon: "wallet" as const },
   { href: "/admin/materialy", label: "Materiały", icon: "folder" as const },
-  { href: "/admin/sm", label: "Social Media", icon: "spark" as const },
   { href: "/admin/czat", label: "Czat strony", icon: "chat" as const },
   { href: "/admin/team", label: "Team", icon: "team" as const },
   { href: "/admin/powiadomienia", label: "Powiadomienia", icon: "bell" as const },
@@ -59,7 +57,6 @@ const MORE_ACTIVE_PREFIXES = [
   "/admin/generator",
   "/admin/leady",
   "/admin/harmonogram",
-  "/admin/sm",
   "/admin/materialy",
 ];
 
