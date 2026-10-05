@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  enrichPortalFilesWithUrls,
   getCrmClientBySlug,
   listPortalFiles,
   listPortalNotes,
@@ -54,12 +55,13 @@ export async function GET(
   }
 
   try {
-    const [files, notes, messages, requests] = await Promise.all([
+    const [rawFiles, notes, messages, requests] = await Promise.all([
       listPortalFiles(client.id),
       listPortalNotes(client.id),
       listPortalMessages(client.id),
       isAdmin ? listAccessRequests(client.id) : Promise.resolve([]),
     ]);
+    const files = await enrichPortalFilesWithUrls(rawFiles);
 
     return NextResponse.json({
       client,
