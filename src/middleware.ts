@@ -4,6 +4,8 @@ import { TEAM, isTeamMemberId } from "@/lib/team";
 
 const SESSION_COOKIE = "cosgral_admin_session";
 const ADMIN_EMAILS = TEAM.map((m) => m.email.toLowerCase());
+/** Extra admins get ids like `name_a1b2c3` from idFromEmail. */
+const EXTRA_ADMIN_ID = /^[a-z0-9]+_[a-f0-9]{6}$/;
 
 function isSupabaseConfigured(): boolean {
   const mode = (process.env.COSGRAL_DB_MODE || "").toLowerCase();
@@ -36,11 +38,19 @@ function hasLocalAdminSession(request: NextRequest): boolean {
   }
   const normalized = value.toLowerCase();
   if (isTeamMemberId(normalized)) return true;
-  return ADMIN_EMAILS.includes(normalized);
+  if (ADMIN_EMAILS.includes(normalized)) return true;
+  if (EXTRA_ADMIN_ID.test(normalized)) return true;
+  if (normalized.includes("@") && normalized.includes(".")) return true;
+  return false;
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Public invite accept flow
+  if (pathname.startsWith("/admin/invite")) {
+    return NextResponse.next();
+  }
 
   const isAdminPath =
     pathname.startsWith("/admin") &&

@@ -1,9 +1,14 @@
 import { cookies } from "next/headers";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/db";
-import { TEAM, type TeamMemberId, isTeamMemberId } from "@/lib/team";
+import { TEAM, type TeamMemberId } from "@/lib/team";
+import {
+  findAdminByEmail,
+  findAdminBySessionValue,
+  isRegisteredAdminEmail,
+} from "@/lib/admin-users-store";
 
-/** Only these emails may use the admin panel. */
+/** Core team emails (static allowlist). Extra admins live in the blob store. */
 export const ADMIN_EMAILS = TEAM.map((m) => m.email.toLowerCase());
 
 /** Team passwords — used when Supabase Auth is broken / out of sync. */
@@ -23,28 +28,9 @@ function cookieSecure() {
   return process.env.NODE_ENV === "production";
 }
 
-function emailFromSessionValue(raw: string | undefined | null): string | null {
-  if (!raw) return null;
-  let value = raw;
-  try {
-    value = decodeURIComponent(raw);
-  } catch {
-    // keep raw
-  }
-  const normalized = value.toLowerCase();
-  if (isTeamMemberId(normalized)) {
-    return TEAM.find((m) => m.id === normalized)?.email.toLowerCase() ?? null;
-  }
-  if (isAdminEmail(normalized)) return normalized;
-  return null;
-}
-
-async function setLocalSession(email: string, maxAge: number) {
-  const member = TEAM.find((m) => m.email.toLowerCase() === email);
-  // Store team id (no @) to avoid cookie encoding mismatches
-  const value = member?.id ?? email;
+async function setLocalSession(userId: string, maxAge: number) {
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, value, {
+  cookieStore.set(SESSION_COOKIE, userId, {
     httpOnly: true,
     secure: cookieSecure(),
     sameSite: "lax",
@@ -61,18 +47,22 @@ export async function loginAdmin(
   const raw = email.trim().toLowerCase();
   const byLabel = TEAM.find((m) => m.label.toLowerCase() === raw || m.id === raw);
   const normalized = (byLabel?.email ?? raw).toLowerCase();
-  if (!isAdminEmail(normalized)) {
+
+  const admin = await findAdminByEmail(normalized);
+  if (!admin) {
     return { ok: false, error: "Nieprawidłowy login lub hasło" };
   }
 
   const maxAge = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
-  const localOk = LOCAL_ADMIN_PASSWORDS[normalized] === password;
+  const localOk =
+    LOCAL_ADMIN_PASSWORDS[admin.email] === password ||
+    (Boolean(admin.localPassword) && admin.localPassword === password);
 
   if (isSupabaseConfigured()) {
     try {
       const supabase = await createSupabaseServerClient();
       const { error } = await supabase.auth.signInWithPassword({
-        email: normalized,
+        email: admin.email,
         password,
       });
 
@@ -85,7 +75,7 @@ export async function loginAdmin(
           maxAge,
           path: "/",
         });
-        await setLocalSession(normalized, maxAge);
+        await setLocalSession(admin.id, maxAge);
         return { ok: true, mode: "supabase" };
       }
     } catch {
@@ -93,7 +83,7 @@ export async function loginAdmin(
     }
 
     if (localOk) {
-      await setLocalSession(normalized, maxAge);
+      await setLocalSession(admin.id, maxAge);
       return { ok: true, mode: "local" };
     }
 
@@ -104,8 +94,20 @@ export async function loginAdmin(
     return { ok: false, error: "Nieprawidłowy login lub hasło" };
   }
 
-  await setLocalSession(normalized, maxAge);
+  await setLocalSession(admin.id, maxAge);
   return { ok: true, mode: "local" };
+}
+
+/** Establish session after invite accept (already validated). */
+export async function establishAdminSession(
+  email: string,
+  remember = true,
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = await findAdminByEmail(email);
+  if (!admin) return { ok: false, error: "Konto nie istnieje" };
+  const maxAge = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 8;
+  await setLocalSession(admin.id, maxAge);
+  return { ok: true };
 }
 
 export async function getAdminEmail(): Promise<string | null> {
@@ -116,14 +118,42 @@ export async function getAdminEmail(): Promise<string | null> {
         data: { user },
       } = await supabase.auth.getUser();
       const email = user?.email?.toLowerCase() ?? null;
-      if (isAdminEmail(email)) return email;
+      if (email && (await isRegisteredAdminEmail(email))) return email;
     } catch {
       // ignore — try local cookie
     }
   }
 
   const cookieStore = await cookies();
-  return emailFromSessionValue(cookieStore.get(SESSION_COOKIE)?.value);
+  const session = await findAdminBySessionValue(
+    cookieStore.get(SESSION_COOKIE)?.value ?? "",
+  );
+  return session?.email ?? null;
+}
+
+export async function getAdminSession(): Promise<{
+  id: string;
+  email: string;
+  label: string;
+} | null> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createSupabaseServerClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const email = user?.email?.toLowerCase() ?? null;
+      if (email) {
+        const admin = await findAdminByEmail(email);
+        if (admin) return { id: admin.id, email: admin.email, label: admin.label };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const cookieStore = await cookies();
+  return findAdminBySessionValue(cookieStore.get(SESSION_COOKIE)?.value ?? "");
 }
 
 export async function logoutAdmin(): Promise<void> {
@@ -147,7 +177,18 @@ export async function isAdminAuthenticated(): Promise<boolean> {
 export function resolveLocalSessionEmail(
   raw: string | undefined | null,
 ): string | null {
-  return emailFromSessionValue(raw);
+  if (!raw) return null;
+  let value = raw;
+  try {
+    value = decodeURIComponent(raw);
+  } catch {
+    // keep
+  }
+  const normalized = value.toLowerCase();
+  const core = TEAM.find(
+    (m) => m.id === normalized || m.email.toLowerCase() === normalized,
+  );
+  return core?.email.toLowerCase() ?? (normalized.includes("@") ? normalized : null);
 }
 
 export type { TeamMemberId };

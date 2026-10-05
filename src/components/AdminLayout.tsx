@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { CosgralBrand, CosgralLogo } from "@/components/CosgralLogo";
 import { CosgralAmbient } from "@/components/CosgralAmbient";
+import { AdminAccountMenu } from "@/components/AdminAccountMenu";
 import { HubAiChat } from "@/components/HubAiChat";
 import { TileScrollLift } from "@/components/TileScrollLift";
-import { Button } from "@/components/ui/Button";
 
 const DESKTOP_NAV = [
   { href: "/admin", label: "Home" },
@@ -207,13 +206,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     router.push(href);
   };
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/login", { method: "DELETE" }).catch(() =>
-      fetch("/api/auth/logout", { method: "POST" }),
-    );
-    window.location.href = "/admin/login";
-  };
-
   return (
     <div className="relative min-h-screen overflow-x-hidden pb-[max(7rem,calc(5.5rem+env(safe-area-inset-bottom)))] text-white">
       <CosgralAmbient />
@@ -222,9 +214,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       {/* Desktop sidebar — xl+ */}
       <aside className="fixed left-4 top-4 z-20 hidden h-[calc(100%-2rem)] w-60 xl:flex xl:flex-col">
         <div className="glass-strong flex h-full flex-col rounded-[1.75rem] p-5">
-          <Link href="/admin" className="mb-8 px-2">
-            <CosgralBrand size="md" subtitle="Hub" />
-          </Link>
+          <AdminAccountMenu variant="desktop" />
           <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
             {DESKTOP_NAV.map((item) => (
               <Link
@@ -241,33 +231,15 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
           </nav>
-          <Button variant="ghost" onClick={handleLogout} className="mt-4 w-full">
-            Wyloguj
-          </Button>
         </div>
       </aside>
 
       <header className="safe-pt relative z-10 flex items-center justify-between gap-2 px-3 pb-2 pt-3 sm:px-4 xl:hidden">
-        <Link
-          href="/admin"
-          className="glass-pill flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5"
-        >
-          <CosgralLogo size="sm" />
-          <span className="text-[0.7rem] font-medium uppercase tracking-[0.16em] text-white/70">
-            Cosgral
-          </span>
-        </Link>
+        <AdminAccountMenu variant="mobile" />
         <div className="flex shrink-0 items-center gap-2">
           <div className="relative xl:hidden">
             <HubAiChat compact />
           </div>
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className="glass-pill rounded-full px-3.5 py-2 text-[0.65rem]"
-          >
-            Wyloguj
-          </Button>
         </div>
       </header>
 

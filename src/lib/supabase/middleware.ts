@@ -4,6 +4,7 @@ import { TEAM, isTeamMemberId } from "@/lib/team";
 
 const ADMIN_EMAILS = TEAM.map((m) => m.email.toLowerCase());
 const SESSION_COOKIE = "cosgral_admin_session";
+const EXTRA_ADMIN_ID = /^[a-z0-9]+_[a-f0-9]{6}$/;
 
 function hasLocalAdminSession(request: NextRequest): boolean {
   const raw = request.cookies.get(SESSION_COOKIE)?.value;
@@ -16,7 +17,10 @@ function hasLocalAdminSession(request: NextRequest): boolean {
   }
   const normalized = value.toLowerCase();
   if (isTeamMemberId(normalized)) return true;
-  return ADMIN_EMAILS.includes(normalized);
+  if (ADMIN_EMAILS.includes(normalized)) return true;
+  if (EXTRA_ADMIN_ID.test(normalized)) return true;
+  if (normalized.includes("@") && normalized.includes(".")) return true;
+  return false;
 }
 
 export async function updateSession(request: NextRequest) {
@@ -55,6 +59,7 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
     const email = user?.email?.toLowerCase() ?? "";
+    // Core team always; invited users rely on local session cookie (blobs allowlist).
     isAdmin = Boolean(user && ADMIN_EMAILS.includes(email));
   } catch {
     isAdmin = false;
@@ -62,6 +67,10 @@ export async function updateSession(request: NextRequest) {
 
   if (!isAdmin && hasLocalAdminSession(request)) {
     isAdmin = true;
+  }
+
+  if (request.nextUrl.pathname.startsWith("/admin/invite")) {
+    return supabaseResponse;
   }
 
   if (

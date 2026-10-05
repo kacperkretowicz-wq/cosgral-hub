@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { AdminLayout } from "@/components/AdminLayout";
 
-const BARE_PATHS = ["/admin/login", "/admin/setup"];
+const BARE_PATHS = ["/admin/login", "/admin/setup", "/admin/invite"];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
