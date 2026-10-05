@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
-import { listPortalFiles } from "@/lib/portal-db";
+import {
+  enrichPortalFilesWithUrls,
+  getCrmClientById,
+  listAccessRequests,
+  listPortalFiles,
+  listPortalMessages,
+  listPortalNotes,
+} from "@/lib/portal-db";
 import { createClient } from "@supabase/supabase-js";
 import { getGoogleAuth, isGoogleWorkspaceConfigured } from "@/lib/google-auth";
 import { google } from "googleapis";
@@ -12,6 +19,45 @@ function serviceClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
+}
+
+/**
+ * GET /api/portal/clients/[id]
+ *
+ * Pełny katalog materiałów dla zalogowanego admina (bez wymaganego portal_slug).
+ */
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+
+  const { id: clientId } = await params;
+  const client = await getCrmClientById(clientId);
+  if (!client) {
+    return NextResponse.json({ error: "Klient nie znaleziony" }, { status: 404 });
+  }
+
+  try {
+    const rawFiles = await listPortalFiles(clientId);
+    const files = await enrichPortalFilesWithUrls(rawFiles);
+    const [notes, messages, access_requests] = await Promise.all([
+      listPortalNotes(clientId),
+      listPortalMessages(clientId),
+      listAccessRequests(clientId),
+    ]);
+
+    return NextResponse.json({
+      client,
+      files,
+      notes,
+      messages,
+      access_requests,
+    });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
 
 /**

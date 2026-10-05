@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PageHeader, EmptyState } from "@/components/ui/CrmUi";
 import { Button } from "@/components/ui/Button";
 import type { PortalClientSummary } from "@/lib/portal-db";
+import { CatalogShareModal } from "@/components/CatalogShareModal";
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -13,141 +14,6 @@ function formatDate(iso: string | null) {
     month: "short",
     year: "numeric",
   });
-}
-
-// ── Share modal ───────────────────────────────────────────────────────────
-
-function ShareModal({
-  client,
-  onClose,
-  onSlugGenerated,
-}: {
-  client: PortalClientSummary;
-  onClose: () => void;
-  onSlugGenerated: (slug: string) => void;
-}) {
-  const [slug, setSlug] = useState<string | null>(client.portal_slug);
-  const [generating, setGenerating] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "https://cosgralhub.netlify.app";
-  const portalUrl = slug ? `${origin}/portal/${slug}` : null;
-
-  // Generate slug if client doesn't have one yet
-  const generate = async () => {
-    setGenerating(true);
-    const res = await fetch("/api/portal/generate-slug", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ crm_client_id: client.id }),
-    });
-    const data = await res.json();
-    if (res.ok && data.slug) {
-      setSlug(data.slug);
-      onSlugGenerated(data.slug);
-    }
-    setGenerating(false);
-  };
-
-  // Auto-generate if no slug
-  useEffect(() => {
-    if (!slug) void generate();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const copyLink = async () => {
-    if (!portalUrl) return;
-    await navigator.clipboard.writeText(portalUrl);
-    setCopied(true);
-    inputRef.current?.select();
-    setTimeout(() => setCopied(false), 2500);
-  };
-
-  return (
-    /* Backdrop */
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="w-full max-w-md rounded-3xl border border-white/12 bg-[#111111] p-6 shadow-2xl">
-        {/* Header */}
-        <div className="mb-5 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-white/40">Udostępnij katalog</p>
-            <h2 className="mt-1 text-lg font-medium text-white">{client.company_name}</h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full p-1.5 text-white/40 hover:bg-white/8 hover:text-white"
-          >
-            ✕
-          </button>
-        </div>
-
-        {generating || !slug ? (
-          <div className="flex items-center justify-center gap-3 py-8">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
-            <span className="text-sm text-white/50">Generuję link…</span>
-          </div>
-        ) : (
-          <>
-            {/* Instruction */}
-            <p className="mb-4 text-sm text-white/55">
-              Wyślij ten link klientowi — po kliknięciu będzie mógł poprosić o dostęp, a Ty
-              zatwierdzisz go jednym kliknięciem.
-            </p>
-
-            {/* URL box */}
-            <div className="mb-3 flex items-center gap-2 rounded-2xl border border-white/15 bg-white/[0.05] pr-2 pl-4">
-              <input
-                ref={inputRef}
-                type="text"
-                readOnly
-                value={portalUrl ?? ""}
-                className="min-w-0 flex-1 bg-transparent py-3 text-sm text-white/80 outline-none selection:bg-white/20"
-                onClick={() => inputRef.current?.select()}
-              />
-              <button
-                type="button"
-                onClick={copyLink}
-                className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                  copied
-                    ? "bg-emerald-500/20 text-emerald-300"
-                    : "bg-white/10 text-white hover:bg-white/18"
-                }`}
-              >
-                {copied ? "✓ Skopiowano!" : "Kopiuj link"}
-              </button>
-            </div>
-
-            {/* Open in new tab */}
-            <a
-              href={`/portal/${slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block text-center text-xs text-white/30 hover:text-white/60 transition-colors"
-            >
-              Podgląd portalu ↗
-            </a>
-          </>
-        )}
-
-        {/* Footer */}
-        <div className="mt-5 border-t border-white/8 pt-4">
-          <p className="text-[0.65rem] text-white/25">
-            Klient otworzy link i poprosi o dostęp → dostaniesz powiadomienie → zatwierdzisz
-            jednym kliknięciem w zakładce{" "}
-            <Link href={`/admin/materialy/${client.id}`} className="underline hover:text-white/50">
-              Dostęp
-            </Link>
-            .
-          </p>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ── Delete Modal ──────────────────────────────────────────────────────────
@@ -518,8 +384,10 @@ export default function MaterialyPage() {
 
       {/* Share modal */}
       {shareTarget && (
-        <ShareModal
-          client={shareTarget}
+        <CatalogShareModal
+          crmClientId={shareTarget.id}
+          companyName={shareTarget.company_name}
+          portalSlug={shareTarget.portal_slug}
           onClose={() => setShareTarget(null)}
           onSlugGenerated={(slug) => handleSlugGenerated(shareTarget.id, slug)}
         />

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/CrmUi";
 import { Button } from "@/components/ui/Button";
+import { CatalogShareModal } from "@/components/CatalogShareModal";
 import type { PortalFile, PortalNote, PortalMessage, PortalAccessRequest } from "@/lib/portal-db";
 
 // ── helpers ───────────────────────────────────────────────────────────────
@@ -84,7 +85,18 @@ function FileGrid({
                 </a>
               ) : isVideo(f.mime_type) ? (
                 previewId === f.id && embedUrl ? (
-                  <iframe src={embedUrl} className="h-full w-full border-0" allow="autoplay" allowFullScreen />
+                  isGdrive ? (
+                    <iframe src={embedUrl} className="h-full w-full border-0" allow="autoplay" allowFullScreen />
+                  ) : (
+                    // eslint-disable-next-line jsx-a11y/media-has-caption
+                    <video
+                      src={embedUrl}
+                      className="h-full w-full object-contain bg-black"
+                      controls
+                      autoPlay
+                      playsInline
+                    />
+                  )
                 ) : (
                   <div className="flex h-full w-full flex-col items-center justify-center gap-2 relative">
                     {thumbUrl && <img src={thumbUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />}
@@ -681,27 +693,17 @@ export default function MaterialyDetailPage() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState<TabId>("pliki");
   const [shareOpen, setShareOpen] = useState(false);
-  const [shareSlug, setShareSlug] = useState<string | null>(null);
-  const [generatingSlug, setGeneratingSlug] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const shareInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
-    if (!client?.portal_slug && !loading) return;
     try {
-      // First get slug from admin endpoint
-      const clientsRes = await fetch("/api/portal/clients", { cache: "no-store" });
-      const clientsData = await clientsRes.json();
-      const found = (clientsData.clients ?? []).find((c: { id: string }) => c.id === clientId);
-      if (!found) { setError("Klient nie znaleziony"); return; }
-
-      setClient(found);
-      if (!found.portal_slug) { setLoading(false); return; }
-
-      const res = await fetch(`/api/portal/${found.portal_slug}`, { cache: "no-store" });
+      const res = await fetch(`/api/portal/clients/${clientId}`, { cache: "no-store" });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Błąd"); return; }
+      if (!res.ok) {
+        setError(data.error ?? "Błąd");
+        return;
+      }
 
+      setClient(data.client);
       setFiles(data.files ?? []);
       setNotes(data.notes ?? []);
       setMessages(data.messages ?? []);
@@ -727,37 +729,6 @@ export default function MaterialyDetailPage() {
     if (!confirm("Usunąć plik?")) return;
     await fetch(`/api/portal/files/${id}`, { method: "DELETE" });
     void load();
-  };
-
-  // ── Share / generate slug logic ───────────────────────────────────────
-  const openShare = async () => {
-    setShareOpen(true);
-    if (client?.portal_slug) {
-      setShareSlug(client.portal_slug);
-      return;
-    }
-    // Generate slug on first open
-    setGeneratingSlug(true);
-    const res = await fetch("/api/portal/generate-slug", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ crm_client_id: clientId }),
-    });
-    const data = await res.json();
-    if (res.ok && data.slug) {
-      setShareSlug(data.slug);
-      setClient((prev) => prev ? { ...prev, portal_slug: data.slug } : prev);
-    }
-    setGeneratingSlug(false);
-  };
-
-  const copyLink = async () => {
-    if (!shareSlug) return;
-    const url = `${window.location.origin}/portal/${shareSlug}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    shareInputRef.current?.select();
-    setTimeout(() => setCopied(false), 2500);
   };
 
   const TABS: { id: TabId; label: string; badge?: number }[] = [
@@ -788,7 +759,7 @@ export default function MaterialyDetailPage() {
         title={client?.company_name ?? "Katalog klienta"}
         description={client?.portal_slug ? `Portal: /portal/${client.portal_slug}` : "Brak linku portalu"}
         actions={
-          <Button type="button" onClick={openShare}>
+          <Button type="button" onClick={() => setShareOpen(true)}>
             <svg
               className="mr-1.5 inline-block h-3.5 w-3.5"
               fill="none"
@@ -803,87 +774,21 @@ export default function MaterialyDetailPage() {
               <polyline points="16 6 12 2 8 6" />
               <line x1="12" y1="2" x2="12" y2="15" />
             </svg>
-            Udostępnij klientowi
+            Udostępnij
           </Button>
         }
       />
 
-      {/* Share modal */}
-      {shareOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
-          onClick={(e) => e.target === e.currentTarget && setShareOpen(false)}
-        >
-          <div className="w-full max-w-md rounded-3xl border border-white/12 bg-[#111111] p-6 shadow-2xl">
-            {/* Modal header */}
-            <div className="mb-5 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-white/40">Udostępnij katalog</p>
-                <h2 className="mt-1 text-lg font-medium text-white">{client?.company_name}</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShareOpen(false)}
-                className="rounded-full p-1.5 text-white/40 hover:bg-white/8 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            {generatingSlug ? (
-              <div className="flex items-center justify-center gap-3 py-8">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
-                <span className="text-sm text-white/50">Generuję link…</span>
-              </div>
-            ) : shareSlug ? (
-              <>
-                <p className="mb-4 text-sm text-white/55">
-                  Wyślij ten link klientowi. Po kliknięciu będzie mógł poprosić o dostęp — dostaniesz powiadomienie i zatwierdzisz jednym kliknięciem.
-                </p>
-
-                {/* URL box */}
-                <div className="mb-3 flex items-center gap-2 rounded-2xl border border-white/15 bg-white/[0.05] pr-2 pl-4">
-                  <input
-                    ref={shareInputRef}
-                    type="text"
-                    readOnly
-                    value={`${typeof window !== "undefined" ? window.location.origin : "https://cosgralhub.netlify.app"}/portal/${shareSlug}`}
-                    className="min-w-0 flex-1 bg-transparent py-3 text-sm text-white/80 outline-none selection:bg-white/20"
-                    onClick={() => shareInputRef.current?.select()}
-                  />
-                  <button
-                    type="button"
-                    onClick={copyLink}
-                    className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                      copied
-                        ? "bg-emerald-500/20 text-emerald-300"
-                        : "bg-white/10 text-white hover:bg-white/18"
-                    }`}
-                  >
-                    {copied ? "✓ Skopiowano!" : "Kopiuj link"}
-                  </button>
-                </div>
-
-                <a
-                  href={`/portal/${shareSlug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-center text-xs text-white/30 hover:text-white/60 transition-colors"
-                >
-                  Podgląd portalu ↗
-                </a>
-              </>
-            ) : (
-              <p className="py-8 text-center text-sm text-red-300">Nie udało się wygenerować linku</p>
-            )}
-
-            <div className="mt-5 border-t border-white/8 pt-4">
-              <p className="text-[0.65rem] text-white/25">
-                Prośby o dostęp pojawią się w zakładce <strong className="text-white/40">Dostęp</strong> poniżej.
-              </p>
-            </div>
-          </div>
-        </div>
+      {shareOpen && client && (
+        <CatalogShareModal
+          crmClientId={clientId}
+          companyName={client.company_name}
+          portalSlug={client.portal_slug}
+          onClose={() => setShareOpen(false)}
+          onSlugGenerated={(slug) =>
+            setClient((prev) => (prev ? { ...prev, portal_slug: slug } : prev))
+          }
+        />
       )}
 
       {error && (

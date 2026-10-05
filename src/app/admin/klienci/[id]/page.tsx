@@ -67,6 +67,9 @@ export default async function KlientDetailPage({ params }: Props) {
           .join(" · ")}
         actions={
           <>
+            <Link href={`/admin/materialy/${id}`}>
+              <Button variant="secondary">Katalog materiałów</Button>
+            </Link>
             <Link href={`/admin/zlecenia/nowe?crm_client_id=${id}`}>
               <Button>+ Zlecenie</Button>
             </Link>

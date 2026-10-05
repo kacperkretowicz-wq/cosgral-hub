@@ -450,7 +450,18 @@ function FileCard({ f, isNew }: { f: PortalFile; isNew: boolean }) {
           <img src={thumbUrl ?? f.public_url!} alt={f.file_name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
         ) : isVideo(f.mime_type) ? (
           showPreview && embedUrl ? (
-            <iframe src={embedUrl} className="h-full w-full border-0" allow="autoplay" allowFullScreen />
+            gdrive && f.gdrive_file_id ? (
+              <iframe src={embedUrl} className="h-full w-full border-0" allow="autoplay" allowFullScreen />
+            ) : (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <video
+                src={embedUrl}
+                className="h-full w-full object-contain bg-black"
+                controls
+                autoPlay
+                playsInline
+              />
+            )
           ) : (
             <div className="flex h-full w-full items-center justify-center gap-3 flex-col">
               {thumbUrl && <img src={thumbUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />}

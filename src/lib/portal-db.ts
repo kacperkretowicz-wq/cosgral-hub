@@ -290,6 +290,8 @@ export async function validatePortalSession(
 
 // ── Files ───────────────────────────────────────────────────────────────────
 
+const PORTAL_STORAGE_BUCKET = "client-materials";
+
 export async function listPortalFiles(crm_client_id: string): Promise<PortalFile[]> {
   const { data, error } = await db()
     .from("portal_files")
@@ -298,6 +300,24 @@ export async function listPortalFiles(crm_client_id: string): Promise<PortalFile
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as PortalFile[];
+}
+
+/** Odśwież signed URL dla plików w Supabase Storage (podgląd w adminie i portalu). */
+export async function enrichPortalFilesWithUrls(
+  files: PortalFile[],
+): Promise<PortalFile[]> {
+  const supabase = db();
+  return Promise.all(
+    files.map(async (f) => {
+      if (f.gdrive_file_id) return f;
+      if (!f.storage_path) return f;
+      const { data, error } = await supabase.storage
+        .from(PORTAL_STORAGE_BUCKET)
+        .createSignedUrl(f.storage_path, 60 * 60 * 24 * 7);
+      if (error || !data?.signedUrl) return f;
+      return { ...f, public_url: data.signedUrl };
+    }),
+  );
 }
 
 export async function createPortalFile(
