@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { CosgralBrand, CosgralLogo } from "@/components/CosgralLogo";
 import { Button } from "@/components/ui/Button";
@@ -32,12 +33,17 @@ export function AdminAccountMenu({
   variant?: "desktop" | "mobile";
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<UsersPayload | null>(null);
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,11 +67,16 @@ export function AdminAccountMenu({
 
   useEffect(() => {
     if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   const handleLogout = async () => {
@@ -127,6 +138,160 @@ export function AdminAccountMenu({
     }
   };
 
+  const overlay =
+    open && mounted
+      ? createPortal(
+          <div
+            className="fixed inset-0"
+            style={{ zIndex: 9999 }}
+            role="presentation"
+          >
+            <button
+              type="button"
+              className="absolute inset-0"
+              style={{ background: "rgba(0,0,0,0.82)" }}
+              aria-label="Zamknij panel konta"
+              onClick={() => setOpen(false)}
+            />
+            <div
+              className="absolute inset-x-0 top-0 flex justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-6"
+              style={{ pointerEvents: "none" }}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Panel konta"
+                className="w-full max-w-md origin-top animate-[sheetIn_0.28s_var(--ease)_both] rounded-[1.5rem] border border-white/20 p-4 shadow-[0_28px_80px_rgba(0,0,0,0.85)]"
+                style={{
+                  pointerEvents: "auto",
+                  background: "#0a0a0a",
+                }}
+              >
+                <div className="mb-3 flex items-start justify-between gap-2 px-1">
+                  <div>
+                    <p className="label-mono">Konto</p>
+                    <p className="mt-1 text-sm text-white/70">
+                      {data?.me ?? (loading ? "…" : "—")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="text-[0.65rem] uppercase tracking-[0.14em] text-white/45 hover:text-white"
+                  >
+                    Zamknij
+                  </button>
+                </div>
+
+                <form onSubmit={handleInvite} className="mb-3 space-y-2">
+                  <label className="block px-1 text-[0.65rem] uppercase tracking-[0.14em] text-white/40">
+                    Zaproś użytkownika
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="email@firma.pl"
+                      className="min-w-0 flex-1 rounded-full border border-white/15 bg-white/[0.08] px-3.5 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/35"
+                    />
+                    <Button
+                      type="submit"
+                      disabled={busy || !email.trim()}
+                      className="shrink-0 px-4"
+                    >
+                      Wyślij
+                    </Button>
+                  </div>
+                </form>
+
+                {message ? (
+                  <p className="mb-2 break-all px-1 text-xs text-emerald-300/90">
+                    {message}
+                  </p>
+                ) : null}
+                {error ? (
+                  <p className="mb-2 px-1 text-xs text-red-300">{error}</p>
+                ) : null}
+
+                <div className="max-h-[min(16rem,42vh)] space-y-1 overflow-y-auto pr-1">
+                  <p className="px-1 pb-1 text-[0.65rem] uppercase tracking-[0.14em] text-white/35">
+                    Dostęp
+                  </p>
+                  {loading && !data ? (
+                    <p className="px-1 text-sm text-white/40">Ładowanie…</p>
+                  ) : null}
+                  {data?.users.map((u) => (
+                    <div
+                      key={u.id}
+                      className="flex items-center gap-2 rounded-xl px-2 py-2 hover:bg-white/[0.05]"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-white/90">{u.label}</p>
+                        <p className="truncate text-[0.7rem] text-white/40">
+                          {u.email}
+                        </p>
+                      </div>
+                      {u.core ? (
+                        <span className="shrink-0 text-[0.6rem] uppercase tracking-[0.12em] text-white/30">
+                          core
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void handleRemove(u.email)}
+                          className="shrink-0 text-[0.65rem] uppercase tracking-[0.12em] text-red-300/80 hover:text-red-200"
+                        >
+                          Usuń
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {(data?.invites.length ?? 0) > 0 ? (
+                    <>
+                      <p className="px-1 pb-1 pt-2 text-[0.65rem] uppercase tracking-[0.14em] text-white/35">
+                        Oczekujące
+                      </p>
+                      {data?.invites.map((i) => (
+                        <div
+                          key={i.email}
+                          className="rounded-xl px-2 py-2 text-sm text-white/55"
+                        >
+                          <p className="truncate">{i.email}</p>
+                          <p className="text-[0.65rem] text-white/30">
+                            do {new Date(i.expiresAt).toLocaleDateString("pl-PL")}
+                          </p>
+                        </div>
+                      ))}
+                    </>
+                  ) : null}
+                </div>
+
+                <div className="mt-3 flex gap-2">
+                  <Link
+                    href="/admin"
+                    onClick={() => setOpen(false)}
+                    className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-[0.65rem] font-medium uppercase tracking-[0.14em] text-white/55 hover:bg-white/10 hover:text-white"
+                  >
+                    Home
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    onClick={() => void handleLogout()}
+                    className="flex-1"
+                  >
+                    Wyloguj
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
     <>
       <button
@@ -152,138 +317,7 @@ export function AdminAccountMenu({
           </>
         )}
       </button>
-
-      {open ? (
-        <div className="fixed inset-0 z-[90]">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/75 backdrop-blur-[3px]"
-            aria-label="Zamknij panel konta"
-            onClick={() => setOpen(false)}
-          />
-          <div
-            className={`absolute left-4 right-4 mx-auto max-w-md origin-top animate-[sheetIn_0.28s_var(--ease)_both] ${
-              variant === "desktop" ? "top-6 left-[calc(1rem+15rem)] right-auto w-[22rem]" : "top-[max(4.5rem,env(safe-area-inset-top))]"
-            }`}
-            role="dialog"
-            aria-label="Panel konta"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <div className="rounded-[1.5rem] border border-white/15 bg-[#0c0c0c]/[0.97] p-4 shadow-[0_28px_80px_rgba(0,0,0,0.75)] backdrop-blur-xl">
-              <div className="mb-3 flex items-start justify-between gap-2 px-1">
-                <div>
-                  <p className="label-mono">Konto</p>
-                  <p className="mt-1 text-sm text-white/70">
-                    {data?.me ?? (loading ? "…" : "—")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="text-[0.65rem] uppercase tracking-[0.14em] text-white/45 hover:text-white"
-                >
-                  Zamknij
-                </button>
-              </div>
-
-              <form onSubmit={handleInvite} className="mb-3 space-y-2">
-                <label className="block px-1 text-[0.65rem] uppercase tracking-[0.14em] text-white/40">
-                  Zaproś użytkownika
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="email@firma.pl"
-                    className="min-w-0 flex-1 rounded-full border border-white/15 bg-white/[0.08] px-3.5 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/35"
-                  />
-                  <Button type="submit" disabled={busy || !email.trim()} className="shrink-0 px-4">
-                    Wyślij
-                  </Button>
-                </div>
-              </form>
-
-              {message ? (
-                <p className="mb-2 break-all px-1 text-xs text-emerald-300/90">{message}</p>
-              ) : null}
-              {error ? (
-                <p className="mb-2 px-1 text-xs text-red-300">{error}</p>
-              ) : null}
-
-              <div className="max-h-[min(16rem,40vh)] space-y-1 overflow-y-auto pr-1">
-                <p className="px-1 pb-1 text-[0.65rem] uppercase tracking-[0.14em] text-white/35">
-                  Dostęp
-                </p>
-                {loading && !data ? (
-                  <p className="px-1 text-sm text-white/40">Ładowanie…</p>
-                ) : null}
-                {data?.users.map((u) => (
-                  <div
-                    key={u.id}
-                    className="flex items-center gap-2 rounded-xl px-2 py-2 hover:bg-white/[0.05]"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-white/90">{u.label}</p>
-                      <p className="truncate text-[0.7rem] text-white/40">{u.email}</p>
-                    </div>
-                    {u.core ? (
-                      <span className="shrink-0 text-[0.6rem] uppercase tracking-[0.12em] text-white/30">
-                        core
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void handleRemove(u.email)}
-                        className="shrink-0 text-[0.65rem] uppercase tracking-[0.12em] text-red-300/80 hover:text-red-200"
-                      >
-                        Usuń
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {(data?.invites.length ?? 0) > 0 ? (
-                  <>
-                    <p className="px-1 pb-1 pt-2 text-[0.65rem] uppercase tracking-[0.14em] text-white/35">
-                      Oczekujące
-                    </p>
-                    {data?.invites.map((i) => (
-                      <div
-                        key={i.email}
-                        className="rounded-xl px-2 py-2 text-sm text-white/55"
-                      >
-                        <p className="truncate">{i.email}</p>
-                        <p className="text-[0.65rem] text-white/30">
-                          do {new Date(i.expiresAt).toLocaleDateString("pl-PL")}
-                        </p>
-                      </div>
-                    ))}
-                  </>
-                ) : null}
-              </div>
-
-              <div className="mt-3 flex gap-2">
-                <Link
-                  href="/admin"
-                  onClick={() => setOpen(false)}
-                  className="inline-flex flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-[0.65rem] font-medium uppercase tracking-[0.14em] text-white/55 hover:bg-white/10 hover:text-white"
-                >
-                  Home
-                </Link>
-                <Button
-                  variant="ghost"
-                  onClick={() => void handleLogout()}
-                  className="flex-1"
-                >
-                  Wyloguj
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {overlay}
     </>
   );
 }
