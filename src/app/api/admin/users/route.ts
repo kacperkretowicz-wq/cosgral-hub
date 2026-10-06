@@ -11,6 +11,7 @@ import {
   listExtraAdminUsers,
   listInvites,
   removeAdminUser,
+  removeInvite,
 } from "@/lib/admin-users-store";
 
 export async function GET() {
@@ -118,6 +119,8 @@ export async function POST(request: Request) {
 
 const removeSchema = z.object({
   email: z.string().email(),
+  /** "user" = konto z dostępem, "invite" = oczekujące zaproszenie */
+  kind: z.enum(["user", "invite"]).optional().default("user"),
 });
 
 export async function DELETE(request: Request) {
@@ -126,8 +129,16 @@ export async function DELETE(request: Request) {
 
   try {
     const body = await request.json();
-    const { email } = removeSchema.parse(body);
+    const { email, kind } = removeSchema.parse(body);
     const normalized = email.trim().toLowerCase();
+
+    if (kind === "invite") {
+      const result = await removeInvite(normalized);
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, kind: "invite" });
+    }
 
     if (normalized === auth.email?.toLowerCase()) {
       return NextResponse.json(
@@ -146,7 +157,9 @@ export async function DELETE(request: Request) {
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: 404 });
     }
-    return NextResponse.json({ success: true });
+    // Anuluj ewentualne wiszące zaproszenie dla tego samego maila
+    await removeInvite(normalized).catch(() => undefined);
+    return NextResponse.json({ success: true, kind: "user" });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: "Podaj poprawny e-mail." }, { status: 400 });

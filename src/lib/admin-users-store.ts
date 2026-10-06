@@ -205,3 +205,18 @@ export async function consumeInvite(token: string): Promise<AdminInviteRecord | 
   if (Date.parse(record.expiresAt) <= Date.now()) return null;
   return record;
 }
+
+/** Anuluj oczekujące zaproszenie po e-mailu (niezależnie od tokena). */
+export async function removeInvite(
+  email: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const n = normalizeEmail(email);
+  const store = await readJsonStore<InvitesStore>(INVITES_FILE, { invites: [] });
+  const invites = store.invites || [];
+  const next = invites.filter((i) => normalizeEmail(i.email) !== n);
+  if (next.length === invites.length) {
+    return { ok: false, error: "Nie znaleziono zaproszenia dla tego maila." };
+  }
+  await saveInvites(next);
+  return { ok: true };
+}
