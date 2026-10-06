@@ -117,19 +117,31 @@ export function AdminAccountMenu({
     }
   };
 
-  const handleRemove = async (targetEmail: string) => {
-    if (!confirm(`Usunąć dostęp dla ${targetEmail}?`)) return;
+  const handleRemove = async (
+    targetEmail: string,
+    kind: "user" | "invite" = "user",
+  ) => {
+    const label =
+      kind === "invite"
+        ? `Anulować zaproszenie dla ${targetEmail}?`
+        : `Usunąć dostęp Hub dla ${targetEmail}?`;
+    if (!confirm(label)) return;
     setBusy(true);
     setError(null);
+    setMessage(null);
     try {
       const res = await fetch("/api/admin/users", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: targetEmail }),
+        body: JSON.stringify({ email: targetEmail, kind }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Błąd usuwania");
-      setMessage(`Usunięto ${targetEmail}.`);
+      setMessage(
+        kind === "invite"
+          ? `Anulowano zaproszenie: ${targetEmail}.`
+          : `Usunięto dostęp: ${targetEmail}.`,
+      );
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Błąd");
@@ -222,33 +234,45 @@ export function AdminAccountMenu({
                   {loading && !data ? (
                     <p className="px-1 text-sm text-white/40">Ładowanie…</p>
                   ) : null}
-                  {data?.users.map((u) => (
-                    <div
-                      key={u.id}
-                      className="flex items-center gap-2 rounded-xl px-2 py-2 hover:bg-white/[0.05]"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm text-white/90">{u.label}</p>
-                        <p className="truncate text-[0.7rem] text-white/40">
-                          {u.email}
-                        </p>
+                  {data?.users.map((u) => {
+                    const isMe =
+                      data.me.trim().toLowerCase() === u.email.trim().toLowerCase();
+                    const canRemove = !u.core && !isMe;
+                    return (
+                      <div
+                        key={u.id}
+                        className="flex items-center gap-2 rounded-xl px-2 py-2 hover:bg-white/[0.05]"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm text-white/90">
+                            {u.label}
+                            {isMe ? (
+                              <span className="ml-1.5 text-[0.6rem] uppercase tracking-[0.12em] text-white/35">
+                                ty
+                              </span>
+                            ) : null}
+                          </p>
+                          <p className="truncate text-[0.7rem] text-white/40">
+                            {u.email}
+                          </p>
+                        </div>
+                        {u.core ? (
+                          <span className="shrink-0 text-[0.6rem] uppercase tracking-[0.12em] text-white/30">
+                            core
+                          </span>
+                        ) : canRemove ? (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void handleRemove(u.email, "user")}
+                            className="shrink-0 rounded-full border border-red-400/25 bg-red-500/10 px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-[0.12em] text-red-200 hover:bg-red-500/20 disabled:opacity-40"
+                          >
+                            Usuń
+                          </button>
+                        ) : null}
                       </div>
-                      {u.core ? (
-                        <span className="shrink-0 text-[0.6rem] uppercase tracking-[0.12em] text-white/30">
-                          core
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void handleRemove(u.email)}
-                          className="shrink-0 text-[0.65rem] uppercase tracking-[0.12em] text-red-300/80 hover:text-red-200"
-                        >
-                          Usuń
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                   {(data?.invites.length ?? 0) > 0 ? (
                     <>
                       <p className="px-1 pb-1 pt-2 text-[0.65rem] uppercase tracking-[0.14em] text-white/35">
@@ -257,12 +281,22 @@ export function AdminAccountMenu({
                       {data?.invites.map((i) => (
                         <div
                           key={i.email}
-                          className="rounded-xl px-2 py-2 text-sm text-white/55"
+                          className="flex items-center gap-2 rounded-xl px-2 py-2 hover:bg-white/[0.05]"
                         >
-                          <p className="truncate">{i.email}</p>
-                          <p className="text-[0.65rem] text-white/30">
-                            do {new Date(i.expiresAt).toLocaleDateString("pl-PL")}
-                          </p>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm text-white/55">{i.email}</p>
+                            <p className="text-[0.65rem] text-white/30">
+                              do {new Date(i.expiresAt).toLocaleDateString("pl-PL")}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void handleRemove(i.email, "invite")}
+                            className="shrink-0 rounded-full border border-red-400/25 bg-red-500/10 px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-[0.12em] text-red-200 hover:bg-red-500/20 disabled:opacity-40"
+                          >
+                            Usuń
+                          </button>
                         </div>
                       ))}
                     </>
