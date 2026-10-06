@@ -43,6 +43,7 @@ export async function createTeamMessage(input: {
     author_id: input.author_id,
     body: input.body.trim(),
     created_at: new Date().toISOString(),
+    updated_at: null,
   };
   messages.push(message);
   // keep last 500
@@ -56,4 +57,35 @@ export async function createTeamMessage(input: {
   });
 
   return message;
+}
+
+export async function getTeamMessage(id: string): Promise<TeamMessage | null> {
+  const messages = await readMessages();
+  return messages.find((m) => m.id === id) ?? null;
+}
+
+export async function updateTeamMessage(
+  id: string,
+  body: string,
+): Promise<TeamMessage | null> {
+  const messages = await readMessages();
+  const idx = messages.findIndex((m) => m.id === id);
+  if (idx < 0) return null;
+  const nextBody = body.trim();
+  if (!nextBody) return null;
+  messages[idx] = {
+    ...messages[idx],
+    body: nextBody,
+    updated_at: new Date().toISOString(),
+  };
+  await writeMessages(messages);
+  return messages[idx];
+}
+
+export async function deleteTeamMessage(id: string): Promise<boolean> {
+  const messages = await readMessages();
+  const next = messages.filter((m) => m.id !== id);
+  if (next.length === messages.length) return false;
+  await writeMessages(next);
+  return true;
 }

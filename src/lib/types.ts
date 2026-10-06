@@ -202,4 +202,6 @@ export interface TeamMessage {
   author_id: string;
   body: string;
   created_at: string;
+  /** Ustawiane przy edycji wiadomości. */
+  updated_at?: string | null;
 }
