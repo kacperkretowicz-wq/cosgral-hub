@@ -54,3 +54,7 @@ Instrukcja: [KACPER-START.md](./KACPER-START.md) · [WDROZENIE.md](./WDROZENIE.m
 ## Stack
 
 Next.js 15 · Supabase · Google Drive · Vercel
+
+
+<!-- Cosgral AI Agent Task [6.10.2026, 12:59:55] -->
+> 🤖 **Wdrożenie AI (agent3.cosgral@gmail.com):** Zaktualizuj informacje o zespole w README
