@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { PageHeader } from "@/components/ui/CrmUi";
 import { teamLabel } from "@/lib/team";
 import type { TeamMessage } from "@/lib/types";
 
@@ -16,6 +15,7 @@ export default function TeamChatPage() {
   const [editDraft, setEditDraft] = useState("");
   const [actionBusy, setActionBusy] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
 
   const load = useCallback(async () => {
@@ -47,8 +47,17 @@ export default function TeamChatPage() {
 
   useEffect(() => {
     if (!stickToBottom.current) return;
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+    const list = listRef.current;
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
+  }, [messages.length, editingId]);
+
+  const onListScroll = () => {
+    const list = listRef.current;
+    if (!list) return;
+    const distance = list.scrollHeight - list.scrollTop - list.clientHeight;
+    stickToBottom.current = distance < 80;
+  };
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,20 +137,26 @@ export default function TeamChatPage() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-8rem)] flex-col md:h-[calc(100dvh-4rem)]">
-      <PageHeader
-        eyebrow="Team"
-        title="Czat wewnętrzny"
-        description="Jakub · Kacper — poll 1.5s, alert Telegram."
-      />
+    <div className="flex h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)] flex-col overflow-hidden md:h-[calc(100dvh-9rem)] md:max-h-[calc(100dvh-9rem)] xl:h-[calc(100dvh-5rem)] xl:max-h-[calc(100dvh-5rem)]">
+      <div className="mb-3 shrink-0 sm:mb-4">
+        <p className="label-mono mb-1.5">Team</p>
+        <h1 className="display-title text-xl text-white sm:text-2xl">Czat wewnętrzny</h1>
+        <p className="mt-1.5 text-xs leading-relaxed text-white/45 normal-case tracking-normal">
+          Jakub · Kacper — poll 1.5s, alert Telegram.
+        </p>
+      </div>
 
       {error ? (
-        <div className="mb-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200">
+        <div className="mb-2 shrink-0 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200">
           {error}
         </div>
       ) : null}
 
-      <div className="surface min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+      <div
+        ref={listRef}
+        onScroll={onListScroll}
+        className="surface min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4"
+      >
         {!messages.length ? (
           <p className="py-12 text-center text-sm text-white/40">
             Napisz pierwszą wiadomość do zespołu.
@@ -233,7 +248,10 @@ export default function TeamChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={send} className="mt-4 flex gap-2">
+      <form
+        onSubmit={send}
+        className="mt-3 flex shrink-0 gap-2 border-t border-white/8 bg-[#070707]/95 pt-3 backdrop-blur-sm"
+      >
         <input
           value={body}
           onChange={(e) => setBody(e.target.value)}
