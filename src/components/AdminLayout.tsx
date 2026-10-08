@@ -207,7 +207,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden pb-[max(7rem,calc(5.5rem+env(safe-area-inset-bottom)))] text-white">
+    <div className="relative min-h-screen overflow-x-hidden pb-[max(7rem,calc(5.5rem+env(safe-area-inset-bottom)))] xl:pb-12 text-white">
       <CosgralAmbient />
       <TileScrollLift />
 
@@ -293,9 +293,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
       ) : null}
 
-      {/* Liquid glass tab bar — ALWAYS visible */}
+      {/* Liquid glass tab bar — mobile & tablet only */}
       <nav
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[70] px-4 pb-[max(0.85rem,env(safe-area-inset-bottom))]"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-[70] px-4 pb-[max(0.85rem,env(safe-area-inset-bottom))] xl:hidden"
         aria-label="Nawigacja"
       >
         <div className="pointer-events-auto glass-pill relative mx-auto flex max-w-lg items-stretch overflow-hidden rounded-full p-1.5">

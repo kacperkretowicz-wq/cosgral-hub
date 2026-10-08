@@ -212,7 +212,7 @@ export default async function AdminHome() {
           </Link>
         </div>
         {!openProjects.length ? (
-          <p className="text-sm text-white/45">Brak otwartych zleceń.</p>
+          <p className="text-sm text-white/70">Brak otwartych zleceń.</p>
         ) : (
           <ul className="divide-y divide-white/10">
             {openProjects.map((p) => (
@@ -223,13 +223,13 @@ export default async function AdminHome() {
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium text-white">{p.title}</p>
-                    <p className="text-xs text-white/45">
+                    <p className="text-xs text-white/70">
                       {p.crm_clients?.company_name ?? "—"} ·{" "}
                       {SERVICE_TYPE_LABELS[p.service_type]} ·{" "}
                       {teamLabel(p.assigned_to)}
                     </p>
                   </div>
-                  <span className="shrink-0 text-[0.65rem] uppercase tracking-[0.14em] text-white/45">
+                  <span className="shrink-0 text-[0.65rem] uppercase tracking-[0.14em] text-white/70">
                     Edytuj
                   </span>
                 </Link>
@@ -251,7 +251,7 @@ export default async function AdminHome() {
             </Link>
           </div>
           {!tasksToday.length ? (
-            <p className="text-sm text-white/45">Nic na dziś.</p>
+            <p className="text-sm text-white/70">Nic na dziś.</p>
           ) : (
             <ul className="divide-y divide-white/10">
               {tasksToday.map((t) => (
@@ -262,12 +262,12 @@ export default async function AdminHome() {
                   >
                     <div className="min-w-0">
                       <p className="truncate font-medium text-white">{t.title}</p>
-                      <p className="text-xs text-white/45">
+                      <p className="text-xs text-white/70">
                         {teamLabel(t.assignee)}
                         {t.due_date ? ` · ${t.due_date}` : ""}
                       </p>
                     </div>
-                    <span className="shrink-0 text-[0.65rem] uppercase tracking-[0.14em] text-white/45">
+                    <span className="shrink-0 text-[0.65rem] uppercase tracking-[0.14em] text-white/70">
                       Edytuj
                     </span>
                   </Link>
@@ -288,13 +288,13 @@ export default async function AdminHome() {
             </Link>
           </div>
           {!upcomingEvents.length ? (
-            <p className="text-sm text-white/45">Kalendarz pusty.</p>
+            <p className="text-sm text-white/70">Kalendarz pusty.</p>
           ) : (
             <ul className="divide-y divide-white/10">
               {upcomingEvents.map((e) => (
                 <li key={e.id} className="py-3.5">
                   <p className="font-medium text-white">{e.title}</p>
-                  <p className="text-xs text-white/45">
+                  <p className="text-xs text-white/70">
                     {new Date(e.starts_at).toLocaleString("pl-PL")}
                   </p>
                 </li>
@@ -315,7 +315,7 @@ export default async function AdminHome() {
               >
                 <div>
                   <p className="font-medium text-white">{l.company_name}</p>
-                  <p className="text-xs text-white/45">
+                  <p className="text-xs text-white/70">
                     {[l.contact_name, l.email, l.phone].filter(Boolean).join(" · ")}
                   </p>
                 </div>

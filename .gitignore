@@ -46,3 +46,7 @@ next-env.d.ts
 # Local Netlify folder
 .netlify
 data/
+
+# Internal tools & scratch
+.agents/
+preview-quick-wins.html

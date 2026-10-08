@@ -36,6 +36,9 @@ function TaskRow({
   const [notes, setNotes] = useState(task.notes ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [optimisticDone, setOptimisticDone] = useState(false);
+
+  const isDone = showDone || optimisticDone;
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +67,7 @@ function TaskRow({
   };
 
   const markDone = async () => {
+    setOptimisticDone(true);
     await fetch(`/api/tasks/${task.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -73,6 +77,7 @@ function TaskRow({
   };
 
   const restore = async () => {
+    setOptimisticDone(false);
     await fetch(`/api/tasks/${task.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -84,29 +89,30 @@ function TaskRow({
   return (
     <li className="px-3 py-3.5 md:px-4">
       <div className="flex min-h-[48px] items-start gap-3">
-        {!showDone ? (
+        {!isDone ? (
           <button
             type="button"
             aria-label="Oznacz jako gotowe"
             onClick={() => void markDone()}
-            className="mt-1 h-6 w-6 shrink-0 rounded-full border border-white/30 bg-white/5 backdrop-blur-md transition hover:bg-white hover:text-black"
+            className="pressable mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/5 backdrop-blur-md transition hover:border-emerald-400 hover:bg-emerald-500/20 active:scale-90"
           />
         ) : (
           <button
             type="button"
             onClick={() => void restore()}
-            className="mt-1 shrink-0 text-xs text-white/40 underline"
+            className="pressable mt-1 flex items-center gap-1.5 text-xs text-white/60 hover:text-white"
           >
-            Przywróć
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">✓</span>
+            <span className="underline">Przywróć</span>
           </button>
         )}
         <div className="min-w-0 flex-1">
           <p
-            className={`font-medium ${showDone ? "text-white/40 line-through" : "text-white"}`}
+            className={`font-medium transition-colors ${isDone ? "text-white/40 line-through" : "text-white"}`}
           >
             {task.title}
           </p>
-          <p className="mt-1 text-xs text-white/40">
+          <p className="mt-1 text-xs text-white/65">
             {teamLabel(task.assignee)}
             {task.due_date ? ` · ${task.due_date}` : ""}
             {task.project_id ? (

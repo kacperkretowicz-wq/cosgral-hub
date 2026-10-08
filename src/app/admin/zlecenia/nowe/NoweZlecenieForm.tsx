@@ -100,7 +100,7 @@ export default function NoweZlecenieForm() {
       />
       <Link
         href="/admin/zlecenia"
-        className="inline-block text-sm text-white/45 hover:text-white"
+        className="inline-block text-sm text-white/75 hover:text-white"
       >
         ← Anuluj
       </Link>
@@ -208,9 +208,9 @@ export default function NoweZlecenieForm() {
           />
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm font-medium text-red-400">{error}</p>}
 
-        <Button type="submit" disabled={loading || !crmClientId} className="w-full">
+        <Button type="submit" disabled={loading} isLoading={loading} className="w-full">
           {loading ? "Zapisywanie..." : "Utwórz zlecenie"}
         </Button>
       </form>
