@@ -15,9 +15,11 @@ function isEphemeralHost(): boolean {
 }
 
 function shouldUseBlobs(): boolean {
-  if (process.env.COSGRAL_DB_MODE === "local") return false;
+  // Na serwerach Netlify/Vercel (serverless) dysk /var/task jest read-only, więc ZAWSZE używamy Blobs
+  if (isEphemeralHost()) return true;
   if (process.env.COSGRAL_DB_MODE === "blobs") return true;
-  return isEphemeralHost();
+  if (process.env.COSGRAL_DB_MODE === "local") return false;
+  return false;
 }
 
 function blobs() {
